@@ -3,7 +3,7 @@
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../compose/{{ item }}/"
     dest: "{{ stacks_root }}/{{ item }}/"
-    mode: "0640"
+    mode: "0644"
     directory_mode: "0750"
     owner: "{{ admin_user }}"
     group: "{{ admin_user }}"

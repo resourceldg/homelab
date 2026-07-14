@@ -69,8 +69,16 @@
   changed_when: false
   failed_when: false
 
+- name: Check whether the docker binary is available
+  ansible.builtin.command: which docker
+  register: firewall_docker_bin
+  changed_when: false
+  failed_when: false
+
 - name: Apply ufw-docker rules to DOCKER-USER chain
   ansible.builtin.command: ufw-docker install
-  when: firewall_ufwdocker.rc != 0
+  when:
+    - firewall_ufwdocker.rc != 0
+    - firewall_docker_bin.rc == 0
   changed_when: true
   notify: Reload ufw

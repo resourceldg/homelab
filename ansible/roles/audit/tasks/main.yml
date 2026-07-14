@@ -65,6 +65,7 @@
     set -o pipefail
     aideinit -y -f
   args:
+    executable: /bin/bash
     creates: /var/lib/aide/aide.db
 
 - name: Deploy AIDE check script

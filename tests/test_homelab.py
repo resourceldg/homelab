@@ -17,9 +17,13 @@ def test_ssh_hardening(host):
 
 
 def test_sshd_running(host):
-    assert host.service("ssh").is_running
-    assert host.service("ssh").is_enabled
-
+    ssh = host.service("ssh")
+    ssh_socket = host.service("ssh.socket")
+    # Ubuntu 24.04 usa socket activation: ssh.service arranca on-demand
+    # y puede figurar disabled/inactive mientras ssh.socket es quien
+    # escucha y está enabled al boot.
+    assert ssh.is_running or ssh_socket.is_running
+    assert ssh.is_enabled or ssh_socket.is_enabled
 
 def test_ufw_active(host):
     ufw = host.run("ufw status verbose")

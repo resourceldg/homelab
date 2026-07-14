@@ -31,7 +31,7 @@ tailscale_cidr: "100.64.0.0/10"     # Tailscale/CGNAT shared range
 # --- Hardening (CIS via Ubuntu Security Guide) -----------------------------
 # Level 1 Server is chosen deliberately: Level 2 / STIG breaks a Desktop GUI.
 usg_profile: "cis_level1_server"
-usg_enabled: true                    # requires Ubuntu Pro token (see vault)
+usg_enabled: false                    # requires Ubuntu Pro token (see vault)
 harden_disable_usb_storage: false    # true breaks USB backup drives — keep off
 harden_core_dumps: true
 harden_sysctl: true
@@ -79,13 +79,13 @@ stacks_root: "/opt/homelab/stacks"
 
 # --- DuckDNS (dynamic DNS) -------------------------------------------------
 duckdns_enabled: true
-duckdns_domains: "myhomelab"          # -> myhomelab.duckdns.org (no suffix)
+duckdns_domains: "lucasland"          # -> lucasland.duckdns.org (no suffix)          # -> myhomelab.duckdns.org (no suffix)
 duckdns_update_oncalendar: "*:0/5"    # every 5 minutes
 # duckdns_token comes from vault.
 
 # --- Reverse proxy (Caddy) -------------------------------------------------
-caddy_base_domain: "myhomelab.duckdns.org"
-caddy_acme_email: "you@example.com"
+caddy_base_domain: "lucasland.duckdns.org"
+caddy_acme_email: "resourceldg@gmail.com"
 
 # --- Monitoring ------------------------------------------------------------
 monitoring_enabled: true

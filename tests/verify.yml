@@ -15,10 +15,15 @@
         that: "ansible_facts.services[item].state == 'running'"
         fail_msg: "{{ item }} is not running"
       loop:
-        - ssh.service
         - fail2ban.service
         - docker.service
         - tailscaled.service
+
+    - name: Assert SSH is listening (socket-activated or classic)
+      ansible.builtin.wait_for:
+        port: "{{ ssh_port | default(22) }}"
+        host: 127.0.0.1
+        timeout: 5
 
     - name: Check UFW is active
       ansible.builtin.command: ufw status

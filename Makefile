@@ -4,6 +4,9 @@ ANSIBLE_DIR   := ansible
 PLAYBOOK      := $(ANSIBLE_DIR)/site.yml
 RUN           := cd $(ANSIBLE_DIR) &&
 
+VENV := $(CURDIR)/.venv
+export PATH := $(VENV)/bin:$(PATH)
+
 .PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
         harden firewall updates backups monitoring idempotence test verify
 
@@ -11,8 +14,11 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-deps: ## Install Ansible core, Galaxy collections and Python dev/test deps
-	# ansible-core from pip (Ubuntu 22.04 ships 2.10, too old for
+$(VENV)/bin/pip:
+	python3 -m venv $(VENV)
+
+deps: $(VENV)/bin/pip ## Install Ansible core, Galaxy collections and Python dev/test deps
+	# ansible-core from pip (Ubuntu 24.04 apt version lags; pip gives us
 	# deb822_repository / docker_compose_v2).
 	pip install -r tests/requirements.txt ansible-core ansible-lint yamllint \
 	  molecule "molecule-plugins[docker]" docker
@@ -62,4 +68,4 @@ verify: ## Run the in-Ansible posture checks
 	$(RUN) ansible-playbook ../tests/verify.yml
 
 test: ## Run the testinfra smoke tests locally
-	py.test -v --hosts=local:// tests/test_homelab.py
+	py.test -v --hosts=local:// --sudo tests/test_homelab.py
