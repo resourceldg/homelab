@@ -1,0 +1,9 @@
+---
+- name: Prepare
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Refresh apt cache (container images ship stale indexes)
+      ansible.builtin.apt:
+        update_cache: true

@@ -22,8 +22,9 @@ lint: ## Static analysis (yamllint + ansible-lint)
 	yamllint .
 	ansible-lint
 
-molecule: ## Run the Molecule scenario for the ddns role (Docker driver)
+molecule: ## Run Molecule for ddns + backups roles (set UBUNTU_IMAGE_TAG=2204|2404)
 	cd $(ANSIBLE_DIR)/roles/ddns && molecule test
+	cd $(ANSIBLE_DIR)/roles/backups && molecule test
 
 vault-create: ## Create the encrypted vault from the example
 	cp $(ANSIBLE_DIR)/group_vars/all/vault.yml.example $(ANSIBLE_DIR)/group_vars/all/vault.yml

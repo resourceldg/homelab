@@ -1,0 +1,33 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: borgmatic config is present and root-only
+      ansible.builtin.stat:
+        path: /etc/borgmatic/config.yaml
+      register: cfg
+
+    - name: Assert config perms
+      ansible.builtin.assert:
+        that:
+          - cfg.stat.exists
+          - cfg.stat.mode == '0600'
+        fail_msg: "borgmatic config missing or wrong perms"
+
+    - name: Repository was initialised (proves the rendered config parsed OK)
+      ansible.builtin.stat:
+        path: /opt/borg-repo/config
+      register: repo
+
+    - name: Assert repo initialised
+      ansible.builtin.assert:
+        that: repo.stat.exists
+        fail_msg: "borg repo not initialised — borgmatic could not read its config"
+
+    - name: borgmatic timer is enabled
+      ansible.builtin.command: systemctl is-enabled borgmatic.timer
+      register: timer_state
+      changed_when: false
+      failed_when: timer_state.stdout != 'enabled'

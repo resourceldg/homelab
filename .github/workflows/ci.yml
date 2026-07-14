@@ -63,8 +63,13 @@ jobs:
         run: ansible-playbook site.yml --syntax-check
 
   molecule:
-    name: Molecule (ddns role, systemd container)
+    name: Molecule (Ubuntu ${{ matrix.ubuntu }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 2204 = 22.04 jammy, 2404 = 24.04 noble.
+        ubuntu: ["2204", "2404"]
     steps:
       - uses: actions/checkout@v4
 
@@ -78,8 +83,16 @@ jobs:
           pip install "molecule-plugins[docker]" molecule ansible-core docker
           ansible-galaxy collection install -r requirements.yml
 
-      - name: Run Molecule
+      - name: Molecule — ddns role
         working-directory: ansible/roles/ddns
         env:
+          UBUNTU_IMAGE_TAG: ${{ matrix.ubuntu }}
+          ANSIBLE_FORCE_COLOR: "1"
+        run: molecule test
+
+      - name: Molecule — backups role (exercises borgmatic schema per version)
+        working-directory: ansible/roles/backups
+        env:
+          UBUNTU_IMAGE_TAG: ${{ matrix.ubuntu }}
           ANSIBLE_FORCE_COLOR: "1"
         run: molecule test

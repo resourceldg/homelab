@@ -1,0 +1,16 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    # Small, container-safe values. The repo is local so no network is needed.
+    borg_repo: /opt/borg-repo
+    borg_paths:
+      - /etc/hostname
+    borg_exclude:
+      - "**/*.tmp"
+    borg_retention: { hourly: 0, daily: 7, weekly: 4, monthly: 6 }
+    borg_backup_oncalendar: "*-*-* 02:00:00"
+    vault_borg_passphrase: "ci-molecule-passphrase"
+  roles:
+    - role: backups

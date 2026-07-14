@@ -1,16 +1,15 @@
 ---
-# Molecule scenario: converge the ddns role in a systemd-enabled container and
-# assert idempotence. Host-level roles (ufw, apparmor, hardening) need real
-# kernel features and are validated on the target host via `make verify`.
+# Converges the backups role across LTS versions. This is where the
+# version-specific borgmatic schema (sectioned on 22.04 / flat on 24.04+) is
+# actually exercised: `borgmatic init` parses the rendered config, so an
+# invalid schema fails the converge.
 role_name_check: 1
 
 driver:
   name: docker
 
 platforms:
-  # Image tag is parametrised so CI can run the same scenario across LTS
-  # versions (2204, 2404). Defaults to 24.04 for local runs.
-  - name: "molecule-ddns-${UBUNTU_IMAGE_TAG:-2404}"
+  - name: "molecule-backups-${UBUNTU_IMAGE_TAG:-2404}"
     image: "geerlingguy/docker-ubuntu${UBUNTU_IMAGE_TAG:-2404}-ansible:latest"
     command: /usr/lib/systemd/systemd
     privileged: true
@@ -22,7 +21,6 @@ platforms:
 provisioner:
   name: ansible
   env:
-    # Make the role under test discoverable (its parent is ansible/roles).
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
   config_options:
     defaults:
@@ -36,6 +34,7 @@ scenario:
     - dependency
     - syntax
     - create
+    - prepare
     - converge
     - idempotence
     - verify

@@ -26,7 +26,7 @@ Built by a two-plane design:
 | Dynamic DNS | DuckDNS (systemd timer) |
 | Monitoring | Prometheus + Grafana (auto-provisioned dashboard) + node-exporter + cAdvisor |
 | Backups | Borg via borgmatic (encrypted, local repo, retention) |
-| Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule + GitHub Actions |
+| Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule matrix (Ubuntu 22.04 + 24.04) via GitHub Actions |
 
 See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
 rationale behind each decision.
