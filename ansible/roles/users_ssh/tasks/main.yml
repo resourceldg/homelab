@@ -1,8 +1,14 @@
 ---
+# =============================================================================
+# STAGE 1 — BOOTSTRAP (always applied): create the admin/automation account and
+# install its SSH keys and sudo rights. This never restricts login, so it is
+# safe to run against a fresh box without risking a lockout.
+# =============================================================================
 - name: Create admin group
   ansible.builtin.group:
     name: "{{ admin_user }}"
     state: present
+  tags: [ssh, users, bootstrap]
 
 - name: Create admin user
   ansible.builtin.user:
@@ -13,6 +19,7 @@
     shell: /bin/bash
     create_home: true
     state: present
+  tags: [ssh, users, bootstrap]
 
 - name: Install authorized keys for admin user
   ansible.posix.authorized_key:
@@ -21,6 +28,7 @@
     state: present
     exclusive: false
   loop: "{{ admin_ssh_authorized_keys }}"
+  tags: [ssh, users, bootstrap]
 
 - name: Passwordless sudo for admin user (automation only)
   ansible.builtin.copy:
@@ -30,6 +38,46 @@
     owner: root
     group: root
     validate: "visudo -cf %s"
+  tags: [ssh, users, bootstrap]
+
+# =============================================================================
+# STAGE 2 — LOCKDOWN (gated): deploy the restrictive sshd_config and restart
+# sshd. A pre-flight assert refuses to proceed unless a real key is present, so
+# the door is never slammed on an unreachable box. Skip with:
+#     --skip-tags ssh-lockdown
+# =============================================================================
+- name: "Safety gate — refuse SSH lockdown without a usable admin key"
+  ansible.builtin.assert:
+    that:
+      - ssh_allow_users | length > 0
+      - admin_ssh_authorized_keys | length > 0
+      - admin_ssh_authorized_keys | select('search', 'REPLACE_ME') | list | length == 0
+    fail_msg: >-
+      Refusing to harden SSH: set real key(s) in admin_ssh_authorized_keys
+      (no REPLACE_ME placeholder) before enabling lockdown, or you will be
+      locked out. To create the user/keys without hardening SSH, run with
+      --skip-tags ssh-lockdown first and confirm key access.
+    success_msg: "Admin key present — safe to apply the hardened sshd_config."
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
+
+- name: Confirm the admin authorized_keys file is present and non-empty
+  ansible.builtin.stat:
+    path: "/home/{{ admin_user }}/.ssh/authorized_keys"
+  register: users_ssh_authkeys
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
+
+- name: Fail early if the admin has no installed authorized_keys
+  ansible.builtin.assert:
+    that:
+      - users_ssh_authkeys.stat.exists
+      - users_ssh_authkeys.stat.size | default(0) | int > 0
+    fail_msg: >-
+      {{ admin_user }} has no authorized_keys on disk — aborting before the
+      hardened sshd_config disables password auth.
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
 
 - name: Deploy hardened sshd_config
   ansible.builtin.template:
@@ -40,6 +88,8 @@
     group: root
     validate: "sshd -t -f %s"
   notify: Restart sshd
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
 
 - name: Remove weak short Diffie-Hellman moduli
   ansible.builtin.shell: >
@@ -48,6 +98,8 @@
   args:
     creates: /etc/ssh/.moduli_hardened
   notify: Restart sshd
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
 
 - name: Mark moduli as hardened
   ansible.builtin.file:
@@ -56,3 +108,5 @@
     mode: "0600"
     modification_time: preserve
     access_time: preserve
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]

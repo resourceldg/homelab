@@ -6,3 +6,20 @@
 # Public keys authorised for SSH. Empty by default on purpose: each environment
 # MUST provide the real operator keys in its group_vars, or you get no access.
 admin_ssh_authorized_keys: []
+
+# --- SSH lockdown (anti-lockout design) ------------------------------------
+# User + key creation (the "bootstrap" stage) is ALWAYS applied. The restrictive
+# sshd_config — PasswordAuthentication no, AllowUsers, strong crypto, sshd
+# restart — is the "lockdown" stage, gated by this flag and a pre-flight assert
+# that refuses to run without a real key. This lets a first run establish key
+# access before the door is slammed:
+#     # phase 1 — create the user + install keys, leave SSH open:
+#     ansible-playbook site.yml --tags ssh --skip-tags ssh-lockdown
+#     # ...confirm `ssh <admin_user>@host` works with the key...
+#     # phase 2 — apply the hardened sshd_config:
+#     ansible-playbook site.yml --tags ssh
+ssh_lockdown_enabled: true
+
+# Users permitted to log in over SSH (rendered into AllowUsers). Defaults to the
+# admin/automation account; extend it in group_vars for a multi-user host.
+ssh_allow_users: ["{{ admin_user }}"]
