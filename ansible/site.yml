@@ -8,8 +8,8 @@
 - name: Converge home server
   hosts: homeserver
   become: true
-  vars_files:
-    - group_vars/all/vault.yml
+  # vault.yml is auto-loaded from the selected inventory's group_vars/all/,
+  # e.g. inventories/production/group_vars/all/vault.yml — no vars_files needed.
 
   pre_tasks:
     - name: Assert we are on a supported Ubuntu LTS

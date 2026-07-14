@@ -5,10 +5,13 @@ Operational procedures for day-2 tasks.
 ## First-time provisioning
 
 1. `make deps` — install collections and test tooling.
-2. Edit `ansible/group_vars/all/main.yml`: SSH keys, `lan_cidr`, `server_timezone`,
-   `duckdns_domains`, `caddy_base_domain`, `caddy_acme_email`, `borg_repo`.
+2. Edit `ansible/inventories/production/group_vars/all/main.yml`: SSH keys,
+   `lan_cidr`, `caddy_base_domain`, `caddy_acme_email`, `duckdns_domains`.
+   Role-specific knobs (`borg_repo`, retention, timers…) live in each role's
+   `defaults/main.yml`; override them here only when they must differ.
+   Use `ENV=staging` on any `make` target to act on the staging inventory.
 3. `make vault-create`, then `make vault-edit` to fill real tokens.
-4. Store the vault password in `.vault_pass` (gitignored, `chmod 600`).
+4. Store the vault password in `~/.vault_pass` (gitignored, `chmod 600`).
 5. `make dry-run` → review the diff.
 6. `make apply`.
 7. `sudo tailscale up --ssh --accept-routes` (one-time browser auth).

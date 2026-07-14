@@ -1,0 +1,11 @@
+---
+# firewall — role defaults (UFW + ufw-docker).
+# ssh_port, lan_cidr and tailscale_cidr are shared/per-env values (group_vars).
+ufw_default_incoming: "deny"
+ufw_default_outgoing: "allow"
+
+# Ports opened to the internet (must be port-forwarded on the router too).
+# Only the reverse proxy is exposed publicly.
+ufw_public_ports:
+  - { port: 80, proto: tcp, comment: "Caddy HTTP->HTTPS redirect / ACME" }
+  - { port: 443, proto: tcp, comment: "Caddy HTTPS" }

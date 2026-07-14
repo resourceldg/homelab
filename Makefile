@@ -4,11 +4,18 @@ ANSIBLE_DIR   := ansible
 PLAYBOOK      := $(ANSIBLE_DIR)/site.yml
 RUN           := cd $(ANSIBLE_DIR) &&
 
+# Target environment. Override on the CLI: `make apply ENV=staging`.
+ENV       ?= production
+INV       := inventories/$(ENV)
+VAULT     := $(INV)/group_vars/all/vault.yml
+PLAY      := ansible-playbook site.yml -i $(INV)
+
 VENV := $(CURDIR)/.venv
 export PATH := $(VENV)/bin:$(PATH)
 
 .PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
-        harden firewall updates backups monitoring idempotence test verify
+        harden firewall updates backups monitoring idempotence test verify \
+        precommit secrets
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -21,46 +28,52 @@ deps: $(VENV)/bin/pip ## Install Ansible core, Galaxy collections and Python dev
 	# ansible-core from pip (Ubuntu 24.04 apt version lags; pip gives us
 	# deb822_repository / docker_compose_v2).
 	pip install -r tests/requirements.txt ansible-core ansible-lint yamllint \
-	  molecule "molecule-plugins[docker]" docker
+	  molecule "molecule-plugins[docker]" docker pre-commit
 	ansible-galaxy collection install -r requirements.yml
 
 lint: ## Static analysis (yamllint + ansible-lint)
 	yamllint .
 	ansible-lint
 
+precommit: ## Run every pre-commit hook against all files
+	pre-commit run --all-files
+
+secrets: ## Scan the repo for leaked secrets (gitleaks)
+	pre-commit run gitleaks --all-files
+
 molecule: ## Run Molecule for ddns + backups roles (set UBUNTU_IMAGE_TAG=2204|2404)
 	cd $(ANSIBLE_DIR)/roles/ddns && molecule test
 	cd $(ANSIBLE_DIR)/roles/backups && molecule test
 
-vault-create: ## Create the encrypted vault from the example
-	cp $(ANSIBLE_DIR)/group_vars/all/vault.yml.example $(ANSIBLE_DIR)/group_vars/all/vault.yml
-	ansible-vault encrypt $(ANSIBLE_DIR)/group_vars/all/vault.yml
+vault-create: ## Create the encrypted vault for $(ENV) from the example
+	cp $(ANSIBLE_DIR)/$(VAULT).example $(ANSIBLE_DIR)/$(VAULT)
+	ansible-vault encrypt $(ANSIBLE_DIR)/$(VAULT)
 
-vault-edit: ## Edit the encrypted vault
-	$(RUN) ansible-vault edit group_vars/all/vault.yml
+vault-edit: ## Edit the encrypted vault for $(ENV)
+	$(RUN) ansible-vault edit $(VAULT)
 
 dry-run: ## Preview all changes without applying (--check --diff)
-	$(RUN) ansible-playbook site.yml --check --diff
+	$(RUN) $(PLAY) --check --diff
 
-apply: ## Converge the whole server
-	$(RUN) ansible-playbook site.yml
+apply: ## Converge the whole server ($(ENV))
+	$(RUN) $(PLAY)
 
 harden: ## Apply only the security plane
-	$(RUN) ansible-playbook site.yml --tags security
+	$(RUN) $(PLAY) --tags security
 
 firewall: ## Apply only the firewall role
-	$(RUN) ansible-playbook site.yml --tags firewall
+	$(RUN) $(PLAY) --tags firewall
 
 monitoring: ## Redeploy the monitoring + proxy stacks
-	$(RUN) ansible-playbook site.yml --tags "services,docker"
+	$(RUN) $(PLAY) --tags "services,docker"
 
 backups: ## Configure backups and run one now
-	$(RUN) ansible-playbook site.yml --tags backups
+	$(RUN) $(PLAY) --tags backups
 	sudo borgmatic --verbosity 1
 
 idempotence: ## Prove no changes on a second run (exit 1 if drift)
-	$(RUN) ansible-playbook site.yml | tee /tmp/run1.log
-	$(RUN) ansible-playbook site.yml | tee /tmp/run2.log
+	$(RUN) $(PLAY) | tee /tmp/run1.log
+	$(RUN) $(PLAY) | tee /tmp/run2.log
 	@grep -qE 'changed=0 .*failed=0' /tmp/run2.log && \
 	  echo "✅ idempotent" || (echo "❌ second run made changes" && exit 1)
 

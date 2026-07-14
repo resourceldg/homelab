@@ -1,0 +1,30 @@
+---
+# =============================================================================
+# PRODUCTION overrides — identity, network and public-facing config for the
+# real home server. These win over role defaults and the shared baseline.
+# Secrets live next to this file in vault.yml (encrypted).
+# =============================================================================
+
+# --- Identity --------------------------------------------------------------
+server_hostname: "homelab-01"
+server_timezone: "America/Bogota"
+server_locale: "en_US.UTF-8"
+
+# --- Access model ----------------------------------------------------------
+# SSH is reachable only from the LAN and the Tailscale CGNAT range.
+lan_cidr: "192.168.1.0/24"
+tailscale_cidr: "100.64.0.0/10"       # Tailscale/CGNAT shared range
+
+# Public keys authorised for SSH. Add one line per operator.
+admin_ssh_authorized_keys:
+  - "ssh-ed25519 AAAA...REPLACE_ME... operator@laptop"
+
+# --- Hardening -------------------------------------------------------------
+# This homelab does NOT use Ubuntu Pro, so USG/CIS tooling stays off. The
+# complementary hardening controls still apply. Only set true if you add a token.
+usg_enabled: false
+
+# --- Reverse proxy / DNS ---------------------------------------------------
+caddy_base_domain: "lucasland.duckdns.org"
+caddy_acme_email: "resourceldg@gmail.com"
+duckdns_domains: "lucasland"          # -> lucasland.duckdns.org (no suffix)

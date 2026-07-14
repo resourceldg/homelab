@@ -8,5 +8,11 @@ exclude_paths:
 skip_list:
   - yaml[line-length]
   - fqcn[action-core]  # allow short module names for readability in a homelab
+  # Role variables use a deliberate domain namespace (borg_, ufw_, duckdns_,
+  # usg_, harden_, autoupdate_) that is the roles' public API, rather than the
+  # role-name prefix ansible-lint's production profile wants. Redundant names
+  # like backups_borg_repo add no collision safety here and would break every
+  # existing group_vars/vault key, so this one rule is skipped on purpose.
+  - var-naming[no-role-prefix]
 warn_list:
   - experimental

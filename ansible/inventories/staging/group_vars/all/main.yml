@@ -1,0 +1,31 @@
+---
+# =============================================================================
+# STAGING overrides — a safe mirror of production for validating changes.
+# Keep the security posture close to prod, but with throwaway identity/domain
+# so a mistake here never touches the real box or the real DNS record.
+# =============================================================================
+
+# --- Identity --------------------------------------------------------------
+server_hostname: "homelab-staging"
+server_timezone: "America/Bogota"
+server_locale: "en_US.UTF-8"
+
+# --- Access model ----------------------------------------------------------
+lan_cidr: "192.168.1.0/24"
+tailscale_cidr: "100.64.0.0/10"
+
+admin_ssh_authorized_keys:
+  - "ssh-ed25519 AAAA...REPLACE_ME... operator@laptop"
+
+# --- Hardening -------------------------------------------------------------
+# No Ubuntu Pro in this homelab; USG stays off (as in production).
+usg_enabled: false
+
+# --- Reverse proxy / DNS ---------------------------------------------------
+# Distinct subdomain so ACME/DuckDNS never clobbers the production record.
+caddy_base_domain: "staging.lucasland.duckdns.org"
+caddy_acme_email: "resourceldg@gmail.com"
+duckdns_domains: "lucasland-staging"
+
+# Cheaper monitoring footprint on staging.
+prometheus_retention: "3d"

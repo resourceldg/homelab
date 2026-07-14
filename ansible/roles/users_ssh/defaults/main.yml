@@ -1,0 +1,8 @@
+---
+# users_ssh — role defaults.
+# NOTE: admin_user, ssh_port, lan_cidr and tailscale_cidr are cross-role values
+# and live in group_vars (shared) / inventories/<env>/group_vars (per env).
+
+# Public keys authorised for SSH. Empty by default on purpose: each environment
+# MUST provide the real operator keys in its group_vars, or you get no access.
+admin_ssh_authorized_keys: []

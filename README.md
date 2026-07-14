@@ -37,12 +37,16 @@ rationale behind each decision.
 homelab/
 ├── ansible/
 │   ├── site.yml                 # orchestrator (tagged roles)
-│   ├── ansible.cfg
-│   ├── inventory/hosts.ini
-│   ├── group_vars/all/
-│   │   ├── main.yml             # every tunable knob (committed)
-│   │   └── vault.yml.example    # secrets template (encrypt as vault.yml)
-│   └── roles/
+│   ├── ansible.cfg              # defaults to inventories/production
+│   ├── group_vars/all/main.yml  # cross-role constants (same in every env)
+│   ├── inventories/
+│   │   ├── production/
+│   │   │   ├── hosts.ini
+│   │   │   └── group_vars/all/  # prod identity/network/domain + vault
+│   │   └── staging/
+│   │       ├── hosts.ini
+│   │       └── group_vars/all/  # staging overrides + vault
+│   └── roles/                   # each role owns its defaults/main.yml
 │       ├── bootstrap/ users_ssh/ tailscale/ ddns/
 │       ├── firewall/ fail2ban/ apparmor/ hardening/ auto_updates/ audit/
 │       └── docker/ monitoring/ backups/
@@ -57,8 +61,13 @@ homelab/
 
 ## Quickstart
 
-Prerequisites: fresh Ubuntu LTS (**22.04 / 24.04 / 26.04** supported), a sudo user, an Ubuntu Pro token
-(free for personal use, needed for `usg`), a DuckDNS token, and your SSH public key.
+Prerequisites: fresh Ubuntu **24.04 LTS** (primary target; 22.04 and a future
+26.04 also supported), a sudo user, a DuckDNS token, and your SSH public key.
+
+> Ubuntu Pro is **optional** and off by default (`usg_enabled: false`). It only
+> unlocks the `usg` CIS tooling; all the complementary hardening (sysctl,
+> pwquality, core dumps, AppArmor, Fail2ban…) applies without it. Enable it only
+> if you have a Pro token.
 
 ```bash
 # 0. Clone onto the server (or a control node with SSH access).
@@ -67,16 +76,16 @@ git clone <this-repo> homelab && cd homelab
 # 1. Install dependencies.
 make deps
 
-# 2. Fill in your settings.
-$EDITOR ansible/group_vars/all/main.yml      # keys, domain, LAN CIDR, timezone…
-make vault-create                            # create + encrypt secrets
-echo "your-vault-password" > .vault_pass && chmod 600 .vault_pass
+# 2. Fill in your settings for the target environment (production by default).
+$EDITOR ansible/inventories/production/group_vars/all/main.yml  # keys, domain, LAN CIDR…
+make vault-create                            # create + encrypt secrets for ENV
+echo "your-vault-password" > ~/.vault_pass && chmod 600 ~/.vault_pass
 
 # 3. Preview everything (no changes made).
-make dry-run
+make dry-run                                 # add ENV=staging to target staging
 
 # 4. Converge.
-make apply
+make apply                                   # or: make apply ENV=staging
 
 # 5. Authenticate Tailscale once (interactive, one time only).
 sudo tailscale up --ssh --accept-routes

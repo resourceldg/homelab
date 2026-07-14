@@ -1,0 +1,12 @@
+---
+# docker — role defaults.
+# admin_user, apt_repo_release and stacks_root are shared values (group_vars).
+docker_users: ["{{ admin_user }}"]
+docker_daemon_options:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  live-restore: true
+  no-new-privileges: true
+  userland-proxy: false
