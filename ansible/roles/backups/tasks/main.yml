@@ -51,7 +51,7 @@
     dest: /etc/systemd/system/borgmatic.timer.d/schedule.conf
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       [Timer]
       OnCalendar=
       OnCalendar={{ borg_backup_oncalendar }}

@@ -14,7 +14,7 @@
     mode: "0750"
     content: |
       #!/usr/bin/env bash
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       set -euo pipefail
       mkdir -p /var/log/lynis
       lynis audit system --quiet --no-colors \
@@ -28,7 +28,7 @@
     dest: /etc/systemd/system/lynis-scan.service
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       [Unit]
       Description=Lynis security audit
       [Service]
@@ -42,7 +42,7 @@
     dest: /etc/systemd/system/lynis-scan.timer
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       [Unit]
       Description=Weekly Lynis audit
       [Timer]
@@ -74,7 +74,7 @@
     mode: "0750"
     content: |
       #!/usr/bin/env bash
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       set -uo pipefail
       REPORT="$(mktemp)"
       /usr/bin/aide.wrapper --check > "${REPORT}" 2>&1 || true
@@ -90,7 +90,7 @@
     dest: /etc/systemd/system/aide-check.service
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       [Unit]
       Description=AIDE file integrity check
       [Service]
@@ -105,7 +105,7 @@
     dest: /etc/systemd/system/aide-check.timer
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       [Unit]
       Description=Daily AIDE integrity check
       [Timer]

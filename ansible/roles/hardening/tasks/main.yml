@@ -49,7 +49,7 @@
     dest: /etc/security/pwquality.conf.d/99-hardening.conf
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       minlen = 14
       dcredit = -1
       ucredit = -1
@@ -88,7 +88,7 @@
     dest: /etc/security/limits.d/99-nocore.conf
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       * hard core 0
   when: harden_core_dumps | bool
 
@@ -97,7 +97,7 @@
     dest: /etc/modprobe.d/99-hardening-blacklist.conf
     mode: "0644"
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible - do not edit manually
       install cramfs /bin/true
       install freevxfs /bin/true
       install jffs2 /bin/true
