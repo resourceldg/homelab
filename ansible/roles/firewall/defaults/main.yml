@@ -9,3 +9,10 @@ ufw_default_outgoing: "allow"
 ufw_public_ports:
   - { port: 80, proto: tcp, comment: "Caddy HTTP->HTTPS redirect / ACME" }
   - { port: 443, proto: tcp, comment: "Caddy HTTPS" }
+
+# ufw-docker helper — pinned to a release and checksum-verified instead of
+# pulling a moving `master` (supply-chain hardening). To bump: pick a tag from
+# https://github.com/chaifeng/ufw-docker/releases and set the sha256 of that
+# tag's ufw-docker script (curl the raw file | sha256sum).
+ufw_docker_version: "251123"
+ufw_docker_sha256: "c3e5f0bf6061a3a2e7d7ac06abc80665707d2f4c91e90d76f22e4168863fb472"

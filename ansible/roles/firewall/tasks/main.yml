@@ -57,11 +57,12 @@
 # Docker writes its own iptables rules that bypass UFW, so a published port is
 # reachable even when UFW denies it. ufw-docker restores UFW as the source of
 # truth for the DOCKER-USER chain.
-- name: Install ufw-docker helper
+- name: Install ufw-docker helper (pinned + checksum-verified)
   ansible.builtin.get_url:
-    url: "https://raw.githubusercontent.com/chaifeng/ufw-docker/master/ufw-docker"
+    url: "https://raw.githubusercontent.com/chaifeng/ufw-docker/{{ ufw_docker_version }}/ufw-docker"
     dest: /usr/local/bin/ufw-docker
     mode: "0755"
+    checksum: "sha256:{{ ufw_docker_sha256 }}"
 
 - name: Check whether ufw-docker rules are already present
   ansible.builtin.command: grep -q "BEGIN UFW AND DOCKER" /etc/ufw/after.rules

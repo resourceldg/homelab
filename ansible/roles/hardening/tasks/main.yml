@@ -2,6 +2,20 @@
 # CIS hardening via Ubuntu Security Guide (usg) plus complementary controls
 # that usg does not cover or that we want regardless of Pro entitlement.
 
+- name: "USG safety gate — validate token and profile when usg is enabled"
+  ansible.builtin.assert:
+    that:
+      - usg_profile in usg_valid_profiles
+      - vault_ubuntu_pro_token is defined
+      - vault_ubuntu_pro_token | length > 0
+      - vault_ubuntu_pro_token is not search('REPLACE')
+    fail_msg: >-
+      usg_enabled is true but the Ubuntu Pro token is missing/placeholder, or
+      usg_profile ({{ usg_profile }}) is not one of {{ usg_valid_profiles }}.
+      This homelab runs without Pro by default — keep usg_enabled false unless
+      you have a real token.
+  when: usg_enabled | bool
+
 - name: Attach Ubuntu Pro (required for usg)
   ansible.builtin.command: "pro attach {{ vault_ubuntu_pro_token }}"
   args:

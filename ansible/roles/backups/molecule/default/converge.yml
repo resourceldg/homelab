@@ -5,6 +5,8 @@
   vars:
     # Small, container-safe values. The repo is local so no network is needed.
     borg_repo: /opt/borg-repo
+    # A container has no dedicated backup mount; the FS guard is a prod-only check.
+    borg_require_mounted: false
     borg_paths:
       - /etc/hostname
     borg_exclude:

@@ -89,3 +89,36 @@ def test_containers_up(host):
     ps = host.run("docker ps --format '{{.Names}}'")
     for name in ("caddy", "prometheus", "grafana", "node-exporter"):
         assert name in ps.stdout, f"{name} container not running"
+
+
+def test_ufw_docker_bypass_closed(host):
+    """ufw-docker must have injected its managed block so Docker's own iptables
+    rules can no longer bypass UFW on the DOCKER-USER chain."""
+    assert host.file("/etc/ufw/after.rules").contains("BEGIN UFW AND DOCKER")
+    dockeruser = host.run("iptables -S DOCKER-USER")
+    assert dockeruser.rc == 0
+    # ufw-docker terminates the chain by returning control to ufw, not a blanket
+    # RETURN that would let every published port through.
+    assert "ufw-docker-logging-deny" in dockeruser.stdout or \
+        "DROP" in dockeruser.stdout, \
+        f"DOCKER-USER chain has no ufw-docker enforcement:\n{dockeruser.stdout}"
+
+
+def test_internal_ports_loopback_only(host):
+    """Internal services (e.g. Prometheus) must publish only on loopback — never
+    on a routable interface where they would sidestep the Caddy proxy / UFW."""
+    listeners = host.run("ss -tlnH 'sport = :9090'")
+    for line in listeners.stdout.strip().splitlines():
+        assert "127.0.0.1:9090" in line, \
+            f"port 9090 is exposed beyond loopback: {line}"
+
+
+def test_no_container_binds_all_interfaces(host):
+    """Only the reverse proxy may bind to all interfaces (80/443). Any other
+    container publishing on 0.0.0.0/:: is an accidental public exposure."""
+    ps = host.run("docker ps --format '{{.Names}} {{.Ports}}'")
+    for line in ps.stdout.strip().splitlines():
+        if line.split(" ", 1)[0] == "caddy":
+            continue  # Caddy is the intended public entrypoint
+        assert "0.0.0.0:" not in line, f"container binds all IPv4 interfaces: {line}"
+        assert ":::" not in line, f"container binds all IPv6 interfaces: {line}"

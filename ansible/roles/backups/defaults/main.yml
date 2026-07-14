@@ -12,3 +12,10 @@ borg_exclude:
   - "**/*.tmp"
 borg_retention: { hourly: 0, daily: 7, weekly: 4, monthly: 6 }
 borg_backup_oncalendar: "*-*-* 02:00:00"
+
+# Safety: refuse to run unless the backup target is its own mounted filesystem.
+# An unmounted external drive/NAS means /mnt/backup is just a dir on the root
+# disk, so backups would silently fill the system disk and provide no off-disk
+# copy. Set borg_require_mounted: false to override (e.g. a local test).
+borg_require_mounted: true
+borg_mount_point: "{{ borg_repo | dirname }}"

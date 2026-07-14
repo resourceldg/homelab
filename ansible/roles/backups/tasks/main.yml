@@ -6,6 +6,18 @@
       - borgmatic
     state: present
 
+- name: Guard — backup target must be its own mounted filesystem
+  ansible.builtin.assert:
+    that:
+      - ansible_mounts | selectattr('mount', 'equalto', borg_mount_point) | list | length > 0
+    fail_msg: >-
+      {{ borg_mount_point }} is not a mounted filesystem — refusing to back up to
+      what would be the root disk (an unmounted drive means no off-disk copy and
+      a slowly filling system disk). Mount the backup drive/NAS there first, or
+      set borg_require_mounted: false to override.
+    success_msg: "{{ borg_mount_point }} is a mounted filesystem — safe to back up."
+  when: borg_require_mounted | bool
+
 - name: Ensure borg repo parent directory exists
   ansible.builtin.file:
     path: "{{ borg_repo | dirname }}"

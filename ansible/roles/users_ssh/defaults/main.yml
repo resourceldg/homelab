@@ -6,3 +6,30 @@
 # Public keys authorised for SSH. Empty by default on purpose: each environment
 # MUST provide the real operator keys in its group_vars, or you get no access.
 admin_ssh_authorized_keys: []
+
+# --- SSH lockdown (anti-lockout design) ------------------------------------
+# User + key creation (the "bootstrap" stage) is ALWAYS applied. The restrictive
+# sshd_config — PasswordAuthentication no, AllowUsers, strong crypto, sshd
+# restart — is the "lockdown" stage, gated by this flag and a pre-flight assert
+# that refuses to run without a real key. This lets a first run establish key
+# access before the door is slammed:
+#     # phase 1 — create the user + install keys, leave SSH open:
+#     ansible-playbook site.yml --tags ssh --skip-tags ssh-lockdown
+#     # ...confirm `ssh <admin_user>@host` works with the key...
+#     # phase 2 — apply the hardened sshd_config:
+#     ansible-playbook site.yml --tags ssh
+ssh_lockdown_enabled: true
+
+# Additional human accounts beyond the admin/automation user (admin_user).
+# Each item: name, groups (e.g. [sudo] = sudo WITH password), ssh (bool -> added
+# to AllowUsers), authorized_keys (list). Real names and keys are identity, so
+# they belong in the per-environment group_vars, not here.
+#   - operator: your personal account (sudo w/ password, SSH allowed)
+#   - familia:  daily-use account (no sudo, local/desktop login only — no SSH)
+extra_users: []
+
+# Users permitted to log in over SSH (rendered into AllowUsers): the automation
+# account plus every extra_user flagged ssh: true. Computed, not hand-edited.
+ssh_allow_users: >-
+  {{ ([admin_user] + (extra_users | selectattr('ssh', 'equalto', true)
+      | map(attribute='name') | list)) | unique }}

@@ -17,6 +17,9 @@ tailscale_cidr: "100.64.0.0/10"
 admin_ssh_authorized_keys:
   - "ssh-ed25519 AAAA...REPLACE_ME... operator@laptop"
 
+# Throwaway staging box: only the automation account, no extra human users.
+extra_users: []
+
 # --- Hardening -------------------------------------------------------------
 # No Ubuntu Pro in this homelab; USG stays off (as in production).
 usg_enabled: false

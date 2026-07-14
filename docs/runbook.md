@@ -13,10 +13,32 @@ Operational procedures for day-2 tasks.
 3. `make vault-create`, then `make vault-edit` to fill real tokens.
 4. Store the vault password in `~/.vault_pass` (gitignored, `chmod 600`).
 5. `make dry-run` → review the diff.
-6. `make apply`.
-7. `sudo tailscale up --ssh --accept-routes` (one-time browser auth).
-8. Mount the backup drive at `borg_repo`'s parent, then `make backups`.
-9. `make verify && make test`.
+6. **SSH — phase 1 (safe, no lockout):** create the account + install keys
+   without applying the restrictive `sshd_config` yet:
+   ```
+   ansible-playbook site.yml --tags ssh --skip-tags ssh-lockdown
+   ```
+   Then confirm key access from another terminal: `ssh <admin_user>@<host>`.
+7. `make apply` — full converge. The **SSH lockdown** (`PasswordAuthentication
+   no`, `AllowUsers`, sshd restart) now applies. A safety gate aborts the play
+   if `admin_ssh_authorized_keys` is empty or still a `REPLACE_ME` placeholder,
+   so you cannot lock yourself out by forgetting the key. Set
+   `ssh_lockdown_enabled: false` to defer the hardening entirely.
+8. `sudo tailscale up --ssh --accept-routes` (one-time browser auth).
+9. Mount the backup drive at `borg_repo`'s parent, then `make backups`.
+10. `make verify && make test`.
+
+### User accounts
+
+`extra_users` (in the environment's group_vars) defines the human accounts:
+
+- **operator** — your account: in the `sudo` group (sudo asks for a password)
+  and SSH-allowed. Set a login password once so `sudo` works:
+  `sudo passwd operator`. Fill its real key before `make apply` (the SSH lockdown
+  gate refuses to run while an SSH-enabled user still has a `REPLACE_ME` key).
+- **familia** — daily-use account: no sudo, `ssh: false`, so it can log in at the
+  desktop but never over SSH (not added to `AllowUsers`).
+- **ansible** (`admin_user`) — automation only: passwordless sudo, key-based SSH.
 
 ## Add a new educational project
 

@@ -7,6 +7,11 @@ services:
     container_name: prometheus
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -25,6 +30,11 @@ services:
     container_name: grafana
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M
     env_file: .env
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
@@ -42,6 +52,11 @@ services:
     container_name: node-exporter
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
     command:
       - "--path.rootfs=/host"
       - "--collector.systemd"
@@ -56,6 +71,11 @@ services:
     restart: unless-stopped
     privileged: true
     devices: ["/dev/kmsg"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro

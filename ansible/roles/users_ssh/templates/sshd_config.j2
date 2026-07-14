@@ -19,7 +19,7 @@ MaxSessions 4
 LoginGraceTime 30
 
 # Only these users may log in over SSH.
-AllowUsers {{ admin_user }}
+AllowUsers {{ ssh_allow_users | join(' ') }}
 
 # --- Strong cryptography ---------------------------------------------------
 KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512
@@ -43,4 +43,4 @@ Banner /etc/issue.net
 # Reject connections not coming from LAN or Tailscale (defence in depth;
 # UFW enforces this at the packet level too).
 Match Address {{ lan_cidr }},{{ tailscale_cidr }}
-    AllowUsers {{ admin_user }}
+    AllowUsers {{ ssh_allow_users | join(' ') }}
