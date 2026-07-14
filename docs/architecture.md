@@ -115,7 +115,9 @@ Each layer is independent: compromise of one does not defeat the others.
 ## 6. Backups
 
 Borg via **borgmatic** to a local encrypted, deduplicated repository (external
-drive / NAS mount at `/mnt/backup`). Retention 7 daily / 4 weekly / 6 monthly,
+drive / NAS mount at `/mnt/backup`). The borgmatic config is rendered per Ubuntu
+release: the flat schema on 24.04+ (borgmatic ≥ 1.8) and the sectioned schema on
+22.04 (borgmatic 1.5.x), so the same role converges cleanly across LTS versions. Retention 7 daily / 4 weekly / 6 monthly,
 pruned after each run; integrity checks every two weeks. Docker volumes, `/etc`,
 `/opt/homelab` and the admin home are included. For databases, borgmatic dumps
 them consistently *before* the filesystem snapshot (hook stubs in the config).

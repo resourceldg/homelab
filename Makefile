@@ -11,10 +11,12 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-deps: ## Install Galaxy collections and Python dev/test deps
-	ansible-galaxy collection install -r requirements.yml
-	pip install -r tests/requirements.txt ansible-lint yamllint \
+deps: ## Install Ansible core, Galaxy collections and Python dev/test deps
+	# ansible-core from pip (Ubuntu 22.04 ships 2.10, too old for
+	# deb822_repository / docker_compose_v2).
+	pip install -r tests/requirements.txt ansible-core ansible-lint yamllint \
 	  molecule "molecule-plugins[docker]" docker
+	ansible-galaxy collection install -r requirements.yml
 
 lint: ## Static analysis (yamllint + ansible-lint)
 	yamllint .

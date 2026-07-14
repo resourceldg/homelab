@@ -57,7 +57,7 @@ homelab/
 
 ## Quickstart
 
-Prerequisites: fresh Ubuntu LTS (developed against 24.04/26.04), a sudo user, an Ubuntu Pro token
+Prerequisites: fresh Ubuntu LTS (**22.04 / 24.04 / 26.04** supported), a sudo user, an Ubuntu Pro token
 (free for personal use, needed for `usg`), a DuckDNS token, and your SSH public key.
 
 ```bash
