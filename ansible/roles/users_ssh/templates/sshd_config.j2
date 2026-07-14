@@ -1,0 +1,46 @@
+# {{ ansible_managed }}
+# Hardened SSH — keys only, no root, strong crypto. CIS-aligned.
+
+Port {{ ssh_port }}
+AddressFamily inet
+Protocol 2
+
+# --- Authentication --------------------------------------------------------
+PermitRootLogin no
+PasswordAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
+UsePAM yes
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+MaxAuthTries 3
+MaxSessions 4
+LoginGraceTime 30
+
+# Only these users may log in over SSH.
+AllowUsers {{ admin_user }}
+
+# --- Strong cryptography ---------------------------------------------------
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
+# --- Hardening -------------------------------------------------------------
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding no
+PermitTunnel no
+GatewayPorts no
+ClientAliveInterval 300
+ClientAliveCountMax 2
+TCPKeepAlive no
+Compression no
+LogLevel VERBOSE
+Banner /etc/issue.net
+
+# Reject connections not coming from LAN or Tailscale (defence in depth;
+# UFW enforces this at the packet level too).
+Match Address {{ lan_cidr }},{{ tailscale_cidr }}
+    AllowUsers {{ admin_user }}

@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: homelab
+  description: Base host setup — hostname, timezone, locale, base packages, time sync.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

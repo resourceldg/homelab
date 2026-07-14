@@ -1,0 +1,56 @@
+---
+- name: Install Borg and borgmatic
+  ansible.builtin.apt:
+    name:
+      - borgbackup
+      - borgmatic
+    state: present
+
+- name: Ensure borg repo parent directory exists
+  ansible.builtin.file:
+    path: "{{ borg_repo | dirname }}"
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+
+- name: Deploy borgmatic configuration
+  ansible.builtin.template:
+    src: borgmatic.yaml.j2
+    dest: /etc/borgmatic/config.yaml
+    mode: "0600"
+    owner: root
+    group: root
+  no_log: true
+
+- name: Initialise the Borg repository (first run only)
+  ansible.builtin.command: borgmatic init --encryption repokey-blake2
+  environment:
+    BORG_PASSPHRASE: "{{ vault_borg_passphrase }}"
+  args:
+    creates: "{{ borg_repo }}/config"
+  no_log: true
+
+- name: Ensure timer override directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/borgmatic.timer.d
+    state: directory
+    mode: "0755"
+
+- name: Deploy borgmatic timer override (schedule)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/borgmatic.timer.d/schedule.conf
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Timer]
+      OnCalendar=
+      OnCalendar={{ borg_backup_oncalendar }}
+  notify: Reload systemd
+
+- name: Enable borgmatic timer
+  ansible.builtin.systemd:
+    name: borgmatic.timer
+    enabled: true
+    state: started
+    daemon_reload: true

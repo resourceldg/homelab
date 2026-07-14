@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: homelab
+  description: CIS Level 1 hardening via Ubuntu Security Guide plus sysctl/PAM controls.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

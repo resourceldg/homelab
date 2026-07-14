@@ -1,0 +1,11 @@
+---
+profile: production
+exclude_paths:
+  - .cache/
+  - compose/
+  - tests/
+skip_list:
+  - yaml[line-length]
+  - fqcn[action-core]  # allow short module names for readability in a homelab
+warn_list:
+  - experimental

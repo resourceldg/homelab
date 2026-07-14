@@ -1,0 +1,42 @@
+---
+- name: Add Tailscale GPG key
+  ansible.builtin.get_url:
+    url: "https://pkgs.tailscale.com/stable/ubuntu/{{ apt_repo_release }}.noarmor.gpg"
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
+
+- name: Add Tailscale apt repository
+  ansible.builtin.get_url:
+    url: "https://pkgs.tailscale.com/stable/ubuntu/{{ apt_repo_release }}.tailscale-keyring.list"
+    dest: /etc/apt/sources.list.d/tailscale.list
+    mode: "0644"
+  register: ts_repo
+
+- name: Update apt cache after adding repo
+  ansible.builtin.apt:
+    update_cache: true
+  when: ts_repo.changed
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+
+- name: Enable tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Check Tailscale connection status
+  ansible.builtin.command: tailscale status --json
+  register: ts_status
+  changed_when: false
+  failed_when: false
+
+- name: Notify operator to authenticate Tailscale (manual, one-time)
+  ansible.builtin.debug:
+    msg: >
+      Tailscale is installed but not yet authenticated. Run once:
+      'sudo tailscale up --ssh --accept-routes'  and complete the browser login.
+  when: ts_status.rc != 0 or ('BackendState' in ts_status.stdout and '\"NeedsLogin\"' in ts_status.stdout)

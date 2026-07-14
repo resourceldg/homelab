@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: homelab
+  description: Fail2ban with a systemd backend and UFW ban action for SSH brute-force.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

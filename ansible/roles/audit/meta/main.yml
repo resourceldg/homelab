@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: homelab
+  description: Lynis posture scans and AIDE file-integrity monitoring on systemd timers.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

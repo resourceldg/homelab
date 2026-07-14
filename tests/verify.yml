@@ -1,0 +1,57 @@
+---
+# Lightweight in-Ansible verification: asserts live state after convergence.
+# Run:  ansible-playbook tests/verify.yml
+- name: Verify home server posture
+  hosts: homeserver
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Collect service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert critical services are running
+      ansible.builtin.assert:
+        that: "ansible_facts.services[item].state == 'running'"
+        fail_msg: "{{ item }} is not running"
+      loop:
+        - ssh.service
+        - fail2ban.service
+        - docker.service
+        - tailscaled.service
+
+    - name: Check UFW is active
+      ansible.builtin.command: ufw status
+      register: ufw
+      changed_when: false
+      failed_when: "'Status: active' not in ufw.stdout"
+
+    - name: Check enabled timers
+      ansible.builtin.command: "systemctl is-enabled {{ item }}"
+      register: timer
+      changed_when: false
+      failed_when: timer.stdout != 'enabled'
+      loop:
+        - duckdns.timer
+        - lynis-scan.timer
+        - aide-check.timer
+        - borgmatic.timer
+
+    - name: Get list of running containers
+      ansible.builtin.command: docker ps --format '{% raw %}{{.Names}}{% endraw %}'
+      register: running_containers
+      changed_when: false
+
+    - name: Check required containers are up
+      ansible.builtin.assert:
+        that: "item in running_containers.stdout_lines"
+        fail_msg: "container {{ item }} is not running"
+      loop:
+        - caddy
+        - prometheus
+        - grafana
+        - node-exporter
+
+    - name: Report success
+      ansible.builtin.debug:
+        msg: "✅ All posture checks passed."

@@ -1,0 +1,106 @@
+---
+# =============================================================================
+# CENTRAL CONFIGURATION — every tunable knob lives here.
+# Secrets live in vault.yml (encrypted). This file is safe to commit.
+# =============================================================================
+
+# --- Identity & base -------------------------------------------------------
+server_hostname: "homelab-01"
+server_timezone: "America/Bogota"
+server_locale: "en_US.UTF-8"
+
+# Third-party apt repos (Docker, Tailscale) are keyed by the release codename.
+# Brand-new Ubuntu releases sometimes lag in vendor repos. If a repo 404s on a
+# fresh 26.04, pin this to the previous LTS codename (e.g. "noble" for 24.04)
+# until the vendor publishes 26.04. Defaults to the detected release.
+apt_repo_release: "{{ ansible_distribution_release }}"
+
+# Administrative user (created by users_ssh; owns SSH keys, in sudo & docker).
+admin_user: "ansible"
+# Public keys authorised for SSH. Add one line per operator.
+admin_ssh_authorized_keys:
+  - "ssh-ed25519 AAAA...REPLACE_ME... operator@laptop"
+
+# --- Network / access model ------------------------------------------------
+# SSH is NEVER exposed to the internet. It is reachable only from the
+# Tailscale CGNAT range and the local LAN.
+ssh_port: 22
+lan_cidr: "192.168.1.0/24"
+tailscale_cidr: "100.64.0.0/10"     # Tailscale/CGNAT shared range
+
+# --- Hardening (CIS via Ubuntu Security Guide) -----------------------------
+# Level 1 Server is chosen deliberately: Level 2 / STIG breaks a Desktop GUI.
+usg_profile: "cis_level1_server"
+usg_enabled: true                    # requires Ubuntu Pro token (see vault)
+harden_disable_usb_storage: false    # true breaks USB backup drives — keep off
+harden_core_dumps: true
+harden_sysctl: true
+
+# --- Firewall --------------------------------------------------------------
+ufw_default_incoming: "deny"
+ufw_default_outgoing: "allow"
+# Ports opened to the internet (must be port-forwarded on the router too).
+# Only the reverse proxy is exposed publicly.
+ufw_public_ports:
+  - { port: 80, proto: tcp, comment: "Caddy HTTP->HTTPS redirect / ACME" }
+  - { port: 443, proto: tcp, comment: "Caddy HTTPS" }
+
+# --- Fail2ban --------------------------------------------------------------
+fail2ban_bantime: "1h"
+fail2ban_findtime: "10m"
+fail2ban_maxretry: 4
+fail2ban_ignoreips:
+  - "127.0.0.1/8"
+  - "{{ lan_cidr }}"
+  - "{{ tailscale_cidr }}"
+
+# --- Unattended upgrades ----------------------------------------------------
+autoupdate_reboot: true
+autoupdate_reboot_time: "04:30"
+autoupdate_mail: "root"
+
+# --- Auditing --------------------------------------------------------------
+lynis_schedule_oncalendar: "Sun *-*-* 03:00:00"
+aide_check_oncalendar: "*-*-* 05:00:00"
+
+# --- Docker ----------------------------------------------------------------
+docker_users: ["{{ admin_user }}"]
+docker_daemon_options:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  live-restore: true
+  no-new-privileges: true
+  userland-proxy: false
+
+# Where compose stacks are deployed on the host.
+stacks_root: "/opt/homelab/stacks"
+
+# --- DuckDNS (dynamic DNS) -------------------------------------------------
+duckdns_enabled: true
+duckdns_domains: "myhomelab"          # -> myhomelab.duckdns.org (no suffix)
+duckdns_update_oncalendar: "*:0/5"    # every 5 minutes
+# duckdns_token comes from vault.
+
+# --- Reverse proxy (Caddy) -------------------------------------------------
+caddy_base_domain: "myhomelab.duckdns.org"
+caddy_acme_email: "you@example.com"
+
+# --- Monitoring ------------------------------------------------------------
+monitoring_enabled: true
+grafana_admin_user: "admin"
+prometheus_retention: "15d"
+
+# --- Backups (Borg) --------------------------------------------------------
+borg_repo: "/mnt/backup/borg-repo"    # local repo (external drive / NAS mount)
+borg_paths:
+  - "/etc"
+  - "/opt/homelab"
+  - "/var/lib/docker/volumes"
+  - "/home/{{ admin_user }}"
+borg_exclude:
+  - "/var/lib/docker/volumes/*/**/cache"
+  - "**/*.tmp"
+borg_retention: { hourly: 0, daily: 7, weekly: 4, monthly: 6 }
+borg_backup_oncalendar: "*-*-* 02:00:00"

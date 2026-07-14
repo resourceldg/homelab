@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: homelab
+  description: DuckDNS dynamic DNS updater via a sandboxed systemd service and timer.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

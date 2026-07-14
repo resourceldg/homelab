@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[DEFAULT]
+bantime  = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+backend  = systemd
+banaction = ufw
+ignoreip = {{ fail2ban_ignoreips | join(' ') }}
+
+# Escalate repeat offenders.
+[recidive]
+enabled  = true
+bantime  = 1w
+findtime = 1d
+maxretry = 5

@@ -1,0 +1,48 @@
+# {{ ansible_managed }}
+# Borgmatic configuration — local encrypted, deduplicated backups.
+
+source_directories:
+{% for path in borg_paths %}
+    - {{ path }}
+{% endfor %}
+
+repositories:
+    - path: {{ borg_repo }}
+      label: local
+
+exclude_patterns:
+{% for pattern in borg_exclude %}
+    - {{ pattern }}
+{% endfor %}
+
+encryption_passphrase: "{{ vault_borg_passphrase }}"
+compression: zstd,6
+one_file_system: true
+checkpoint_interval: 900
+
+# Retention policy (prune after each backup).
+keep_hourly: {{ borg_retention.hourly }}
+keep_daily: {{ borg_retention.daily }}
+keep_weekly: {{ borg_retention.weekly }}
+keep_monthly: {{ borg_retention.monthly }}
+
+# Integrity: verify a subset of archives weekly.
+checks:
+    - name: repository
+    - name: archives
+      frequency: 2 weeks
+
+# Dump databases from running containers before the filesystem snapshot so
+# backups are consistent. Uncomment and adapt per project.
+# postgresql_databases:
+#     - name: app
+#       hostname: 127.0.0.1
+#       username: postgres
+
+# Hooks: log to journald and record outcome.
+before_backup:
+    - echo "Starting borgmatic backup on $(date -Is)"
+on_error:
+    - 'logger -t borgmatic "BACKUP FAILED"'
+after_backup:
+    - 'logger -t borgmatic "backup completed OK"'

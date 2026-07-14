@@ -1,0 +1,24 @@
+---
+# Template for an educational project. Copy this directory per project,
+# rename the service, add a matching site block in the Caddyfile, and it is
+# published at https://<name>.<your-domain> automatically.
+name: apps
+
+services:
+  demo-app:
+    image: nginxdemos/hello:plain-text
+    container_name: demo-app
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    networks: [edge]
+    # No published ports: reachable only through the Caddy proxy on the
+    # shared 'edge' network.
+
+networks:
+  edge:
+    external: true

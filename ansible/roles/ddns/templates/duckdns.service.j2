@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Update DuckDNS dynamic DNS record
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/duckdns-update.sh
+# Sandboxing
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/etc/duckdns

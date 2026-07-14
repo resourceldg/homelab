@@ -1,0 +1,49 @@
+---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ server_hostname }}"
+
+- name: Ensure hostname resolves in /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1 {{ server_hostname }}"
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ server_timezone }}"
+
+- name: Generate locale
+  community.general.locale_gen:
+    name: "{{ server_locale }}"
+    state: present
+
+- name: Update apt cache (once per hour)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base tooling
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - ca-certificates
+      - gnupg
+      - python3
+      - python3-apt
+      - unattended-upgrades
+      - apt-listchanges
+      - needrestart
+      - chrony
+    state: present
+
+- name: Enable time synchronisation
+  ansible.builtin.systemd:
+    name: chrony
+    enabled: true
+    state: started

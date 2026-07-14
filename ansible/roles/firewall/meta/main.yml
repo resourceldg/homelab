@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: homelab
+  description: UFW default-deny firewall plus ufw-docker to close the Docker bypass.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

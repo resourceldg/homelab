@@ -1,0 +1,34 @@
+---
+- name: Install AppArmor and profiles
+  ansible.builtin.apt:
+    name:
+      - apparmor
+      - apparmor-utils
+      - apparmor-profiles
+      - apparmor-profiles-extra
+    state: present
+
+- name: Enable and start AppArmor
+  ansible.builtin.systemd:
+    name: apparmor
+    enabled: true
+    state: started
+
+- name: Ensure AppArmor is enabled in the kernel cmdline
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash apparmor=1 security=apparmor"'
+  notify: Update grub
+
+- name: List AppArmor profiles in complain mode
+  ansible.builtin.command: aa-status --complaining
+  register: aa_complaining
+  changed_when: false
+  failed_when: false
+
+- name: Set all profiles to enforce mode
+  ansible.builtin.command: aa-enforce /etc/apparmor.d/*
+  register: aa_enforce
+  changed_when: "'Setting' in aa_enforce.stdout"
+  failed_when: false

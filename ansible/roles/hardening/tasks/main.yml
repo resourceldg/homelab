@@ -1,0 +1,120 @@
+---
+# CIS hardening via Ubuntu Security Guide (usg) plus complementary controls
+# that usg does not cover or that we want regardless of Pro entitlement.
+
+- name: Attach Ubuntu Pro (required for usg)
+  ansible.builtin.command: "pro attach {{ vault_ubuntu_pro_token }}"
+  args:
+    creates: /var/lib/ubuntu-advantage/status.json
+  when: usg_enabled | bool
+  no_log: true
+
+- name: Install Ubuntu Security Guide
+  ansible.builtin.apt:
+    name: usg
+    state: present
+  when: usg_enabled | bool
+
+- name: Run usg audit (report only, never fails the play)
+  ansible.builtin.command: "usg audit {{ usg_profile }}"
+  register: usg_audit
+  changed_when: false
+  failed_when: false
+  when: usg_enabled | bool
+
+- name: Apply usg CIS profile fixes
+  ansible.builtin.command: "usg fix {{ usg_profile }}"
+  register: usg_fix
+  changed_when: "'remediation' in usg_fix.stdout | lower"
+  failed_when: false
+  when: usg_enabled | bool
+  notify: Regenerate initramfs
+
+# --- Complementary controls (apply with or without Pro) --------------------
+- name: Harden kernel & network via sysctl
+  ansible.builtin.template:
+    src: 99-hardening.conf.j2
+    dest: /etc/sysctl.d/99-hardening.conf
+    mode: "0644"
+  notify: Reload sysctl
+  when: harden_sysctl | bool
+
+- name: Enforce password quality policy
+  ansible.builtin.apt:
+    name: libpam-pwquality
+    state: present
+
+- name: Configure pwquality
+  ansible.builtin.copy:
+    dest: /etc/security/pwquality.conf.d/99-hardening.conf
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      minlen = 14
+      dcredit = -1
+      ucredit = -1
+      ocredit = -1
+      lcredit = -1
+      retry = 3
+      enforce_for_root
+
+- name: Harden login.defs password aging
+  ansible.builtin.lineinfile:
+    path: /etc/login.defs
+    regexp: "^{{ item.key }}"
+    line: "{{ item.key }}\t{{ item.value }}"
+  loop:
+    - { key: "PASS_MAX_DAYS", value: "365" }
+    - { key: "PASS_MIN_DAYS", value: "1" }
+    - { key: "PASS_WARN_AGE", value: "14" }
+    - { key: "UMASK", value: "027" }
+    - { key: "ENCRYPT_METHOD", value: "YESCRYPT" }
+
+- name: Set strict permissions on sensitive files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    mode: "{{ item.mode }}"
+    owner: root
+    group: "{{ item.group | default('root') }}"
+  loop:
+    - { path: /etc/passwd, mode: "0644" }
+    - { path: /etc/shadow, mode: "0640", group: shadow }
+    - { path: /etc/gshadow, mode: "0640", group: shadow }
+    - { path: /etc/group, mode: "0644" }
+    - { path: /etc/ssh/sshd_config, mode: "0600" }
+
+- name: Disable core dumps (setuid programs)
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-nocore.conf
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      * hard core 0
+  when: harden_core_dumps | bool
+
+- name: Blacklist uncommon/dangerous kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/99-hardening-blacklist.conf
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      install cramfs /bin/true
+      install freevxfs /bin/true
+      install jffs2 /bin/true
+      install hfs /bin/true
+      install hfsplus /bin/true
+      install udf /bin/true
+      install dccp /bin/true
+      install sctp /bin/true
+      install rds /bin/true
+      install tipc /bin/true
+
+- name: Deploy legal login banner
+  ansible.builtin.copy:
+    dest: "{{ item }}"
+    mode: "0644"
+    content: |
+      Authorised access only. All activity is logged and monitored.
+  loop:
+    - /etc/issue.net
+    - /etc/issue

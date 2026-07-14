@@ -1,0 +1,78 @@
+---
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Set UFW default incoming policy
+  community.general.ufw:
+    direction: incoming
+    policy: "{{ ufw_default_incoming }}"
+
+- name: Set UFW default outgoing policy
+  community.general.ufw:
+    direction: outgoing
+    policy: "{{ ufw_default_outgoing }}"
+
+- name: Allow SSH from LAN only
+  community.general.ufw:
+    rule: allow
+    src: "{{ lan_cidr }}"
+    port: "{{ ssh_port }}"
+    proto: tcp
+    comment: "SSH from LAN"
+
+- name: Allow SSH from Tailscale range
+  community.general.ufw:
+    rule: allow
+    src: "{{ tailscale_cidr }}"
+    port: "{{ ssh_port }}"
+    proto: tcp
+    comment: "SSH from Tailscale"
+
+- name: Allow all traffic on the Tailscale interface
+  community.general.ufw:
+    rule: allow
+    interface: tailscale0
+    direction: in
+    comment: "Trust tailnet"
+
+- name: Open public ports (internet-facing services)
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment }}"
+  loop: "{{ ufw_public_ports }}"
+
+- name: Enable UFW logging
+  community.general.ufw:
+    logging: "low"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+
+# --- Close the Docker/UFW bypass ------------------------------------------
+# Docker writes its own iptables rules that bypass UFW, so a published port is
+# reachable even when UFW denies it. ufw-docker restores UFW as the source of
+# truth for the DOCKER-USER chain.
+- name: Install ufw-docker helper
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/chaifeng/ufw-docker/master/ufw-docker"
+    dest: /usr/local/bin/ufw-docker
+    mode: "0755"
+
+- name: Apply ufw-docker rules to DOCKER-USER chain
+  ansible.builtin.command: ufw-docker install
+  args:
+    creates: /etc/ufw/after.rules.ufw-docker
+  register: ufw_docker_install
+  notify: Reload ufw
+
+- name: Persist ufw-docker marker
+  ansible.builtin.copy:
+    dest: /etc/ufw/after.rules.ufw-docker
+    content: "installed by ansible\n"
+    mode: "0644"
+  when: ufw_docker_install is changed

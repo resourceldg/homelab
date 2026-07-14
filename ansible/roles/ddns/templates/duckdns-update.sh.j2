@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+# Updates DuckDNS with the current public IP. DuckDNS auto-detects the IP
+# when the 'ip' parameter is left empty.
+set -euo pipefail
+
+# shellcheck source=/dev/null
+source /etc/duckdns/duckdns.env
+
+LOG_TAG="duckdns"
+RESPONSE="$(curl -fsS --retry 3 --max-time 20 \
+  "https://www.duckdns.org/update?domains=${DUCKDNS_DOMAINS}&token=${DUCKDNS_TOKEN}&ip=")"
+
+if [[ "${RESPONSE}" == "OK" ]]; then
+  logger -t "${LOG_TAG}" "update OK for ${DUCKDNS_DOMAINS}"
+else
+  logger -t "${LOG_TAG}" "update FAILED for ${DUCKDNS_DOMAINS}: ${RESPONSE}"
+  exit 1
+fi

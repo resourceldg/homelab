@@ -1,0 +1,44 @@
+---
+- name: Deploy proxy and monitoring stacks
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../compose/{{ item }}/"
+    dest: "{{ stacks_root }}/{{ item }}/"
+    mode: "0640"
+    directory_mode: "0750"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  loop:
+    - proxy
+    - monitoring
+  when: monitoring_enabled | bool
+
+- name: Render proxy .env (DuckDNS token + domain for Caddy TLS)
+  ansible.builtin.template:
+    src: proxy.env.j2
+    dest: "{{ stacks_root }}/proxy/.env"
+    mode: "0600"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  no_log: true
+
+- name: Render monitoring .env (Grafana admin password)
+  ansible.builtin.template:
+    src: monitoring.env.j2
+    dest: "{{ stacks_root }}/monitoring/.env"
+    mode: "0600"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  no_log: true
+
+- name: Bring up the proxy stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/proxy"
+    state: present
+    pull: missing
+
+- name: Bring up the monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/monitoring"
+    state: present
+    pull: missing
+  when: monitoring_enabled | bool

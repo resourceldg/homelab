@@ -1,0 +1,123 @@
+---
+# --- Lynis (periodic security posture scan) --------------------------------
+- name: Install Lynis and AIDE
+  ansible.builtin.apt:
+    name:
+      - lynis
+      - aide
+      - aide-common
+    state: present
+
+- name: Deploy Lynis scan wrapper
+  ansible.builtin.copy:
+    dest: /usr/local/bin/lynis-scan.sh
+    mode: "0750"
+    content: |
+      #!/usr/bin/env bash
+      # {{ ansible_managed }}
+      set -euo pipefail
+      mkdir -p /var/log/lynis
+      lynis audit system --quiet --no-colors \
+        --logfile /var/log/lynis/lynis.log \
+        --report-file /var/log/lynis/lynis-report.dat
+      SCORE="$(awk -F= '/hardening_index/{print $2}' /var/log/lynis/lynis-report.dat)"
+      logger -t lynis "hardening index: ${SCORE}"
+
+- name: Deploy Lynis systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/lynis-scan.service
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Unit]
+      Description=Lynis security audit
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/lynis-scan.sh
+      Nice=15
+  notify: Reload systemd
+
+- name: Deploy Lynis systemd timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/lynis-scan.timer
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Unit]
+      Description=Weekly Lynis audit
+      [Timer]
+      OnCalendar={{ lynis_schedule_oncalendar }}
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+  notify: Reload systemd
+
+- name: Enable Lynis timer
+  ansible.builtin.systemd:
+    name: lynis-scan.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# --- AIDE (file integrity monitoring) --------------------------------------
+- name: Initialise AIDE database (first run only, can take minutes)
+  ansible.builtin.shell: |
+    set -o pipefail
+    aideinit -y -f
+  args:
+    creates: /var/lib/aide/aide.db
+  register: aide_init
+
+- name: Deploy AIDE check script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/aide-check.sh
+    mode: "0750"
+    content: |
+      #!/usr/bin/env bash
+      # {{ ansible_managed }}
+      set -uo pipefail
+      REPORT="$(mktemp)"
+      /usr/bin/aide.wrapper --check > "${REPORT}" 2>&1 || true
+      if grep -q "found differences" "${REPORT}"; then
+        logger -t aide "INTEGRITY CHANGES DETECTED — see ${REPORT}"
+        mail -s "[AIDE] integrity changes on {{ server_hostname }}" root < "${REPORT}" || true
+      else
+        logger -t aide "no integrity changes"
+      fi
+
+- name: Deploy AIDE check service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/aide-check.service
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Unit]
+      Description=AIDE file integrity check
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/aide-check.sh
+      Nice=19
+      IOSchedulingClass=idle
+  notify: Reload systemd
+
+- name: Deploy AIDE check timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/aide-check.timer
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Unit]
+      Description=Daily AIDE integrity check
+      [Timer]
+      OnCalendar={{ aide_check_oncalendar }}
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+  notify: Reload systemd
+
+- name: Enable AIDE timer
+  ansible.builtin.systemd:
+    name: aide-check.timer
+    enabled: true
+    state: started
+    daemon_reload: true

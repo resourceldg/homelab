@@ -1,0 +1,44 @@
+---
+# Caddy reverse proxy with automatic HTTPS.
+# TLS certificates are issued via the DuckDNS DNS-01 challenge, so no inbound
+# port 80 is required for issuance (useful behind a dynamic IP / CGNAT).
+name: proxy
+
+services:
+  caddy:
+    build: .
+    image: homelab/caddy-duckdns:latest
+    container_name: caddy
+    restart: unless-stopped
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    env_file: .env
+    environment:
+      CADDY_BASE_DOMAIN: ${CADDY_BASE_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:

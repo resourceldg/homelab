@@ -1,0 +1,46 @@
+---
+- name: Create duckdns config directory
+  ansible.builtin.file:
+    path: /etc/duckdns
+    state: directory
+    mode: "0750"
+    owner: root
+    group: root
+
+- name: Deploy duckdns update script
+  ansible.builtin.template:
+    src: duckdns-update.sh.j2
+    dest: /usr/local/bin/duckdns-update.sh
+    mode: "0750"
+    owner: root
+    group: root
+
+- name: Deploy duckdns credentials (token from vault)
+  ansible.builtin.template:
+    src: duckdns.env.j2
+    dest: /etc/duckdns/duckdns.env
+    mode: "0600"
+    owner: root
+    group: root
+  no_log: true
+
+- name: Deploy duckdns systemd service
+  ansible.builtin.template:
+    src: duckdns.service.j2
+    dest: /etc/systemd/system/duckdns.service
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Deploy duckdns systemd timer
+  ansible.builtin.template:
+    src: duckdns.timer.j2
+    dest: /etc/systemd/system/duckdns.timer
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Enable duckdns timer
+  ansible.builtin.systemd:
+    name: duckdns.timer
+    enabled: "{{ duckdns_enabled }}"
+    state: "{{ 'started' if duckdns_enabled else 'stopped' }}"
+    daemon_reload: true

@@ -1,0 +1,43 @@
+---
+# =============================================================================
+# site.yml — single entrypoint. Roles are ordered by dependency and tagged so
+# any domain can be run in isolation, e.g.:
+#     ansible-playbook site.yml --tags firewall
+#     ansible-playbook site.yml --tags "hardening,audit" --check
+# =============================================================================
+- name: Converge home server
+  hosts: homeserver
+  become: true
+  vars_files:
+    - group_vars/all/vault.yml
+
+  pre_tasks:
+    - name: Assert we are on a supported Ubuntu LTS
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version is version('22.04', '>=')
+        fail_msg: >-
+          This playbook targets Ubuntu 22.04+ LTS
+          (developed against 24.04/26.04).
+      tags: always
+
+  roles:
+    # --- Base host plane ---------------------------------------------------
+    - { role: bootstrap,     tags: ["base", "bootstrap"] }
+    - { role: users_ssh,     tags: ["base", "ssh", "users"] }
+    - { role: tailscale,     tags: ["network", "tailscale"] }
+    - { role: ddns,          tags: ["network", "ddns"] }
+
+    # --- Security plane ----------------------------------------------------
+    - { role: firewall,      tags: ["security", "firewall"] }
+    - { role: fail2ban,      tags: ["security", "fail2ban"] }
+    - { role: apparmor,      tags: ["security", "apparmor"] }
+    - { role: hardening,     tags: ["security", "hardening", "cis"] }
+    - { role: auto_updates,  tags: ["security", "updates"] }
+    - { role: audit,         tags: ["security", "audit"] }
+
+    # --- Service plane -----------------------------------------------------
+    - { role: docker,        tags: ["docker"] }
+    - { role: monitoring,    tags: ["services", "monitoring"] }
+    - { role: backups,       tags: ["backups"] }

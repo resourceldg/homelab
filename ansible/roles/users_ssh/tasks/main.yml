@@ -1,0 +1,56 @@
+---
+- name: Create admin group
+  ansible.builtin.group:
+    name: "{{ admin_user }}"
+    state: present
+
+- name: Create admin user
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    groups: sudo
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Install authorized keys for admin user
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ item }}"
+    state: present
+    exclusive: false
+  loop: "{{ admin_ssh_authorized_keys }}"
+
+- name: Passwordless sudo for admin user (automation only)
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/90-{{ admin_user }}"
+    content: "{{ admin_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    mode: "0440"
+    owner: root
+    group: root
+    validate: "visudo -cf %s"
+
+- name: Deploy hardened sshd_config
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: "0600"
+    owner: root
+    group: root
+    validate: "sshd -t -f %s"
+  notify: Restart sshd
+
+- name: Remove weak short Diffie-Hellman moduli
+  ansible.builtin.shell: >
+    awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe &&
+    mv /etc/ssh/moduli.safe /etc/ssh/moduli
+  args:
+    creates: /etc/ssh/.moduli_hardened
+  notify: Restart sshd
+
+- name: Mark moduli as hardened
+  ansible.builtin.file:
+    path: /etc/ssh/.moduli_hardened
+    state: touch
+    modification_time: preserve
+    access_time: preserve

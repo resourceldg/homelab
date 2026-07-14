@@ -1,0 +1,33 @@
+# Global options
+{
+	email {$ACME_EMAIL}
+	# DuckDNS DNS-01 challenge for wildcard-capable, port-80-free issuance.
+	acme_dns duckdns {$DUCKDNS_TOKEN}
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+# Grafana dashboard.
+grafana.{$CADDY_BASE_DOMAIN} {
+	reverse_proxy grafana:3000
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+# Example educational project (served from the apps stack).
+demo.{$CADDY_BASE_DOMAIN} {
+	reverse_proxy demo-app:80
+	encode zstd gzip
+}
+
+# Root domain -> simple landing.
+{$CADDY_BASE_DOMAIN} {
+	respond "homelab up" 200
+}

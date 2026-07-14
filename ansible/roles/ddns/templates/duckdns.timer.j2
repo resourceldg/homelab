@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Run DuckDNS update on a schedule
+
+[Timer]
+OnBootSec=60
+OnCalendar={{ duckdns_update_oncalendar }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
