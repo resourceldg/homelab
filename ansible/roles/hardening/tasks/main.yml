@@ -6,7 +6,6 @@
   ansible.builtin.command: "pro attach {{ vault_ubuntu_pro_token }}"
   args:
     creates: /var/lib/ubuntu-advantage/status.json
-  changed_when: true
   when: usg_enabled | bool
   no_log: true
 

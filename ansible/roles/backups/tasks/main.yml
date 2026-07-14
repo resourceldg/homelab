@@ -37,7 +37,6 @@
     BORG_PASSPHRASE: "{{ vault_borg_passphrase }}"
   args:
     creates: "{{ borg_repo }}/config"
-  changed_when: true
   no_log: true
 
 - name: Ensure timer override directory exists
