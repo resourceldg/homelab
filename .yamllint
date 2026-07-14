@@ -9,6 +9,8 @@ rules:
     check-keys: false
   comments:
     min-spaces-from-content: 1
+  # ansible-lint's embedded yaml rule requires this disabled.
+  comments-indentation: disable
   braces:
     max-spaces-inside: 1
   octal-values:

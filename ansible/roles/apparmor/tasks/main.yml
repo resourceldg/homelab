@@ -21,14 +21,8 @@
     line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash apparmor=1 security=apparmor"'
   notify: Update grub
 
-- name: List AppArmor profiles in complain mode
-  ansible.builtin.command: aa-status --complaining
-  register: aa_complaining
-  changed_when: false
-  failed_when: false
-
 - name: Set all profiles to enforce mode
   ansible.builtin.command: aa-enforce /etc/apparmor.d/*
-  register: aa_enforce
-  changed_when: "'Setting' in aa_enforce.stdout"
+  register: apparmor_enforce
+  changed_when: "'Setting' in apparmor_enforce.stdout"
   failed_when: false

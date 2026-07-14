@@ -46,11 +46,13 @@
     mv /etc/ssh/moduli.safe /etc/ssh/moduli
   args:
     creates: /etc/ssh/.moduli_hardened
+  changed_when: true
   notify: Restart sshd
 
 - name: Mark moduli as hardened
   ansible.builtin.file:
     path: /etc/ssh/.moduli_hardened
     state: touch
+    mode: "0600"
     modification_time: preserve
     access_time: preserve

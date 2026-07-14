@@ -63,16 +63,14 @@
     dest: /usr/local/bin/ufw-docker
     mode: "0755"
 
+- name: Check whether ufw-docker rules are already present
+  ansible.builtin.command: grep -q "BEGIN UFW AND DOCKER" /etc/ufw/after.rules
+  register: firewall_ufwdocker
+  changed_when: false
+  failed_when: false
+
 - name: Apply ufw-docker rules to DOCKER-USER chain
   ansible.builtin.command: ufw-docker install
-  args:
-    creates: /etc/ufw/after.rules.ufw-docker
-  register: ufw_docker_install
+  when: firewall_ufwdocker.rc != 0
+  changed_when: true
   notify: Reload ufw
-
-- name: Persist ufw-docker marker
-  ansible.builtin.copy:
-    dest: /etc/ufw/after.rules.ufw-docker
-    content: "installed by ansible\n"
-    mode: "0644"
-  when: ufw_docker_install is changed

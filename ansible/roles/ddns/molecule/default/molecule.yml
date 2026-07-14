@@ -19,6 +19,9 @@ platforms:
 
 provisioner:
   name: ansible
+  env:
+    # Make the role under test discoverable (its parent is ansible/roles).
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
   config_options:
     defaults:
       interpreter_python: auto_silent

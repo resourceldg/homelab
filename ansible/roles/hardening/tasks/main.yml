@@ -6,6 +6,7 @@
   ansible.builtin.command: "pro attach {{ vault_ubuntu_pro_token }}"
   args:
     creates: /var/lib/ubuntu-advantage/status.json
+  changed_when: true
   when: usg_enabled | bool
   no_log: true
 
@@ -17,15 +18,14 @@
 
 - name: Run usg audit (report only, never fails the play)
   ansible.builtin.command: "usg audit {{ usg_profile }}"
-  register: usg_audit
   changed_when: false
   failed_when: false
   when: usg_enabled | bool
 
 - name: Apply usg CIS profile fixes
   ansible.builtin.command: "usg fix {{ usg_profile }}"
-  register: usg_fix
-  changed_when: "'remediation' in usg_fix.stdout | lower"
+  register: hardening_usg_fix
+  changed_when: "'remediation' in hardening_usg_fix.stdout | lower"
   failed_when: false
   when: usg_enabled | bool
   notify: Regenerate initramfs

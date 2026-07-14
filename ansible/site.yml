@@ -24,20 +24,20 @@
 
   roles:
     # --- Base host plane ---------------------------------------------------
-    - { role: bootstrap,     tags: ["base", "bootstrap"] }
-    - { role: users_ssh,     tags: ["base", "ssh", "users"] }
-    - { role: tailscale,     tags: ["network", "tailscale"] }
-    - { role: ddns,          tags: ["network", "ddns"] }
+    - { role: bootstrap, tags: ["base", "bootstrap"] }
+    - { role: users_ssh, tags: ["base", "ssh", "users"] }
+    - { role: tailscale, tags: ["network", "tailscale"] }
+    - { role: ddns, tags: ["network", "ddns"] }
 
     # --- Security plane ----------------------------------------------------
-    - { role: firewall,      tags: ["security", "firewall"] }
-    - { role: fail2ban,      tags: ["security", "fail2ban"] }
-    - { role: apparmor,      tags: ["security", "apparmor"] }
-    - { role: hardening,     tags: ["security", "hardening", "cis"] }
-    - { role: auto_updates,  tags: ["security", "updates"] }
-    - { role: audit,         tags: ["security", "audit"] }
+    - { role: firewall, tags: ["security", "firewall"] }
+    - { role: fail2ban, tags: ["security", "fail2ban"] }
+    - { role: apparmor, tags: ["security", "apparmor"] }
+    - { role: hardening, tags: ["security", "hardening", "cis"] }
+    - { role: auto_updates, tags: ["security", "updates"] }
+    - { role: audit, tags: ["security", "audit"] }
 
     # --- Service plane -----------------------------------------------------
-    - { role: docker,        tags: ["docker"] }
-    - { role: monitoring,    tags: ["services", "monitoring"] }
-    - { role: backups,       tags: ["backups"] }
+    - { role: docker, tags: ["docker"] }
+    - { role: monitoring, tags: ["services", "monitoring"] }
+    - { role: backups, tags: ["backups"] }
