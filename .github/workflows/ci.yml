@@ -45,7 +45,7 @@ jobs:
             cp "ansible/inventories/$env/group_vars/all/vault.yml.example" \
                "ansible/inventories/$env/group_vars/all/vault.yml"
           done
-          echo "ci-not-a-real-password" > .vault_pass
+          echo "ci-not-a-real-password" > ~/.vault_pass   # ansible.cfg vault_password_file
 
       - name: yamllint
         run: yamllint .
@@ -75,7 +75,7 @@ jobs:
             cp "ansible/inventories/$env/group_vars/all/vault.yml.example" \
                "ansible/inventories/$env/group_vars/all/vault.yml"
           done
-          echo "ci-not-a-real-password" > .vault_pass
+          echo "ci-not-a-real-password" > ~/.vault_pass   # ansible.cfg vault_password_file
 
       - name: Syntax check (both environments)
         working-directory: ansible
