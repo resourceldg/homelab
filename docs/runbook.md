@@ -28,6 +28,18 @@ Operational procedures for day-2 tasks.
 9. Mount the backup drive at `borg_repo`'s parent, then `make backups`.
 10. `make verify && make test`.
 
+### User accounts
+
+`extra_users` (in the environment's group_vars) defines the human accounts:
+
+- **operator** — your account: in the `sudo` group (sudo asks for a password)
+  and SSH-allowed. Set a login password once so `sudo` works:
+  `sudo passwd operator`. Fill its real key before `make apply` (the SSH lockdown
+  gate refuses to run while an SSH-enabled user still has a `REPLACE_ME` key).
+- **familia** — daily-use account: no sudo, `ssh: false`, so it can log in at the
+  desktop but never over SSH (not added to `AllowUsers`).
+- **ansible** (`admin_user`) — automation only: passwordless sudo, key-based SSH.
+
 ## Add a new educational project
 
 1. Copy `compose/apps/` to `compose/apps-<name>/`, rename the service.

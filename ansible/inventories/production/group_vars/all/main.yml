@@ -15,9 +15,25 @@ server_locale: "en_US.UTF-8"
 lan_cidr: "192.168.1.0/24"
 tailscale_cidr: "100.64.0.0/10"       # Tailscale/CGNAT shared range
 
-# Public keys authorised for SSH. Add one line per operator.
+# Public keys for the automation account (admin_user). Add one line per operator.
 admin_ssh_authorized_keys:
   - "ssh-ed25519 AAAA...REPLACE_ME... operator@laptop"
+
+# Human accounts (multi-user model). Replace names + keys with the real values.
+#   operator = you: sudo WITH password (in sudo group), SSH allowed.
+#   familia  = daily-use account: no sudo, local/desktop login only (no SSH).
+# A safety gate refuses to harden SSH while any ssh: true user still has a
+# REPLACE_ME key, so fill operator's real key before `make apply`.
+extra_users:
+  - name: operator            # TODO: your real username
+    groups: [sudo]
+    ssh: true
+    authorized_keys:
+      - "ssh-ed25519 AAAA...REPLACE_ME... you@laptop"
+  - name: familia             # TODO: the family account username
+    groups: []
+    ssh: false
+    authorized_keys: []
 
 # --- Hardening -------------------------------------------------------------
 # This homelab does NOT use Ubuntu Pro, so USG/CIS tooling stays off. The

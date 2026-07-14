@@ -40,6 +40,34 @@
     validate: "visudo -cf %s"
   tags: [ssh, users, bootstrap]
 
+# --- Additional human accounts (multi-user model) --------------------------
+# operator = you (in sudo group -> sudo WITH password, no NOPASSWD drop-in);
+# familia = daily-use account (no sudo, no SSH). SSH exposure is controlled by
+# each user's `ssh` flag, which feeds AllowUsers via ssh_allow_users.
+- name: Create additional user accounts
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups | default([]) }}"
+    append: true
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: true
+    state: present
+  loop: "{{ extra_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags: [ssh, users, bootstrap]
+
+- name: Install authorized keys for additional users
+  ansible.posix.authorized_key:
+    user: "{{ item.0.name }}"
+    key: "{{ item.1 }}"
+    state: present
+    exclusive: false
+  loop: "{{ extra_users | subelements('authorized_keys', skip_missing=true) }}"
+  loop_control:
+    label: "{{ item.0.name }}"
+  tags: [ssh, users, bootstrap]
+
 # =============================================================================
 # STAGE 2 — LOCKDOWN (gated): deploy the restrictive sshd_config and restart
 # sshd. A pre-flight assert refuses to proceed unless a real key is present, so
@@ -76,6 +104,21 @@
     fail_msg: >-
       {{ admin_user }} has no authorized_keys on disk — aborting before the
       hardened sshd_config disables password auth.
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
+
+- name: "Safety gate — SSH-enabled extra users need a real key (no placeholder)"
+  ansible.builtin.assert:
+    that:
+      - item.authorized_keys | default([]) | length > 0
+      - item.authorized_keys | select('search', 'REPLACE_ME') | list | length == 0
+    fail_msg: >-
+      {{ item.name }} is SSH-enabled (in AllowUsers) but has no usable key
+      (empty or a REPLACE_ME placeholder). Set a real key or flip its ssh: false
+      before hardening, so you never add an unreachable account to AllowUsers.
+  loop: "{{ extra_users | selectattr('ssh', 'equalto', true) | list }}"
+  loop_control:
+    label: "{{ item.name }}"
   when: ssh_lockdown_enabled | bool
   tags: [ssh, ssh-lockdown]
 
