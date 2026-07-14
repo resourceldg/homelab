@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    # Fake values — the role only writes config and manages the timer; it never
+    # contacts DuckDNS during convergence.
+    duckdns_enabled: true
+    duckdns_domains: "molecule-test"
+    duckdns_update_oncalendar: "*:0/5"
+    vault_duckdns_token: "ci-dummy-token"
+  roles:
+    - role: ddns

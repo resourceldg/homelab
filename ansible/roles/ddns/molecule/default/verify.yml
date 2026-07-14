@@ -1,0 +1,40 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Stat the update script
+      ansible.builtin.stat:
+        path: /usr/local/bin/duckdns-update.sh
+      register: script
+
+    - name: Update script is present and executable
+      ansible.builtin.assert:
+        that:
+          - script.stat.exists
+          - script.stat.mode == '0750'
+        fail_msg: "duckdns-update.sh missing or wrong perms"
+
+    - name: Credentials file is root-only
+      ansible.builtin.stat:
+        path: /etc/duckdns/duckdns.env
+      register: creds
+
+    - name: Credentials perms are 0600
+      ansible.builtin.assert:
+        that:
+          - creds.stat.exists
+          - creds.stat.mode == '0600'
+
+    - name: Timer is enabled
+      ansible.builtin.command: systemctl is-enabled duckdns.timer
+      register: timer_state
+      changed_when: false
+      failed_when: timer_state.stdout != 'enabled'
+
+    - name: Service unit is valid (dry parse)
+      ansible.builtin.command: systemd-analyze verify /etc/systemd/system/duckdns.service
+      register: unit_verify
+      changed_when: false
+      failed_when: unit_verify.rc != 0

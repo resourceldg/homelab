@@ -4,20 +4,24 @@ ANSIBLE_DIR   := ansible
 PLAYBOOK      := $(ANSIBLE_DIR)/site.yml
 RUN           := cd $(ANSIBLE_DIR) &&
 
-.PHONY: help deps lint vault-edit vault-create dry-run apply \
+.PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
         harden firewall updates backups monitoring idempotence test verify
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-deps: ## Install Galaxy collections and Python test deps
-	ansible-galaxy install -r requirements.yml
-	pip install -r tests/requirements.txt ansible-lint yamllint
+deps: ## Install Galaxy collections and Python dev/test deps
+	ansible-galaxy collection install -r requirements.yml
+	pip install -r tests/requirements.txt ansible-lint yamllint \
+	  molecule "molecule-plugins[docker]" docker
 
 lint: ## Static analysis (yamllint + ansible-lint)
 	yamllint .
-	$(RUN) ansible-lint site.yml
+	ansible-lint
+
+molecule: ## Run the Molecule scenario for the ddns role (Docker driver)
+	cd $(ANSIBLE_DIR)/roles/ddns && molecule test
 
 vault-create: ## Create the encrypted vault from the example
 	cp $(ANSIBLE_DIR)/group_vars/all/vault.yml.example $(ANSIBLE_DIR)/group_vars/all/vault.yml

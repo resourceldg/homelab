@@ -1,5 +1,7 @@
 # Homelab — Secure Ubuntu Home & Dev Server (IaC)
 
+[![CI](https://github.com/resourceldg/homelab/actions/workflows/ci.yml/badge.svg)](https://github.com/resourceldg/homelab/actions/workflows/ci.yml)
+
 Reproducible, modular infrastructure-as-code for an **Ubuntu Desktop LTS** box that
 doubles as a **development server** and **hosting platform for educational projects**.
 
@@ -24,7 +26,7 @@ Built by a two-plane design:
 | Dynamic DNS | DuckDNS (systemd timer) |
 | Monitoring | Prometheus + Grafana (auto-provisioned dashboard) + node-exporter + cAdvisor |
 | Backups | Borg via borgmatic (encrypted, local repo, retention) |
-| Tests | ansible-lint, idempotence, testinfra, verify playbook |
+| Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule + GitHub Actions |
 
 See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
 rationale behind each decision.
