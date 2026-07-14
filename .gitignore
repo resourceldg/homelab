@@ -1,6 +1,6 @@
-# Secrets — never commit decrypted material
-ansible/group_vars/all/vault.yml
-!ansible/group_vars/all/vault.yml.example
+# Secrets — never commit decrypted material (per-environment vaults)
+ansible/inventories/*/group_vars/all/vault.yml
+!ansible/inventories/*/group_vars/all/vault.yml.example
 *.pem
 *.key
 id_ed25519*

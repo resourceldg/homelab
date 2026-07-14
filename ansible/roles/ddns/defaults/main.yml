@@ -1,0 +1,5 @@
+---
+# ddns — role defaults (DuckDNS via systemd timer).
+# duckdns_domains differs per environment (group_vars); duckdns_token is vaulted.
+duckdns_enabled: true
+duckdns_update_oncalendar: "*:0/5"    # every 5 minutes

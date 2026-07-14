@@ -1,0 +1,19 @@
+---
+# =============================================================================
+# SECRETS TEMPLATE — copy to vault.yml and encrypt:
+#     cp vault.yml.example vault.yml
+#     ansible-vault encrypt vault.yml
+# Edit later with:  ansible-vault edit vault.yml
+# =============================================================================
+
+# Ubuntu Pro token (needed for `usg` CIS tooling). Get it at ubuntu.com/pro.
+vault_ubuntu_pro_token: "REPLACE_WITH_UBUNTU_PRO_TOKEN"
+
+# DuckDNS token from https://www.duckdns.org (top of the page after login).
+vault_duckdns_token: "REPLACE_WITH_DUCKDNS_TOKEN"
+
+# Grafana admin password.
+vault_grafana_admin_password: "REPLACE_WITH_STRONG_PASSWORD"
+
+# Borg repository passphrase — LOSE THIS AND YOU LOSE THE BACKUPS.
+vault_borg_passphrase: "REPLACE_WITH_LONG_RANDOM_PASSPHRASE"

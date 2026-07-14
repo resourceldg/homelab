@@ -1,0 +1,14 @@
+---
+# backups — role defaults (Borg via borgmatic).
+# borg_passphrase is vaulted; admin_user is a shared value (group_vars).
+borg_repo: "/mnt/backup/borg-repo"    # local repo (external drive / NAS mount)
+borg_paths:
+  - "/etc"
+  - "/opt/homelab"
+  - "/var/lib/docker/volumes"
+  - "/home/{{ admin_user }}"
+borg_exclude:
+  - "/var/lib/docker/volumes/*/**/cache"
+  - "**/*.tmp"
+borg_retention: { hourly: 0, daily: 7, weekly: 4, monthly: 6 }
+borg_backup_oncalendar: "*-*-* 02:00:00"

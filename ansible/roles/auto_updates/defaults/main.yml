@@ -1,0 +1,5 @@
+---
+# auto_updates — role defaults (unattended-upgrades, security only).
+autoupdate_reboot: true
+autoupdate_reboot_time: "04:30"
+autoupdate_mail: "root"

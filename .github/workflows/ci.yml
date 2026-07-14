@@ -8,6 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # scan full history, not just the tip commit
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: Lint (yamllint + ansible-lint)
     runs-on: ubuntu-latest
@@ -26,9 +39,12 @@ jobs:
 
       - name: Prepare non-secret placeholders
         run: |
-          # CI never has the real vault. Use the committed example so playbooks
-          # parse; values are all placeholders.
-          cp ansible/group_vars/all/vault.yml.example ansible/group_vars/all/vault.yml
+          # CI never has the real vault. Use the committed per-env examples so
+          # playbooks parse; values are all placeholders.
+          for env in production staging; do
+            cp "ansible/inventories/$env/group_vars/all/vault.yml.example" \
+               "ansible/inventories/$env/group_vars/all/vault.yml"
+          done
           echo "ci-not-a-real-password" > .vault_pass
 
       - name: yamllint
@@ -55,12 +71,17 @@ jobs:
 
       - name: Prepare non-secret placeholders
         run: |
-          cp ansible/group_vars/all/vault.yml.example ansible/group_vars/all/vault.yml
+          for env in production staging; do
+            cp "ansible/inventories/$env/group_vars/all/vault.yml.example" \
+               "ansible/inventories/$env/group_vars/all/vault.yml"
+          done
           echo "ci-not-a-real-password" > .vault_pass
 
-      - name: Syntax check
+      - name: Syntax check (both environments)
         working-directory: ansible
-        run: ansible-playbook site.yml --syntax-check
+        run: |
+          ansible-playbook site.yml -i inventories/production --syntax-check
+          ansible-playbook site.yml -i inventories/staging --syntax-check
 
   molecule:
     name: Molecule (Ubuntu ${{ matrix.ubuntu }})

@@ -1,0 +1,8 @@
+---
+# hardening — role defaults (CIS via Ubuntu Security Guide).
+# Level 1 Server is chosen deliberately: Level 2 / STIG breaks a Desktop GUI.
+usg_profile: "cis_level1_server"
+usg_enabled: false                 # off by default; needs Ubuntu Pro (not used here)
+harden_disable_usb_storage: false  # true breaks USB backup drives — keep off
+harden_core_dumps: true
+harden_sysctl: true

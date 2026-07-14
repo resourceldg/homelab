@@ -1,0 +1,31 @@
+---
+# Run locally with `pre-commit run --all-files` (install once: `pre-commit install`).
+# Mirrors the checks the CI enforces, so problems surface before they are pushed.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+      - id: check-yaml
+        args: [--unsafe]          # tolerate Ansible custom tags (!vault, !unsafe)
+      - id: detect-private-key    # never let a private key slip into a commit
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [--strict]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks             # scan the diff for secrets
+
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v24.7.0
+    hooks:
+      - id: ansible-lint
+        files: \.(ya?ml)$

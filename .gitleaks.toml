@@ -1,0 +1,16 @@
+# gitleaks config — extend the default ruleset with a homelab allowlist so the
+# committed placeholder secrets (templates, examples) never trip the scanner.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and committed examples — never real secrets"
+paths = [
+  '''.*\.example$''',
+  '''ansible/inventories/.*/group_vars/all/vault\.yml\.example''',
+]
+regexes = [
+  '''REPLACE_WITH_[A-Z_]+''',
+  '''AAAA\.\.\.REPLACE_ME''',
+  '''ci-not-a-real-password''',
+]

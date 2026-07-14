@@ -151,7 +151,23 @@ Three levels, wired into the Makefile:
 
 ## 9. Secrets
 
-Ansible Vault (`group_vars/all/vault.yml`) holds the Ubuntu Pro token, DuckDNS
-token, Grafana password and Borg passphrase. It renders directly into systemd
-env files and compose `.env` at deploy time; nothing secret is committed.
-Chosen over SOPS/age for zero extra dependencies in a single-operator homelab.
+Ansible Vault (`inventories/<env>/group_vars/all/vault.yml`, one per
+environment) holds the Ubuntu Pro token, DuckDNS token, Grafana password and
+Borg passphrase. It renders directly into systemd env files and compose `.env`
+at deploy time; nothing secret is committed. Chosen over SOPS/age for zero extra
+dependencies in a single-operator homelab.
+
+## 10. Variable layering
+
+Configuration is resolved in three precedence layers (lowest to highest):
+
+1. **`roles/<role>/defaults/main.yml`** — each role owns its tunables and ships
+   sane defaults, so a role is self-contained and reusable.
+2. **`group_vars/all/main.yml`** — cross-role constants identical in every
+   environment (`admin_user`, `ssh_port`, `apt_repo_release`, `stacks_root`).
+3. **`inventories/<env>/group_vars/all/`** — per-environment identity, network,
+   domain and secrets. This is the only layer that differs between prod and
+   staging, and it wins over the two below it.
+
+Select an environment with `-i inventories/production` or `-i inventories/staging`
+(`make apply ENV=staging`).

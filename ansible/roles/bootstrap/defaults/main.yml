@@ -1,0 +1,8 @@
+---
+# bootstrap — role defaults. Override per environment in
+# inventories/<env>/group_vars/all/main.yml when a value must differ.
+
+# Hostname applied to the box. Environments override this (prod vs staging).
+server_hostname: "homelab"
+server_timezone: "America/Bogota"
+server_locale: "en_US.UTF-8"

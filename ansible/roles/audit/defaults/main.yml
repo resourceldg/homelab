@@ -1,0 +1,5 @@
+---
+# audit — role defaults (Lynis weekly + AIDE daily FIM).
+# server_hostname (used in report identity) comes from bootstrap/env.
+lynis_schedule_oncalendar: "Sun *-*-* 03:00:00"
+aide_check_oncalendar: "*-*-* 05:00:00"

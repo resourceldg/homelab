@@ -1,0 +1,7 @@
+---
+# monitoring — role defaults (Prometheus + Grafana + exporters + Caddy proxy).
+# caddy_base_domain / caddy_acme_email differ per environment (group_vars);
+# admin_user and stacks_root are shared; passwords/tokens are vaulted.
+monitoring_enabled: true
+grafana_admin_user: "admin"
+prometheus_retention: "15d"

@@ -1,0 +1,10 @@
+---
+# fail2ban — role defaults.
+# ssh_port comes from shared group_vars; lan_cidr / tailscale_cidr are per env.
+fail2ban_bantime: "1h"
+fail2ban_findtime: "10m"
+fail2ban_maxretry: 4
+fail2ban_ignoreips:
+  - "127.0.0.1/8"
+  - "{{ lan_cidr }}"
+  - "{{ tailscale_cidr }}"

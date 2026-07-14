@@ -48,7 +48,7 @@
     path: /etc/security/pwquality.conf.d
     state: directory
     mode: "0755"
-    
+
 - name: Configure pwquality
   ansible.builtin.copy:
     dest: /etc/security/pwquality.conf.d/99-hardening.conf
