@@ -143,8 +143,10 @@ fuera del directorio del propio equipo del que llama.
 - puertos publicados en `0.0.0.0` o fuera del rango permitido
 - más de **5 servicios** por equipo
 
-**Exige** en cada servicio: límite de CPU, límite de memoria, `pids_limit`,
-rotación de logs, política `restart` y (cuando tenga sentido) un `healthcheck`.
+**Exige** en cada servicio, bajo `deploy.resources.limits`: `cpus`, `memory` y
+`pids` (los top-level `mem_limit`/`pids_limit` se rechazan porque chocan con el
+bloque `deploy` en Compose v2), además de rotación de logs y política `restart`,
+y (cuando tenga sentido) un `healthcheck`.
 La publicación se permite **solo** en `127.0.0.1` (Caddy es el único ingress, §7).
 
 **Nota IoT (stack de evaluación):** Mosquitto, Node-RED y n8n entran en 5

@@ -88,15 +88,19 @@ def _check_service(name, svc, project_dir, v):
             v.append(f"{where}: image '{image}' must be pinned to an explicit tag (not latest)")
 
     # --- Resource limits, pids, logging, restart ---------------------------
+    # Everything under deploy.resources.limits (cpus/memory/pids). Top-level
+    # mem_limit/pids_limit conflict with the deploy block in Compose v2, so they
+    # are rejected — the whole team is capped anyway by its cgroup slice.
     limits = (((svc.get("deploy") or {}).get("resources") or {}).get("limits")) or {}
-    has_cpu = "cpus" in limits or "cpus" in svc
-    has_mem = "memory" in limits or "mem_limit" in svc
-    if not has_cpu:
+    if "cpus" not in limits:
         v.append(f"{where}: missing CPU limit (deploy.resources.limits.cpus)")
-    if not has_mem:
+    if "memory" not in limits:
         v.append(f"{where}: missing memory limit (deploy.resources.limits.memory)")
-    if "pids_limit" not in svc:
-        v.append(f"{where}: missing pids_limit")
+    if "pids" not in limits:
+        v.append(f"{where}: missing pids limit (deploy.resources.limits.pids)")
+    for legacy in ("pids_limit", "mem_limit"):
+        if legacy in svc:
+            v.append(f"{where}: use deploy.resources.limits, not top-level {legacy} (they conflict in Compose v2)")
     if "logging" not in svc:
         v.append(f"{where}: missing logging (log rotation required)")
     if "restart" not in svc and "restart_policy" not in (svc.get("deploy") or {}):

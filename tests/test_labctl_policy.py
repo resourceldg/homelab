@@ -22,9 +22,8 @@ def _svc(**over):
     base = {
         "image": "eclipse-mosquitto:2.0.18",
         "restart": "unless-stopped",
-        "pids_limit": 100,
         "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}},
-        "deploy": {"resources": {"limits": {"cpus": "0.25", "memory": "128M"}}},
+        "deploy": {"resources": {"limits": {"cpus": "0.25", "memory": "128M", "pids": 100}}},
     }
     base.update(over)
     return base
@@ -136,8 +135,14 @@ def test_missing_memory_limit_rejected():
 
 def test_missing_pids_limit_rejected():
     svc = _svc()
-    del svc["pids_limit"]
-    assert any("pids_limit" in x for x in ok(_doc(web=svc)))
+    del svc["deploy"]["resources"]["limits"]["pids"]
+    assert any("pids limit" in x for x in ok(_doc(web=svc)))
+
+
+def test_toplevel_pids_limit_rejected():
+    svc = _svc()
+    svc["pids_limit"] = 100
+    assert any("not top-level pids_limit" in x for x in ok(_doc(web=svc)))
 
 
 def test_missing_logging_rejected():
