@@ -4,7 +4,10 @@
     src: "{{ playbook_dir }}/../compose/{{ item }}/"
     dest: "{{ stacks_root }}/{{ item }}/"
     mode: "0644"
-    directory_mode: "0750"
+    # 0755 so in-container service users (e.g. the Grafana uid 472) can read the
+    # mounted config/provisioning dirs. No secrets live here — the .env files are
+    # rendered separately with 0600.
+    directory_mode: "0755"
     owner: "{{ admin_user }}"
     group: "{{ admin_user }}"
   loop:
