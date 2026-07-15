@@ -1,0 +1,22 @@
+---
+- name: Create team groups
+  ansible.builtin.group:
+    name: "grp-{{ item.name }}"
+    state: present
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "grp-{{ item.name }}"
+  when: classroom_enabled | bool
+
+- name: Create student users (no sudo, not in docker group)
+  ansible.builtin.user:
+    name: "{{ item.1 }}"
+    groups: ["grp-{{ item.0.name }}"]
+    append: true
+    shell: "{{ classroom_user_shell }}"
+    create_home: true
+    state: present
+  loop: "{{ classroom_teams | subelements('members') }}"
+  loop_control:
+    label: "{{ item.1 }} ({{ item.0.name }})"
+  when: classroom_enabled | bool

@@ -1,0 +1,27 @@
+---
+# One cgroup v2 systemd slice per team. labctld (phase 2) runs each team's
+# containers under cgroup_parent=classroom-<team>.slice, so the kernel caps the
+# whole team's RAM/CPU/tasks regardless of what the student wrote in Compose.
+- name: Deploy per-team systemd slice unit
+  ansible.builtin.template:
+    src: classroom-team.slice.j2
+    dest: "/etc/systemd/system/classroom-{{ item.name }}.slice"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "classroom-{{ item.name }}.slice"
+  notify: Reload systemd
+  when: classroom_enabled | bool
+
+- name: Enable and start team slices
+  ansible.builtin.systemd:
+    name: "classroom-{{ item.name }}.slice"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "classroom-{{ item.name }}.slice"
+  when: classroom_enabled | bool

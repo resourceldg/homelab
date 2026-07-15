@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# Resource ceiling for classroom team {{ item.name }}.
+[Unit]
+Description=Classroom team {{ item.name }} resource slice
+Before=slices.target
+
+[Slice]
+MemoryAccounting=true
+MemoryHigh={{ classroom_slice_memory_high }}
+MemoryMax={{ classroom_slice_memory_max }}
+CPUAccounting=true
+CPUQuota={{ classroom_slice_cpu_quota }}
+TasksAccounting=true
+TasksMax={{ classroom_slice_tasks_max }}

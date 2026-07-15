@@ -41,3 +41,6 @@
     - { role: docker, tags: ["docker"] }
     - { role: monitoring, tags: ["services", "monitoring"] }
     - { role: backups, tags: ["backups"] }
+
+    # --- Classroom plane (multi-user Docker Compose lab) -------------------
+    - { role: classroom, tags: ["classroom"] }

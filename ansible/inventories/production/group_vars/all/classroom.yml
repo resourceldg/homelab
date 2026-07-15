@@ -1,0 +1,14 @@
+---
+# Classroom team roster (production). Onboarding/offboarding = edit this list and
+# re-apply `--tags classroom`. Members must be valid Linux usernames.
+classroom_teams:
+  - name: equipo-01
+    members: [jessi]
+  - name: equipo-02
+    members: [alan, gabi]
+  - name: equipo-03
+    members: [santi, mijael, gino]
+  - name: equipo-04
+    members: [mariano, jorge]
+  - name: equipo-05
+    members: [guido]

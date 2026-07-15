@@ -1,0 +1,16 @@
+---
+# classroom base plane: Linux users/groups, per-team project dirs (2770 setgid)
+# backed by loopback filesystems (hard disk quota), and a cgroup v2 systemd slice
+# per team (hard CPU/RAM/tasks ceiling). Students get NO sudo, NO docker group,
+# NO socket access — labctl/labctld (phase 2) is their only path to the engine.
+- name: Import user & group tasks
+  ansible.builtin.import_tasks: users.yml
+  tags: [classroom, classroom-users]
+
+- name: Import per-team disk quota (loopback) tasks
+  ansible.builtin.import_tasks: quotas.yml
+  tags: [classroom, classroom-quotas]
+
+- name: Import per-team systemd slice tasks
+  ansible.builtin.import_tasks: slices.yml
+  tags: [classroom, classroom-slices]
