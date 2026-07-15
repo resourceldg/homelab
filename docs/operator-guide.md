@@ -73,9 +73,15 @@ si entra otro equipo sin quedarte sin RAM.
 
 ## Verificación
 
+Corré los tests **con `sudo`**: necesitan acceso a Docker y leer los archivos
+aislados de los equipos (`root:grp-equipo-NN 0640` dentro de dirs `2770`). Sin
+privilegios dan falsos negativos (que, de hecho, confirman el aislamiento).
+
 ```bash
 cd ~/homelab
-~/homelab/.venv/bin/py.test -v --hosts=local:// tests/test_classroom.py tests/test_labctl.py tests/test_shared_services.py
+sudo ~/homelab/.venv/bin/py.test -v --hosts=local:// \
+  tests/test_classroom.py tests/test_labctl.py \
+  tests/test_shared_services.py tests/test_classroom_publish.py
 ```
 
 ## Auditoría y troubleshooting
