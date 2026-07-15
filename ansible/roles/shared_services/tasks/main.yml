@@ -52,16 +52,39 @@
     mode: "0700"
   when: shared_services_enabled | bool and (classroom_teams | length > 0)
 
+# Generated on the host (as root) so the secret store stays root-only; the
+# `password` lookup runs on the controller and could not write there.
+- name: Generate a Postgres password per team (once)
+  ansible.builtin.shell:
+    cmd: "printf %s \"$(openssl rand -hex 16)\" > {{ shared_services_secrets_dir }}/{{ item.name }}.pgpass"
+    creates: "{{ shared_services_secrets_dir }}/{{ item.name }}.pgpass"
+  args:
+    executable: /bin/bash
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: shared_services_enabled | bool
+
+- name: Read per-team DB passwords
+  ansible.builtin.slurp:
+    src: "{{ shared_services_secrets_dir }}/{{ item.name }}.pgpass"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: team_pgpass
+  no_log: true
+  when: shared_services_enabled | bool
+
 - name: Create a Postgres role per team
   community.postgresql.postgresql_user:
     login_host: "127.0.0.1"
     login_user: postgres
     login_password: "{{ vault_postgres_superuser_password }}"
-    name: "{{ item.name | replace('-', '_') }}"
-    password: "{{ lookup('password', shared_services_secrets_dir ~ '/' ~ item.name ~ '.pgpass chars=ascii_letters,digits length=24') }}"
-  loop: "{{ classroom_teams }}"
+    name: "{{ item.item.name | replace('-', '_') }}"
+    password: "{{ item.content | b64decode }}"
+  loop: "{{ team_pgpass.results }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.item.name }}"
   no_log: true
   when: shared_services_enabled | bool
 
@@ -70,24 +93,24 @@
     login_host: "127.0.0.1"
     login_user: postgres
     login_password: "{{ vault_postgres_superuser_password }}"
-    name: "db_{{ item.name | replace('-', '_') }}"
-    owner: "{{ item.name | replace('-', '_') }}"
-  loop: "{{ classroom_teams }}"
+    name: "db_{{ item.item.name | replace('-', '_') }}"
+    owner: "{{ item.item.name | replace('-', '_') }}"
+  loop: "{{ team_pgpass.results }}"
   loop_control:
-    label: "db_{{ item.name | replace('-', '_') }}"
+    label: "db_{{ item.item.name | replace('-', '_') }}"
   no_log: true
   when: shared_services_enabled | bool
 
 - name: Render each team's shared-services credentials file
   ansible.builtin.template:
     src: team-shared-services.env.j2
-    dest: "{{ classroom_root }}/{{ item.name }}/.shared-services.env"
+    dest: "{{ classroom_root }}/{{ item.item.name }}/.shared-services.env"
     owner: root
-    group: "grp-{{ item.name }}"
+    group: "grp-{{ item.item.name }}"
     mode: "0640"
-  loop: "{{ classroom_teams }}"
+  loop: "{{ team_pgpass.results }}"
   loop_control:
-    label: "{{ item.name }}"
+    label: "{{ item.item.name }}"
     index_var: team_index
   no_log: true
   when: shared_services_enabled | bool
