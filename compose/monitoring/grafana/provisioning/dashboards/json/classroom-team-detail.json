@@ -1,0 +1,95 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-3h", "to": "now" },
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["classroom", "provisioned"],
+  "title": "Classroom Team Detail",
+  "uid": "classroom-team-detail",
+  "templating": {
+    "list": [
+      { "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "query": "prometheus", "current": {}, "hide": 0, "refresh": 1 },
+      {
+        "name": "team", "label": "Equipo", "type": "query", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "query": "label_values(label_replace(container_last_seen{name=~\"equipo-.*\"}, \"team\", \"$1\", \"name\", \"(equipo-[0-9]+)-.*\"), team)",
+        "refresh": 2, "sort": 1, "includeAll": false, "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Contenedores del $team",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "blue" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "count(container_last_seen{name=~\"$team-.*\"})" }
+      ]
+    },
+    {
+      "id": 2, "type": "gauge", "title": "RAM usada vs tope (1.25 GiB)",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 0.8 }, { "color": "red", "value": 0.95 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(container_memory_usage_bytes{name=~\"$team-.*\"}) / (1.25 * 1024 * 1024 * 1024)" }
+      ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "CPU (cores)",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 2, "color": { "mode": "fixed", "fixedColor": "orange" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"$team-.*\"}[5m]))" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "RAM por contenedor",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 15 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "legendFormat": "{{name}}",
+          "expr": "container_memory_usage_bytes{name=~\"$team-.*\"}" }
+      ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "CPU por contenedor (cores)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 15 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "legendFormat": "{{name}}",
+          "expr": "rate(container_cpu_usage_seconds_total{name=~\"$team-.*\"}[5m])" }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Red (rx/tx)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "legendFormat": "rx {{name}}",
+          "expr": "rate(container_network_receive_bytes_total{name=~\"$team-.*\"}[5m])" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "legendFormat": "tx {{name}}",
+          "expr": "rate(container_network_transmit_bytes_total{name=~\"$team-.*\"}[5m])" }
+      ]
+    }
+  ]
+}

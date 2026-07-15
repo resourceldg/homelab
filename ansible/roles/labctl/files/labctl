@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""labctl — the student CLI for the classroom lab.
+
+The ONLY interface students use to drive their Compose stack. It never touches
+Docker: it forwards the requested action to the labctld broker over a Unix
+socket and prints the result. Run it from inside your team directory:
+
+    cd /srv/classroom/equipo-01
+    labctl validate     # check your compose against the lab policy
+    labctl up           # deploy (inside your team's resource slice)
+    labctl ps | logs | usage | status | restart | down
+"""
+import json
+import os
+import socket
+import sys
+
+SOCK = "/run/labctld.sock"
+ACTIONS = ["validate", "up", "down", "restart", "ps", "logs", "usage", "status"]
+USAGE = "uso: labctl {" + "|".join(ACTIONS) + "}"
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(USAGE)
+        return 0 if len(sys.argv) >= 2 else 2
+    action = sys.argv[1]
+    if action not in ACTIONS:
+        print(USAGE, file=sys.stderr)
+        return 2
+
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(SOCK)
+    except OSError as exc:
+        print(f"labctl: no puedo contactar a labctld ({exc}). ¿Está corriendo el servicio?",
+              file=sys.stderr)
+        return 1
+
+    sock.sendall((json.dumps({"action": action, "cwd": os.getcwd()}) + "\n").encode())
+    buf = b""
+    while True:
+        chunk = sock.recv(65536)
+        if not chunk:
+            break
+        buf += chunk
+
+    resp = json.loads(buf.decode() or "{}")
+    if resp.get("violations"):
+        print("✗ Compose rechazado por la política del laboratorio:", file=sys.stderr)
+        for item in resp["violations"]:
+            print(f"  - {item}", file=sys.stderr)
+        return 1
+    if resp.get("output"):
+        print(resp["output"].rstrip())
+    if resp.get("error"):
+        print(f"labctl: {resp['error']}", file=sys.stderr)
+    return 0 if resp.get("ok") else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

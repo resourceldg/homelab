@@ -1,0 +1,73 @@
+---
+# Per-team hard disk quota via a loopback filesystem sized to the hard cap.
+# Data physically cannot exceed the image size, so a runaway team can't fill the
+# host disk. The Compose policy (phase 2) forces persistent data to live inside
+# the team dir, so all team writes land on this capped filesystem.
+- name: Ensure classroom root exists
+  ansible.builtin.file:
+    path: "{{ classroom_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: classroom_enabled | bool
+
+- name: Ensure loopback image directory exists
+  ansible.builtin.file:
+    path: "{{ classroom_loopback_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: classroom_enabled | bool
+
+- name: Create per-team loopback image (sparse; size = hard cap)
+  ansible.builtin.command:
+    cmd: "truncate -s {{ classroom_disk_hard_gb }}G {{ classroom_loopback_dir }}/{{ item.name }}.img"
+    creates: "{{ classroom_loopback_dir }}/{{ item.name }}.img"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}.img ({{ classroom_disk_hard_gb }}G)"
+  when: classroom_enabled | bool
+
+- name: Make a filesystem on each loopback image (idempotent)
+  community.general.filesystem:
+    fstype: "{{ classroom_loopback_fs }}"
+    dev: "{{ classroom_loopback_dir }}/{{ item.name }}.img"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: classroom_enabled | bool
+
+- name: Ensure per-team mountpoint exists
+  ansible.builtin.file:
+    path: "{{ classroom_root }}/{{ item.name }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: classroom_enabled | bool
+
+- name: Mount each team loopback (persistent via fstab; nosuid,nodev)
+  ansible.posix.mount:
+    path: "{{ classroom_root }}/{{ item.name }}"
+    src: "{{ classroom_loopback_dir }}/{{ item.name }}.img"
+    fstype: "{{ classroom_loopback_fs }}"
+    opts: "loop,nosuid,nodev"
+    state: mounted
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: classroom_enabled | bool
+
+- name: Enforce team dir ownership and setgid (2770, no cross-team access)
+  ansible.builtin.file:
+    path: "{{ classroom_root }}/{{ item.name }}"
+    owner: root
+    group: "grp-{{ item.name }}"
+    mode: "2770"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: classroom_enabled | bool

@@ -65,3 +65,9 @@ cadvisor.{$CADDY_BASE_DOMAIN} {
 	encode zstd gzip
 	reverse_proxy cadvisor:8080
 }
+
+# =========================================================================
+# Published student projects — rendered by the classroom_publish role into
+# conf.d/classroom-exposures.caddy from the student_exposures registry.
+# =========================================================================
+import conf.d/*.caddy

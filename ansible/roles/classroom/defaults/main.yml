@@ -1,0 +1,23 @@
+---
+# classroom — role defaults. The team roster lives per-environment in
+# inventories/<env>/group_vars/all/classroom.yml (classroom_teams).
+
+classroom_enabled: true
+classroom_root: "/srv/classroom"
+classroom_user_shell: "/bin/bash"
+
+# Team roster. Each item: { name: equipo-NN, members: [user, ...] }.
+# Overridden per environment; empty here so the role is a safe no-op by default.
+classroom_teams: []
+
+# --- Per-team resource ceiling (systemd cgroup v2 slice) -------------------
+classroom_slice_memory_max: "1.25G"   # hard kill ceiling for the whole team
+classroom_slice_memory_high: "1G"     # soft throttle threshold
+classroom_slice_cpu_quota: "100%"     # 1 core
+classroom_slice_tasks_max: 512
+
+# --- Per-team disk quota (loopback filesystem, hard cap by size) -----------
+classroom_disk_hard_gb: 20            # loopback image size = physical hard cap
+classroom_disk_soft_gb: 15            # warning threshold (surfaced by labctl/Grafana)
+classroom_loopback_dir: "/var/lib/classroom/loopbacks"
+classroom_loopback_fs: "ext4"

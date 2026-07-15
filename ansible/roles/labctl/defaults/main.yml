@@ -1,0 +1,7 @@
+---
+# labctl — role defaults. Installs the labctld broker daemon + labctl client so
+# students can drive Docker Compose without any docker/sudo/socket access.
+labctl_enabled: true
+labctl_opt_dir: "/opt/labctl"
+labctl_socket_group: "classroom"     # common group all students belong to
+labctl_log_dir: "/var/log/labctl"

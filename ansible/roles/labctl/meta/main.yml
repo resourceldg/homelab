@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  author: homelab
+  description: >-
+    labctl broker daemon + student client: the only interface students use to
+    drive Docker Compose, with no docker/sudo/socket access. Validates every
+    Compose against the lab policy and runs it inside the team's cgroup slice.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions: ["jammy", "noble"]
+dependencies: []

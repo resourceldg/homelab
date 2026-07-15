@@ -17,3 +17,6 @@ vault_grafana_admin_password: "REPLACE_WITH_STRONG_PASSWORD"
 
 # Borg repository passphrase — LOSE THIS AND YOU LOSE THE BACKUPS.
 vault_borg_passphrase: "REPLACE_WITH_LONG_RANDOM_PASSPHRASE"
+
+# Postgres superuser password for the shared classroom database.
+vault_postgres_superuser_password: "REPLACE_WITH_STRONG_PASSWORD"

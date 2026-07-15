@@ -1,0 +1,73 @@
+---
+- name: Install PyYAML for the broker daemon
+  ansible.builtin.apt:
+    name: python3-yaml
+    state: present
+  when: labctl_enabled | bool
+
+- name: Ensure labctl program directory exists
+  ansible.builtin.file:
+    path: "{{ labctl_opt_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: labctl_enabled | bool
+
+- name: Install the Compose policy module
+  ansible.builtin.copy:
+    src: policy.py
+    dest: "{{ labctl_opt_dir }}/policy.py"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart labctld
+  when: labctl_enabled | bool
+
+- name: Install the labctld broker daemon
+  ansible.builtin.copy:
+    src: labctld
+    dest: "{{ labctl_opt_dir }}/labctld"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart labctld
+  when: labctl_enabled | bool
+
+- name: Install the labctl student client
+  ansible.builtin.copy:
+    src: labctl
+    dest: /usr/local/bin/labctl
+    owner: root
+    group: root
+    mode: "0755"
+  when: labctl_enabled | bool
+
+- name: Ensure audit log directory exists
+  ansible.builtin.file:
+    path: "{{ labctl_log_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: labctl_enabled | bool
+
+- name: Deploy labctld systemd unit
+  ansible.builtin.template:
+    src: labctld.service.j2
+    dest: /etc/systemd/system/labctld.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart labctld
+  when: labctl_enabled | bool
+
+- name: Enable and start labctld
+  ansible.builtin.systemd:
+    name: labctld
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: labctl_enabled | bool
