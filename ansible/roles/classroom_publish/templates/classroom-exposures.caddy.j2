@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Vhosts for published student projects. Managed by the classroom_publish role;
+# do not edit by hand. Caddy reaches each team's container over the team network
+# (labctld attaches Caddy at `up`).
+{% for e in student_exposures | default([]) if e.enabled | default(false) %}
+{{ e.hostname }} {
+	import secure_headers
+	encode zstd gzip
+	reverse_proxy {{ e.team }}-{{ e.service }}-1:{{ e.port }}
+}
+{% endfor %}

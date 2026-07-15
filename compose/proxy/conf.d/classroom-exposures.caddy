@@ -1,0 +1,2 @@
+# Placeholder — overwritten by the classroom_publish role with the rendered
+# student project vhosts. Keeps `import conf.d/*.caddy` matching at least one file.

@@ -37,7 +37,10 @@ AUDIT = "/var/log/labctl/audit.log"
 COMPOSE_NAMES = ("compose.yml", "compose.yaml", "docker-compose.yml", "docker-compose.yaml")
 TEAM_RE = re.compile(r"^grp-(equipo-\d+)$")
 ALLOWED = {"validate", "up", "down", "restart", "ps", "logs", "usage", "status"}
-SHARED_SERVICES = ("postgres", "redis", "mailpit")
+# Infrastructure containers attached to each team's private network at `up` so
+# teams can reach shared data services and be published via Caddy — without
+# being able to see one another (each team has its own network).
+INFRA_CONTAINERS = ("postgres", "redis", "mailpit", "caddy")
 TIMEOUT = 180
 
 
@@ -80,11 +83,11 @@ def base_cmd(team, team_dir, compose_file, override=None):
 
 
 def connect_shared(team):
-    """Attach the shared data services to the team's private project network so
-    the team reaches them by hostname, without exposing teams to one another."""
+    """Attach the shared infra containers to the team's private project network
+    so the team reaches them by hostname, without exposing teams to one another."""
     net = f"{team}_default"
     errs = []
-    for svc in SHARED_SERVICES:
+    for svc in INFRA_CONTAINERS:
         r = subprocess.run(["docker", "network", "connect", net, svc],
                            capture_output=True, text=True)
         msg = r.stderr.lower()

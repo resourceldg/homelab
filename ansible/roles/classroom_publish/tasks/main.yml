@@ -1,0 +1,31 @@
+---
+# Render the enabled student exposures into a Caddy conf.d file (imported by the
+# main Caddyfile) and reload Caddy. Caddy reaches each team's service container
+# because labctld attaches Caddy to every team network at `up`.
+- name: Ensure the proxy conf.d directory exists
+  ansible.builtin.file:
+    path: "{{ stacks_root }}/proxy/conf.d"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"
+  when: classroom_publish_enabled | bool
+
+- name: Render the classroom exposures vhosts
+  ansible.builtin.template:
+    src: classroom-exposures.caddy.j2
+    dest: "{{ stacks_root }}/proxy/conf.d/classroom-exposures.caddy"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+  register: classroom_exposures_file
+  when: classroom_publish_enabled | bool
+
+- name: Reload Caddy to pick up exposure changes
+  ansible.builtin.command:
+    cmd: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+  changed_when: true
+  failed_when: false
+  when:
+    - classroom_publish_enabled | bool
+    - classroom_exposures_file is changed

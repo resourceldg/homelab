@@ -1,0 +1,13 @@
+---
+# classroom_publish — operator-controlled ingress for student projects.
+# Renders a Caddy vhost per ENABLED exposure; nothing is public until the
+# operator flips `enabled: true`.
+classroom_publish_enabled: true
+
+# Registry of what the world may see. Overridden per environment.
+#   - team: equipo-01           # the team whose project is exposed
+#     hostname: equipo01.example # public FQDN (Caddy issues the cert)
+#     service: web               # the compose service name in the team's project
+#     port: 8080                 # the container port to proxy to
+#     enabled: true
+student_exposures: []
