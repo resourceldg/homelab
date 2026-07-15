@@ -1,0 +1,93 @@
+---
+# Deploy the shared data services and provision one Postgres database + role and
+# one Redis logical DB per team, then drop a credentials env file into each team
+# directory. labctld connects these services to each team's private network at
+# `up` time, so teams reach them without seeing one another.
+- name: Deploy the shared-data stack
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../compose/shared-data/"
+    dest: "{{ stacks_root }}/shared-data/"
+    mode: "0644"
+    directory_mode: "0750"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Render shared-data .env (Postgres superuser password)
+  ansible.builtin.template:
+    src: shared-data.env.j2
+    dest: "{{ stacks_root }}/shared-data/.env"
+    mode: "0600"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  no_log: true
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Install psycopg2 for Postgres provisioning
+  ansible.builtin.apt:
+    name: python3-psycopg2
+    state: present
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Bring up the shared-data stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/shared-data"
+    state: present
+    pull: missing
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Wait for Postgres to accept connections
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 5432
+    timeout: 90
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Ensure per-team DB password store exists (root only)
+  ansible.builtin.file:
+    path: "{{ shared_services_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Create a Postgres role per team
+  community.postgresql.postgresql_user:
+    login_host: "127.0.0.1"
+    login_user: postgres
+    login_password: "{{ vault_postgres_superuser_password }}"
+    name: "{{ item.name | replace('-', '_') }}"
+    password: "{{ lookup('password', shared_services_secrets_dir ~ '/' ~ item.name ~ '.pgpass chars=ascii_letters,digits length=24') }}"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+  when: shared_services_enabled | bool
+
+- name: Create a database per team (owned by the team role)
+  community.postgresql.postgresql_db:
+    login_host: "127.0.0.1"
+    login_user: postgres
+    login_password: "{{ vault_postgres_superuser_password }}"
+    name: "db_{{ item.name | replace('-', '_') }}"
+    owner: "{{ item.name | replace('-', '_') }}"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "db_{{ item.name | replace('-', '_') }}"
+  no_log: true
+  when: shared_services_enabled | bool
+
+- name: Render each team's shared-services credentials file
+  ansible.builtin.template:
+    src: team-shared-services.env.j2
+    dest: "{{ classroom_root }}/{{ item.name }}/.shared-services.env"
+    owner: root
+    group: "grp-{{ item.name }}"
+    mode: "0640"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+    index_var: team_index
+  no_log: true
+  when: shared_services_enabled | bool

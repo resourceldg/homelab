@@ -1,0 +1,66 @@
+---
+# Shared multi-tenant data services for the classroom. Operator-managed (NOT a
+# student stack). Each team gets its own Postgres DB/user and Redis logical DB;
+# labctld connects these services to each team's private network at `up` time,
+# so teams reach them without being able to see each other.
+name: shared-data
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: postgres
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [shared]
+    # Published on loopback only so Ansible can provision per-team roles/DBs.
+    ports:
+      - "127.0.0.1:5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks: [shared]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  mailpit:
+    image: axllent/mailpit:v1.20.4
+    container_name: mailpit
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    # 'edge' lets Caddy serve the web UI (private); 'shared' is its home network.
+    networks: [shared, edge]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+networks:
+  shared:
+    name: classroom-shared
+  edge:
+    external: true
+
+volumes:
+  postgres_data:
