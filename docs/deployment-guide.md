@@ -425,20 +425,43 @@ Forward **TCP 443** (and 80) on the router to the server's LAN IP; DuckDNS keeps
 the public A record updated. The public URLs then work from anywhere. Prometheus
 and cAdvisor return **403** to the public internet by design.
 
-### From your notebook / phone (private, via Tailscale)
-Make the domain resolve to the **tailnet** IP instead of the public one, so you
-hit Caddy over the tailnet — valid HTTPS (the cert is issued via DNS-01, so it's
-trusted regardless of network) and **no port-forwarding required**:
+### From your notebook (private, via Tailscale) — recommended
 
-- **Quick (one device)** — add to `/etc/hosts`:
-  ```
-  <server-tailnet-ip>  <domain> grafana.<domain> demo.<domain> prometheus.<domain> cadvisor.<domain>
-  ```
-- **Fleet-wide** — Tailscale admin → **DNS → Split DNS**: send `<domain>` to a
-  resolver that returns the tailnet IP (or use MagicDNS).
+Point the domains at the server's **tailnet IP** in `/etc/hosts`. You hit Caddy
+over Tailscale with valid HTTPS (the cert is issued via DNS-01, so it's trusted
+on any network) and **no port-forwarding required**:
 
-Over Tailscale your source IP is in `100.64.0.0/10`, so the private services
-work; from the public internet the same URLs return 403.
+```bash
+echo "<server-tailnet-ip>  <domain> grafana.<domain> demo.<domain> prometheus.<domain> cadvisor.<domain>" \
+  | sudo tee -a /etc/hosts
+```
+
+**Use the tailnet IP even if you're mostly on the same LAN.** When your laptop
+and the server are on the same network, Tailscale makes a **direct connection
+over the LAN** (no relay, no cloud hop), so you get LAN speed at home *and* it
+keeps working unchanged when you leave. The only requirement is that Tailscale is
+running on the laptop.
+
+> Alternative: the server's **LAN IP** (`<server-lan-ip>`) also works and doesn't
+> need Tailscale running — but only while you're at home, and the domains stop
+> resolving elsewhere. Prefer the tailnet IP unless you routinely run with
+> Tailscale off.
+
+Either source passes the private-service gate: the LAN (`LAN_CIDR`) and the
+tailnet (`100.64.0.0/10`) are both allowed; the public internet gets a 403.
+
+### Future: your own DNS (no per-device edits)
+
+`/etc/hosts` is per-device (and awkward on phones). To resolve these names across
+your whole network without editing each machine, set up one of:
+
+- **Tailscale → DNS → Split DNS / MagicDNS** — send `<domain>` to a resolver that
+  returns the tailnet IP; works on every tailnet device automatically.
+- **A local DNS resolver** (e.g. Pi-hole / the router's DNS) mapping the domains
+  to the server's LAN or tailnet IP for all LAN devices.
+
+Deferred for now — the tailnet-IP `/etc/hosts` line above is enough for the
+laptop.
 
 ### How the private gating works
 The `prometheus.` and `cadvisor.` Caddy sites `respond 403` to any client whose
