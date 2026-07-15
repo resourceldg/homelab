@@ -1,45 +1,101 @@
-# Guía del alumno — conectarse y desplegar tu entorno
+# Guía del alumno — paso a paso
 
-Esta guía es todo lo que necesitás para trabajar en el laboratorio. Vas a usar
-**una sola herramienta**: `labctl`. **No** tenés (ni necesitás) acceso a Docker,
-sudo, ni al socket de Docker.
+Esta guía asume que **recién empezás** con Linux y Docker. Vamos despacio y
+explicando todo. No necesitás saber nada de antemano.
 
-## 1. Conectarte por SSH
+**¿Qué vas a hacer?** Entrar al servidor del laboratorio desde tu compu, escribir
+un archivo que describe tu aplicación, y prenderla con **un solo comando**
+(`labctl`). No manejás Docker directamente ni necesitás permisos de administrador.
 
-Tu profe te da un usuario (tu nombre) y el laboratorio ya tiene tu clave pública
-cargada. Desde tu notebook:
+---
+
+## Antes de empezar
+
+Necesitás:
+- Tu **notebook** con una terminal (en Linux/Mac ya viene; en Windows usá
+  *PowerShell* o *Windows Terminal*).
+- Un **nombre de usuario** que te da el profe (por ejemplo `jessi`).
+- Que el profe ya haya cargado tu **clave** en el servidor (lo hace una vez).
+- La **dirección del servidor** (una IP o un nombre, te la pasa el profe).
+
+> **¿Qué es una "terminal"?** Es una ventana donde escribís comandos en texto en
+> vez de hacer clic. Vas a escribir un comando, apretar Enter, y el servidor
+> responde con texto.
+
+---
+
+## Paso 1 — Entrar al servidor (SSH)
+
+**SSH** es la forma de conectarte a otra computadora por la red de forma segura.
+En tu terminal (la de tu notebook) escribí, reemplazando por tus datos:
 
 ```bash
-ssh tu-usuario@<ip-o-host-del-servidor>
+ssh tu-usuario@direccion-del-servidor
 ```
 
-Si es la primera vez, aceptá la huella del servidor (`yes`). Si te pide password
-y no lo esperabas, avisá al profe: el acceso es por **clave SSH**.
+Ejemplo real:
+```bash
+ssh jessi@192.168.100.48
+```
 
-## 2. Ir al directorio de tu equipo
+- **La primera vez** te va a mostrar algo como *"The authenticity of host…
+  fingerprint… Are you sure you want to continue (yes/no)?"*. Escribí **`yes`** y
+  Enter. (Es normal: tu compu está guardando la identidad del servidor.)
+- Si todo está bien, **entrás**: el texto a la izquierda (el "prompt") cambia a
+  algo como `jessi@homelab-01:~$`. Eso significa que ya **estás adentro del
+  servidor**. Todo lo que escribas ahora corre allá, no en tu notebook.
 
-Cada equipo tiene su carpeta, y **solo tu equipo puede entrar**:
+> Si te pide una contraseña y no la tenés, avisá al profe: el acceso es por
+> **clave**, no por contraseña.
+
+Para **salir** del servidor en cualquier momento: escribí `exit` y Enter (volvés
+a tu notebook).
+
+---
+
+## Paso 2 — Moverte por la terminal (3 comandos)
+
+Estos 3 comandos son todo lo que necesitás para ubicarte:
+
+| Comando | Qué hace | Ejemplo |
+|---|---|---|
+| `pwd` | Te dice **en qué carpeta estás** (print working directory) | `pwd` → `/home/jessi` |
+| `ls` | **Lista** los archivos de la carpeta actual | `ls` |
+| `cd` | **Entra** a una carpeta (change directory) | `cd /srv/classroom/equipo-01` |
+
+Andá a la carpeta de tu equipo (cambiá el número por el tuyo):
 
 ```bash
-cd /srv/classroom/equipo-01     # el número de tu equipo
+cd /srv/classroom/equipo-01
+pwd     # confirmá que dice /srv/classroom/equipo-01
+ls      # ver qué hay (al principio, vacío o con tu compose)
 ```
 
-Ahí ponés tu proyecto: el `compose.yml` y los archivos que monte tu app
-(configs, etc.). Todo lo que persistas tiene que vivir **dentro de esta carpeta**
-(tenés una cuota de disco propia).
+> **Importante:** solo tu equipo puede entrar a esta carpeta. Es tu espacio de
+> trabajo. Todo tu proyecto vive acá.
 
-## 3. Escribir tu `compose.yml`
+---
 
-Tu Compose tiene que cumplir la [política del laboratorio](docker-compose-policy.md).
-En resumen, cada servicio necesita:
+## Paso 3 — Escribir tu archivo `compose.yml`
 
-- imagen **con tag fijo** (no `latest`),
-- límites bajo `deploy.resources.limits`: `cpus`, `memory`, `pids`,
-- `logging` (rotación) y `restart`,
-- puertos publicados **solo** en `127.0.0.1` (o ninguno),
-- montajes **dentro** de tu carpeta (nada de `/`, `/etc`, ni el socket de Docker).
+Un **`compose.yml`** es un archivo de texto que describe **qué contenedores**
+(mini-servidores con tu app adentro) querés prender y cómo. Docker lo lee y los
+prende.
 
-Ejemplo mínimo válido:
+Para crear/editar el archivo usamos un editor de texto simple llamado **nano**:
+
+```bash
+nano compose.yml
+```
+
+Se abre el editor dentro de la terminal. Escribí (o pegá) tu contenido. Cuando
+termines:
+- **Guardar:** apretá `Ctrl` + `O`, después Enter.
+- **Salir:** apretá `Ctrl` + `X`.
+
+(Abajo, nano te muestra los atajos; `^O` significa `Ctrl+O`.)
+
+### Un ejemplo mínimo que funciona
 
 ```yaml
 services:
@@ -53,52 +109,121 @@ services:
     ports: ["127.0.0.1:8080:80"]
 ```
 
-## 4. Usar `labctl`
+**Qué dice, en criollo:**
+- `services:` → acá listás tus contenedores.
+- `web:` → el nombre que le ponés a tu contenedor.
+- `image:` → qué programa corre adentro (acá, un web de prueba). **Siempre con un
+  número de versión** (el `:plain-text`), nunca `latest`.
+- `restart: unless-stopped` → si se cae, que se vuelva a prender solo.
+- `logging:` → limita el tamaño de los logs (obligatorio).
+- `deploy.resources.limits:` → los **topes** de CPU, memoria y procesos
+  (obligatorio; es lo que impide que un error tuyo tumbe el servidor).
+- `ports: ["127.0.0.1:8080:80"]` → publica el puerto solo **de forma privada**
+  (`127.0.0.1`). Vos no exponés nada a Internet; eso lo hace el profe.
 
-Desde tu carpeta:
+> **Cuidado con la indentación (los espacios al inicio de cada línea):** en YAML
+> los espacios importan. Usá **2 espacios** por nivel y **nunca Tab**. Si algo
+> falla, casi siempre es la indentación.
+
+Las reglas completas están en [la política](docker-compose-policy.md), pero
+`labctl` te avisa exactamente qué corregir si algo no cumple.
+
+---
+
+## Paso 4 — Prender tu proyecto con `labctl`
+
+`labctl` es **la única herramienta que usás**. Corré estos comandos **desde la
+carpeta de tu equipo**:
 
 ```bash
-labctl validate    # revisa tu compose contra la política (¡empezá siempre por acá!)
-labctl up          # despliega
-labctl ps          # ver contenedores
-labctl logs        # ver logs recientes
+labctl validate    # revisa tu compose SIN prender nada. Empezá siempre por acá.
+labctl up          # prende tu proyecto
+labctl ps          # muestra tus contenedores y su estado
+labctl logs        # muestra los mensajes (logs) de tu app
+labctl status      # tu uso de recursos y los límites de tu equipo
 labctl usage       # cuánto disco estás usando
-labctl status      # estado + límites de tu equipo
-labctl restart     # recrea los contenedores
-labctl down        # baja todo
+labctl restart     # reinicia tus contenedores
+labctl down        # apaga todo tu proyecto
 ```
 
-Si `validate` rechaza algo, te dice **exactamente qué corregir**. Arreglá y
-volvé a intentar.
+**Flujo típico:**
+1. `labctl validate` → si dice `compose is valid ✔`, seguí. Si no, te lista los
+   errores; corregí con `nano compose.yml` y volvé a validar.
+2. `labctl up` → deberías ver que baja la imagen y prende el contenedor.
+3. `labctl ps` → confirmá que dice `Up` (arriba).
+4. `labctl logs` → mirá que tu app arrancó bien.
 
-## 5. Servicios compartidos (base de datos, etc.)
+> `labctl` **nunca** te deja hacer algo peligroso ni salir de tu carpeta. Si te
+> rechaza algo, el mensaje te dice qué cambiar.
 
-No levantes tu propio Postgres/Redis. El laboratorio te da los tuyos, con
-credenciales en `.shared-services.env` dentro de tu carpeta. Cargalas con
-`env_file` y conectá por hostname (`postgres`, `redis`, `mailpit`). Detalle
-completo en [servicios-compartidos.md](servicios-compartidos.md).
+---
 
-## 6. Límites de tu equipo
+## Paso 5 — Usar la base de datos compartida
 
-- **RAM:** hasta ~1.25 GiB para todo tu stack.
-- **CPU:** hasta 1 núcleo.
-- **Servicios:** máximo 5.
-- **Disco:** 20 GB (tope duro).
+No prendas tu propia base de datos: el laboratorio te da una **Postgres** con
+usuario y contraseña **solo para tu equipo**. Los datos de conexión están en un
+archivo llamado `.shared-services.env` en tu carpeta.
 
-Si te pasás de RAM, el kernel puede frenar/matar tus contenedores. Usá `labctl
-status` y el dashboard **Team Detail** en Grafana para verte.
+Para usarla, en tu servicio agregá la línea `env_file` y conectá al host
+`postgres`:
 
-## 7. Publicar en Internet
+```yaml
+services:
+  api:
+    image: mi-imagen:1.0
+    env_file: .shared-services.env      # <-- carga tu usuario/clave de la base
+    restart: unless-stopped
+    logging: { driver: json-file, options: { max-size: 10m, max-file: "3" } }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M, pids: 200 }
+```
 
-**Vos no exponés puertos públicos.** Si tu proyecto tiene que verse desde afuera,
-lo pide el profe (operador), que lo publica de forma controlada. Ver
-[operator-guide.md](operator-guide.md).
+Tu app se conecta a la base usando el nombre `postgres` (por ejemplo
+`postgres:5432`). Más detalle en [servicios-compartidos.md](servicios-compartidos.md).
 
-## Problemas comunes
+> **No compartas** ese archivo `.shared-services.env` ni lo subas a ningún lado:
+> tiene tu contraseña.
 
-| Síntoma | Causa | Solución |
+---
+
+## Errores comunes (y qué hacer)
+
+| Lo que ves | Qué significa | Qué hacés |
 |---|---|---|
-| `Compose rechazado por la política…` | tu compose viola una regla | leé la lista, corregí, `labctl validate` |
-| `no compose file in …` | no hay `compose.yml` en tu carpeta | creá `compose.yml` en el dir de tu equipo |
-| `no puedo contactar a labctld` | el servicio no está corriendo | avisá al profe |
-| tu app no conecta a `postgres` | faltó `env_file: .shared-services.env` | agregalo a tu servicio |
+| `Compose rechazado por la política…` | tu `compose.yml` viola una regla | leé la lista de abajo del mensaje, corregí con `nano`, y `labctl validate` |
+| `no compose file in …` | no hay `compose.yml` en tu carpeta | asegurate de estar en la carpeta de tu equipo (`pwd`) y de haber guardado el archivo |
+| `did not find expected key` / error de YAML | mala indentación (espacios) | revisá que uses 2 espacios y nada de Tab |
+| `no puedo contactar a labctld` | el servicio del laboratorio no responde | avisá al profe |
+| tu app no conecta a la base | te faltó `env_file: .shared-services.env` | agregá esa línea a tu servicio |
+| `Permission denied` al hacer algo raro | quisiste salir de tu espacio permitido | quedate dentro de la carpeta de tu equipo y usá solo `labctl` |
+
+---
+
+## Chuleta (todo junto)
+
+```bash
+# 1. desde tu notebook: entrar
+ssh tu-usuario@servidor
+
+# 2. ir a tu carpeta
+cd /srv/classroom/equipo-01
+
+# 3. editar tu proyecto
+nano compose.yml         # Ctrl+O guarda, Ctrl+X sale
+
+# 4. validar, prender, mirar
+labctl validate
+labctl up
+labctl ps
+labctl logs
+
+# 5. apagar cuando termines
+labctl down
+
+# salir del servidor
+exit
+```
+
+¡Eso es todo! Si algo no sale, releé el mensaje de error (casi siempre te dice qué
+corregir) y, si no, preguntale al profe.

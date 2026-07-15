@@ -28,31 +28,28 @@ socket, y sin poder desestabilizar el servidor ni afectarse entre equipos.
 
 ```mermaid
 flowchart TB
-  subgraph ENG["Único Docker Engine (del operador)"]
+  subgraph ENG["Unico Docker Engine (del operador)"]
     subgraph INFRA["Infraestructura compartida"]
-      caddy[Caddy ingress]
-      prom[Prometheus]
-      graf[Grafana]
-      cadv[cAdvisor]
-      pg[(PostgreSQL compartido)]
-      redis[(Redis compartido)]
-      mail[Mailpit]
+      caddy["Caddy ingress"]
+      pg["PostgreSQL compartido"]
+      redis["Redis compartido"]
+      mail["Mailpit"]
+      prom["Prometheus"]
+      graf["Grafana"]
     end
     subgraph MINE["Proyectos del operador"]
-      pa[proyecto-a]
-      pb[proyecto-b]
+      pa["proyecto-a"]
+      pb["proyecto-b"]
     end
-    subgraph CLASS["Proyectos de alumnos (slice systemd por equipo)"]
-      e1["equipo-01 .slice"]
-      e2["equipo-02 .slice"]
-      e3["equipo-03 .slice"]
-      e4["equipo-04 .slice"]
-      e5["equipo-05 .slice"]
+    subgraph CLASS["Proyectos de alumnos (un slice por equipo)"]
+      e1["equipo-01"]
+      e2["equipo-02"]
+      e3["equipo-03"]
     end
   end
   caddy --> MINE
-  caddy -. aprobado por operador .-> CLASS
-  e1 & e2 & e3 & e4 & e5 -. datos privados .-> pg
+  caddy -->|aprobado por operador| CLASS
+  CLASS -->|datos privados| pg
 ```
 
 Los tres planos se aíslan mediante **usuarios/grupos de Linux**, **permisos de
@@ -85,11 +82,10 @@ alta/baja es cambiar una línea y re-aplicar con Ansible.
 
 ```mermaid
 flowchart LR
-  u[alumno: gino] -->|integrante de| g[grp-equipo-03]
-  g -->|2770 setgid| d["/srv/classroom/equipo-03"]
-  d -->|montado en| lo["loopback ext4 (tope duro 20 GB)"]
-  u -. sin pertenencia .-x docker[grupo docker]
-  u -. sin regla .-x sudo[sudoers]
+  u["alumno: gino"] -->|integrante de| g["grp-equipo-03"]
+  g -->|"2770 setgid"| d["/srv/classroom/equipo-03"]
+  d -->|montado en| lo["loopback ext4 (tope 20 GB)"]
+  u -->|NO tiene acceso| x["grupo docker / sudo / socket"]
 ```
 
 ## 4. `labctl` — la única interfaz del alumno ✅
@@ -112,19 +108,19 @@ docker), a través de un socket Unix restringido por grupo. El daemon es lo
 
 ```mermaid
 sequenceDiagram
-  participant S as alumno (grp-equipo-03)
-  participant C as labctl (sin privilegios)
-  participant D as labctld (daemon, con docker)
+  participant S as alumno
+  participant C as labctl
+  participant D as labctld
   participant E as Docker Engine
-  S->>C: labctl up   (cwd=/srv/classroom/equipo-03)
-  C->>C: resuelve usuario→equipo, confirma que el cwd es el dir propio del equipo
-  C->>D: pedido{equipo, dir, acción} por /run/labctld.sock (0660, grupo)
-  D->>D: revalida uid del que llama ∈ equipo; enjaula el path a /srv/classroom/equipo-03
-  D->>D: valida el compose contra la política (§5)
-  D->>D: inyecta cgroup_parent = classroom-equipo-03.slice (§6)
+  S->>C: labctl up (en el dir del equipo)
+  C->>C: resuelve usuario y equipo, confirma el dir
+  C->>D: pedido por /run/labctld.sock (0660, grupo)
+  D->>D: revalida el uid del que llama; enjaula el path
+  D->>D: valida el compose contra la politica
+  D->>D: inyecta el cgroup_parent del slice del equipo
   D->>E: docker compose -p equipo-03 up -d
-  D->>D: agrega registro de auditoría (quién/cuándo/qué/resultado)
-  D-->>C: resultado (+ logs en streaming)
+  D->>D: registra la auditoria
+  D-->>C: resultado y logs
   C-->>S: resultado
 ```
 
