@@ -28,6 +28,13 @@ Built by a two-plane design:
 | Backups | Borg via borgmatic (encrypted, local repo, retention) |
 | Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule matrix (Ubuntu 22.04 + 24.04) via GitHub Actions |
 
+A **multi-user Docker Compose teaching lab** runs on top of this server — 5
+student teams deploy isolated stacks via `labctl`, with no Docker/sudo/socket
+access. See [docs/classroom-architecture.md](docs/classroom-architecture.md) and
+the guides ([student](docs/student-guide.md), [operator](docs/operator-guide.md),
+[labctl](docs/labctl.md), [policy](docs/docker-compose-policy.md),
+[resources](docs/resource-model.md), [shared services](docs/servicios-compartidos.md)).
+
 See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
 rationale behind each decision, and
 **[docs/deployment-guide.md](docs/deployment-guide.md)** for the exhaustive,

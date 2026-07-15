@@ -18,8 +18,8 @@ jobs:
           python-version: "3.12"
       - name: Install pytest
         run: pip install pytest
-      - name: Run policy unit tests
-        run: pytest tests/test_labctl_policy.py -q
+      - name: Run unit tests (policy + dashboards)
+        run: pytest tests/test_labctl_policy.py tests/test_dashboards.py -q
 
   secrets:
     name: Secret scan (gitleaks)
