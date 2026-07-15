@@ -10,6 +10,7 @@
   loop:
     - proxy
     - monitoring
+    - dashboard
   when: monitoring_enabled | bool
 
 - name: Render proxy .env (DuckDNS token + domain for Caddy TLS)
@@ -30,6 +31,15 @@
     group: "{{ admin_user }}"
   no_log: true
 
+- name: Render dashboard .env (allowed hosts + base domain for Homepage)
+  ansible.builtin.template:
+    src: dashboard.env.j2
+    dest: "{{ stacks_root }}/dashboard/.env"
+    mode: "0644"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: dashboard_enabled | bool
+
 - name: Bring up the proxy stack
   community.docker.docker_compose_v2:
     project_src: "{{ stacks_root }}/proxy"
@@ -42,3 +52,10 @@
     state: present
     pull: missing
   when: monitoring_enabled | bool
+
+- name: Bring up the dashboard stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/dashboard"
+    state: present
+    pull: missing
+  when: dashboard_enabled | bool

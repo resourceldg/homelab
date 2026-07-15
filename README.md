@@ -55,6 +55,7 @@ homelab/
 │       └── docker/ monitoring/ backups/
 ├── compose/
 │   ├── proxy/                   # Caddy (custom build w/ DuckDNS DNS-01)
+│   ├── dashboard/               # Homepage launchpad (links every service)
 │   ├── monitoring/              # Prometheus + Grafana + exporters
 │   └── apps/                    # example educational project
 ├── tests/                       # testinfra + verify playbook

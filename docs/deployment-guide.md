@@ -25,6 +25,7 @@ this repo as a pedagogical example.
 10. [Verification & health checks](#10-verification--health-checks)
 11. [Troubleshooting](#11-troubleshooting)
 12. [Break-glass recovery](#12-break-glass-recovery)
+13. [Accessing services (dashboard, web & Tailscale)](#13-accessing-services)
 
 ---
 
@@ -403,3 +404,53 @@ If you ever can't SSH in at all:
 
 > The design goal is that **no single change can lock you out**: console +
 > Tailscale SSH + a key-based OpenSSH fallback are three independent doors.
+
+---
+
+## 13. Accessing services
+
+Everything sits behind the Caddy reverse proxy at `https://*.<domain>`, with a
+**Homepage** dashboard at the root as a launchpad linking them all:
+
+| Service | URL | Exposure |
+|---|---|---|
+| Dashboard (Homepage) | `https://<domain>` | public + private |
+| Grafana | `https://grafana.<domain>` | public + private |
+| Demo app | `https://demo.<domain>` | public + private |
+| Prometheus | `https://prometheus.<domain>` | **tailnet/LAN only** (403 from internet) |
+| cAdvisor | `https://cadvisor.<domain>` | **tailnet/LAN only** (403 from internet) |
+
+### From the web (any browser, anywhere)
+Forward **TCP 443** (and 80) on the router to the server's LAN IP; DuckDNS keeps
+the public A record updated. The public URLs then work from anywhere. Prometheus
+and cAdvisor return **403** to the public internet by design.
+
+### From your notebook / phone (private, via Tailscale)
+Make the domain resolve to the **tailnet** IP instead of the public one, so you
+hit Caddy over the tailnet — valid HTTPS (the cert is issued via DNS-01, so it's
+trusted regardless of network) and **no port-forwarding required**:
+
+- **Quick (one device)** — add to `/etc/hosts`:
+  ```
+  <server-tailnet-ip>  <domain> grafana.<domain> demo.<domain> prometheus.<domain> cadvisor.<domain>
+  ```
+- **Fleet-wide** — Tailscale admin → **DNS → Split DNS**: send `<domain>` to a
+  resolver that returns the tailnet IP (or use MagicDNS).
+
+Over Tailscale your source IP is in `100.64.0.0/10`, so the private services
+work; from the public internet the same URLs return 403.
+
+### How the private gating works
+The `prometheus.` and `cadvisor.` Caddy sites `respond 403` to any client whose
+IP isn't in `TAILSCALE_CIDR`, `LAN_CIDR`, or loopback (values rendered into the
+proxy `.env` from group_vars). This relies on Caddy seeing the **real client
+IP**, which works here because the Docker daemon runs with
+`userland-proxy: false`. The dashboard's tiles for those services still show, but
+only resolve when you're on the tailnet/LAN.
+
+### Enabling / disabling
+The dashboard is controlled by `dashboard_enabled` (default true) in the
+`monitoring` role. Re-deploy after changes with:
+```bash
+ansible-playbook site.yml -i inventories/production --tags "services,docker" -K
+```
