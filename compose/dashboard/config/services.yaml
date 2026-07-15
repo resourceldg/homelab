@@ -1,0 +1,23 @@
+---
+# {{HOMEPAGE_VAR_BASE_DOMAIN}} is substituted from the HOMEPAGE_VAR_BASE_DOMAIN
+# env var at runtime. Services marked "tailnet only" are gated by Caddy and 403
+# from the public internet.
+- Monitoring:
+    - Grafana:
+        href: https://grafana.{{HOMEPAGE_VAR_BASE_DOMAIN}}
+        description: Dashboards & metrics
+        icon: grafana.png
+    - Prometheus:
+        href: https://prometheus.{{HOMEPAGE_VAR_BASE_DOMAIN}}
+        description: Metrics store — tailnet/LAN only
+        icon: prometheus.png
+    - cAdvisor:
+        href: https://cadvisor.{{HOMEPAGE_VAR_BASE_DOMAIN}}
+        description: Container metrics — tailnet/LAN only
+        icon: cadvisor.png
+
+- Apps:
+    - Demo:
+        href: https://demo.{{HOMEPAGE_VAR_BASE_DOMAIN}}
+        description: Example educational project
+        icon: mdi-application

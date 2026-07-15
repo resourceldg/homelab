@@ -8,10 +8,8 @@
 	}
 }
 
-# Grafana dashboard.
-grafana.{$CADDY_BASE_DOMAIN} {
-	reverse_proxy grafana:3000
-	encode zstd gzip
+# Security headers applied to every site.
+(secure_headers) {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
@@ -21,13 +19,52 @@ grafana.{$CADDY_BASE_DOMAIN} {
 	}
 }
 
-# Example educational project (served from the apps stack).
-demo.{$CADDY_BASE_DOMAIN} {
-	reverse_proxy demo-app:80
+# =========================================================================
+# PUBLIC — reachable from the internet if the router forwards 443 (and 80).
+# =========================================================================
+
+# Dashboard / launchpad at the root domain.
+{$CADDY_BASE_DOMAIN} {
+	import secure_headers
 	encode zstd gzip
+	reverse_proxy homepage:3000
 }
 
-# Root domain -> simple landing.
-{$CADDY_BASE_DOMAIN} {
-	respond "homelab up" 200
+# Grafana (has its own login).
+grafana.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	encode zstd gzip
+	reverse_proxy grafana:3000
+}
+
+# Example educational project.
+demo.{$CADDY_BASE_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy demo-app:80
+}
+
+# =========================================================================
+# PRIVATE — tailnet / LAN / loopback only. Even with 443 port-forwarded, the
+# public internet gets a 403. The `route` block makes the deny run BEFORE the
+# reverse_proxy. TAILSCALE_CIDR / LAN_CIDR come from the rendered .env.
+# =========================================================================
+
+prometheus.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	encode zstd gzip
+	@external not remote_ip {$TAILSCALE_CIDR} {$LAN_CIDR} 127.0.0.1/8 ::1
+	route {
+		respond @external "This service is reachable only from Tailscale or the LAN." 403
+		reverse_proxy prometheus:9090
+	}
+}
+
+cadvisor.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	encode zstd gzip
+	@external not remote_ip {$TAILSCALE_CIDR} {$LAN_CIDR} 127.0.0.1/8 ::1
+	route {
+		respond @external "This service is reachable only from Tailscale or the LAN." 403
+		reverse_proxy cadvisor:8080
+	}
 }

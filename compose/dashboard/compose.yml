@@ -1,0 +1,25 @@
+---
+# Homepage — a single launchpad linking every service. Published by Caddy at the
+# root domain (https://<your-domain>). Static links only (no docker.sock mount,
+# to keep the security posture tight).
+name: dashboard
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    env_file: .env
+    volumes:
+      - ./config:/app/config
+    networks: [edge]
+
+networks:
+  edge:
+    external: true
