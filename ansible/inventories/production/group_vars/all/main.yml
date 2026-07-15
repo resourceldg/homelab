@@ -7,33 +7,29 @@
 
 # --- Identity --------------------------------------------------------------
 server_hostname: "homelab-01"
-server_timezone: "America/Bogota"
-server_locale: "en_US.UTF-8"
+server_timezone: "America/Argentina/Buenos_Aires"
+server_locale: "es_AR.UTF-8"
 
 # --- Access model ----------------------------------------------------------
 # SSH is reachable only from the LAN and the Tailscale CGNAT range.
-lan_cidr: "192.168.1.0/24"
+lan_cidr: "192.168.100.0/24"
 tailscale_cidr: "100.64.0.0/10"       # Tailscale/CGNAT shared range
 
-# Public keys for the automation account (admin_user). Add one line per operator.
+# Public key for the automation account (admin_user): OpenSSH fallback for
+# direct LAN access, complementing Tailscale SSH.
 admin_ssh_authorized_keys:
-  - "ssh-ed25519 AAAA...REPLACE_ME... operator@laptop"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJAadQBUGIuyyl1uWWIzSQBSVrKvGFYacYzl4PuGACJ7 zen@zen-precision-3561"
 
-# Human accounts (multi-user model). Replace names + keys with the real values.
-#   operator = you: sudo WITH password (in sudo group), SSH allowed.
-#   familia  = daily-use account: no sudo, local/desktop login only (no SSH).
+# Human accounts (multi-user model).
+#   homelab = operator (you): sudo WITH password (in sudo group), SSH allowed.
 # A safety gate refuses to harden SSH while any ssh: true user still has a
-# REPLACE_ME key, so fill operator's real key before `make apply`.
+# REPLACE_ME key. Add a 'familia' entry (ssh: false) when that account is needed.
 extra_users:
-  - name: operator            # TODO: your real username
+  - name: homelab
     groups: [sudo]
     ssh: true
     authorized_keys:
-      - "ssh-ed25519 AAAA...REPLACE_ME... you@laptop"
-  - name: familia             # TODO: the family account username
-    groups: []
-    ssh: false
-    authorized_keys: []
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJAadQBUGIuyyl1uWWIzSQBSVrKvGFYacYzl4PuGACJ7 zen@zen-precision-3561"
 
 # --- Hardening -------------------------------------------------------------
 # This homelab does NOT use Ubuntu Pro, so USG/CIS tooling stays off. The
