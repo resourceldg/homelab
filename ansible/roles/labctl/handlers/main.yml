@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart labctld
+  ansible.builtin.systemd:
+    name: labctld
+    state: restarted

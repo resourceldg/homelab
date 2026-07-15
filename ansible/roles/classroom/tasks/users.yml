@@ -1,4 +1,10 @@
 ---
+- name: Create the common classroom group (socket access for labctl)
+  ansible.builtin.group:
+    name: classroom
+    state: present
+  when: classroom_enabled | bool
+
 - name: Create team groups
   ansible.builtin.group:
     name: "grp-{{ item.name }}"
@@ -11,7 +17,7 @@
 - name: Create student users (no sudo, not in docker group)
   ansible.builtin.user:
     name: "{{ item.1 }}"
-    groups: ["grp-{{ item.0.name }}"]
+    groups: ["grp-{{ item.0.name }}", "classroom"]
     append: true
     shell: "{{ classroom_user_shell }}"
     create_home: true

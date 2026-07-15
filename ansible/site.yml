@@ -44,3 +44,4 @@
 
     # --- Classroom plane (multi-user Docker Compose lab) -------------------
     - { role: classroom, tags: ["classroom"] }
+    - { role: labctl, tags: ["classroom", "labctl"] }

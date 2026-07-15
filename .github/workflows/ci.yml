@@ -8,6 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  unit:
+    name: Unit tests (labctl policy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: pip install pytest
+      - name: Run policy unit tests
+        run: pytest tests/test_labctl_policy.py -q
+
   secrets:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest

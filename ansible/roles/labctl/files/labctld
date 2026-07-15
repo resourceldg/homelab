@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""labctld — privileged broker for the classroom lab.
+
+Students never touch Docker; they connect via `labctl` over a group-restricted
+Unix socket. The daemon:
+  * identifies the caller by SO_PEERCRED (kernel-provided uid, unspoofable),
+  * derives the caller's team from Linux group membership,
+  * jails every operation to that team's /srv/classroom/<team> directory,
+  * validates the Compose against policy.py before starting anything,
+  * runs the team's containers inside the team's cgroup-v2 systemd slice,
+  * audits every request to /var/log/labctl/audit.log.
+
+Runs as root under systemd. All subprocesses use argument lists (no shell), so
+student-controlled input can't inject commands.
+"""
+import datetime
+import grp
+import json
+import os
+import pwd
+import re
+import socket
+import struct
+import subprocess
+import sys
+import tempfile
+
+import yaml
+
+sys.path.insert(0, "/opt/labctl")
+import policy  # noqa: E402
+
+SOCK = "/run/labctld.sock"
+SOCK_GROUP = "classroom"
+CLASSROOM_ROOT = "/srv/classroom"
+AUDIT = "/var/log/labctl/audit.log"
+COMPOSE_NAMES = ("compose.yml", "compose.yaml", "docker-compose.yml", "docker-compose.yaml")
+TEAM_RE = re.compile(r"^grp-(equipo-\d+)$")
+ALLOWED = {"validate", "up", "down", "restart", "ps", "logs", "usage", "status"}
+TIMEOUT = 180
+
+
+def team_of(uid):
+    """Return (username, team_or_None, all_teams) from group membership."""
+    user = pwd.getpwuid(uid).pw_name
+    teams = []
+    for g in grp.getgrall():
+        m = TEAM_RE.match(g.gr_name)
+        if m and user in g.gr_mem and m.group(1) not in teams:
+            teams.append(m.group(1))
+    pg = grp.getgrgid(pwd.getpwuid(uid).pw_gid).gr_name
+    m = TEAM_RE.match(pg)
+    if m and m.group(1) not in teams:
+        teams.append(m.group(1))
+    return user, (teams[0] if len(teams) == 1 else None), teams
+
+
+def audit(user, team, action, result):
+    os.makedirs(os.path.dirname(AUDIT), exist_ok=True)
+    rec = {"ts": datetime.datetime.now().isoformat(timespec="seconds"),
+           "user": user, "team": team, "action": action, "result": result}
+    with open(AUDIT, "a") as f:
+        f.write(json.dumps(rec) + "\n")
+
+
+def find_compose(team_dir):
+    for n in COMPOSE_NAMES:
+        p = os.path.join(team_dir, n)
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def base_cmd(team, team_dir, compose_file, override=None):
+    cmd = ["docker", "compose", "--project-directory", team_dir, "-p", team, "-f", compose_file]
+    if override:
+        cmd += ["-f", override]
+    return cmd
+
+
+def write_override(team, team_dir, doc):
+    """Force every service into the team's systemd slice (hard resource cap)."""
+    slice_name = f"classroom-{team}.slice"
+    services = {name: {"cgroup_parent": slice_name} for name in (doc.get("services") or {})}
+    fd, path = tempfile.mkstemp(prefix=".labctl-", suffix=".yml", dir=team_dir)
+    with os.fdopen(fd, "w") as f:
+        yaml.safe_dump({"services": services}, f)
+    return path
+
+
+def handle(action, uid):
+    user, team, teams = team_of(uid)
+    if action not in ALLOWED:
+        return {"ok": False, "error": f"unknown action '{action}'"}
+    if not team:
+        return {"ok": False, "error": f"{user}: not in exactly one classroom team (found {teams})"}
+    team_dir = os.path.join(CLASSROOM_ROOT, team)
+    compose_file = find_compose(team_dir)
+
+    if action in ("validate", "up", "restart"):
+        if not compose_file:
+            return {"ok": False, "error": f"no compose file in {team_dir}"}
+        with open(compose_file) as f:
+            doc = yaml.safe_load(f) or {}
+        violations = policy.validate_compose(doc, project_dir=team_dir)
+        if violations:
+            audit(user, team, action, "policy-rejected")
+            return {"ok": False, "violations": violations}
+        if action == "validate":
+            audit(user, team, action, "ok")
+            return {"ok": True, "output": "compose is valid ✔"}
+
+    if action in ("usage", "status"):
+        return _local(action, team, team_dir, user)
+
+    override = None
+    try:
+        if action in ("up", "restart"):
+            override = write_override(team, team_dir, doc)
+            args = ["up", "-d", "--remove-orphans"] + (["--force-recreate"] if action == "restart" else [])
+            cmd = base_cmd(team, team_dir, compose_file, override) + args
+        elif action == "down":
+            cmd = (base_cmd(team, team_dir, compose_file) if compose_file
+                   else ["docker", "compose", "-p", team]) + ["down"]
+        elif action == "ps":
+            cmd = ["docker", "compose", "-p", team, "ps"]
+        elif action == "logs":
+            cmd = ["docker", "compose", "-p", team, "logs", "--tail", "200", "--no-color"]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT)
+        audit(user, team, action, f"rc={proc.returncode}")
+        return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-8000:]}
+    finally:
+        if override and os.path.exists(override):
+            os.unlink(override)
+
+
+def _local(action, team, team_dir, user):
+    if action == "usage":
+        du = subprocess.run(["du", "-sh", team_dir], capture_output=True, text=True)
+        df = subprocess.run(["df", "-h", team_dir], capture_output=True, text=True)
+        audit(user, team, action, "ok")
+        return {"ok": True, "output": (du.stdout + df.stdout).rstrip()}
+    sl = subprocess.run(["systemctl", "show", f"classroom-{team}.slice",
+                         "-p", "MemoryMax", "-p", "MemoryCurrent", "-p", "TasksMax"],
+                        capture_output=True, text=True)
+    ps = subprocess.run(["docker", "compose", "-p", team, "ps"], capture_output=True, text=True)
+    audit(user, team, action, "ok")
+    return {"ok": True, "output": (sl.stdout + "\n" + ps.stdout).rstrip()}
+
+
+def serve():
+    if os.path.exists(SOCK):
+        os.unlink(SOCK)
+    srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    srv.bind(SOCK)
+    os.chmod(SOCK, 0o660)
+    try:
+        os.chown(SOCK, 0, grp.getgrnam(SOCK_GROUP).gr_gid)
+    except KeyError:
+        pass
+    srv.listen(8)
+    while True:
+        conn, _ = srv.accept()
+        try:
+            raw = conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
+            _pid, uid, _gid = struct.unpack("3i", raw)
+            req = json.loads(conn.recv(65536).decode() or "{}")
+            resp = handle(req.get("action", ""), uid)
+        except Exception as exc:  # noqa: BLE001
+            resp = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        try:
+            conn.sendall((json.dumps(resp) + "\n").encode())
+        except BrokenPipeError:
+            pass
+        conn.close()
+
+
+if __name__ == "__main__":
+    serve()
