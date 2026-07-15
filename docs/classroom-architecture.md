@@ -1,46 +1,48 @@
-# Classroom Platform — Architecture
+# Plataforma de Aula — Arquitectura
 
-A multi-user **Docker Compose teaching lab** layered onto the existing homelab: 5
-student teams develop, deploy and test real Compose stacks (the evaluation target
-is a full IoT stack — **Mosquitto + Node-RED + n8n**) on a **single, shared,
-operator-owned Docker Engine**, without ever getting Docker, sudo, or socket
-access, and without being able to destabilise the server or each other.
+Un **laboratorio de Docker Compose multiusuario** montado sobre el homelab
+existente: 5 equipos de alumnos desarrollan, despliegan y prueban stacks de
+Compose reales (el objetivo de evaluación es un stack IoT completo —
+**Mosquitto + Node-RED + n8n**) sobre un **único Docker Engine compartido y
+administrado por el operador**, sin obtener nunca acceso a Docker, sudo ni al
+socket, y sin poder desestabilizar el servidor ni afectarse entre equipos.
 
-> Status: **proposal / design of record.** Implemented in phases (see
-> [Roadmap](#roadmap)). Confirmed decisions are marked ✅.
+> Estado: **propuesta / diseño de referencia.** Se implementa por fases (ver
+> [Hoja de ruta](#hoja-de-ruta)). Las decisiones confirmadas van marcadas con ✅.
 
 ---
 
-## 1. Goals & constraints
+## 1. Objetivos y restricciones
 
-- **Single Docker Engine**, administered only by the operator. No per-student
-  daemon, no Rootless-per-user, no Kubernetes/Nomad/Portainer, no heavy control
-  plane. ✅
-- **Hardware is modest and shared** — Intel i5-4460 (4 cores), **15 GiB RAM**,
-  256 GB SSD, also used as a desktop/family workstation. Every decision optimises
-  RAM/CPU/disk.
-- **Reproducible, idempotent, Ansible-managed, secure, pedagogically clear.**
-- Students interact **only** through one tool: `labctl`. ✅
+- **Un único Docker Engine**, administrado solo por el operador. Sin daemon por
+  alumno, sin Rootless por usuario, sin Kubernetes/Nomad/Portainer, sin plano de
+  control pesado. ✅
+- **El hardware es modesto y compartido** — Intel i5-4460 (4 núcleos),
+  **15 GiB de RAM**, SSD de 256 GB, usado también como workstation de
+  escritorio/familiar. Cada decisión optimiza RAM/CPU/disco.
+- **Reproducible, idempotente, administrado con Ansible, seguro y claro
+  pedagógicamente.**
+- Los alumnos interactúan **únicamente** a través de una herramienta: `labctl`. ✅
 
-## 2. Three planes on one engine
+## 2. Tres planos sobre un solo engine
 
 ```mermaid
 flowchart TB
-  subgraph ENG["Single Docker Engine (operator-owned)"]
-    subgraph INFRA["Shared infrastructure"]
+  subgraph ENG["Único Docker Engine (del operador)"]
+    subgraph INFRA["Infraestructura compartida"]
       caddy[Caddy ingress]
       prom[Prometheus]
       graf[Grafana]
       cadv[cAdvisor]
-      pg[(PostgreSQL shared)]
-      redis[(Redis shared)]
+      pg[(PostgreSQL compartido)]
+      redis[(Redis compartido)]
       mail[Mailpit]
     end
-    subgraph MINE["Operator projects"]
+    subgraph MINE["Proyectos del operador"]
       pa[proyecto-a]
       pb[proyecto-b]
     end
-    subgraph CLASS["Student projects (per-team systemd slices)"]
+    subgraph CLASS["Proyectos de alumnos (slice systemd por equipo)"]
       e1["equipo-01 .slice"]
       e2["equipo-02 .slice"]
       e3["equipo-03 .slice"]
@@ -49,18 +51,18 @@ flowchart TB
     end
   end
   caddy --> MINE
-  caddy -. operator-approved .-> CLASS
-  e1 & e2 & e3 & e4 & e5 -. private data .-> pg
+  caddy -. aprobado por operador .-> CLASS
+  e1 & e2 & e3 & e4 & e5 -. datos privados .-> pg
 ```
 
-The three planes are isolated by **Linux users/groups**, **filesystem
-permissions**, and **cgroup v2 systemd slices** — not by separate daemons.
+Los tres planos se aíslan mediante **usuarios/grupos de Linux**, **permisos de
+archivos** y **slices systemd de cgroup v2** — no con daemons separados.
 
-## 3. Teams & the Linux model
+## 3. Equipos y modelo de Linux
 
-Teams (confirmed) ✅:
+Equipos (confirmado) ✅:
 
-| Team | Members | Group |
+| Equipo | Integrantes | Grupo |
 |---|---|---|
 | equipo-01 | jessi | `grp-equipo-01` |
 | equipo-02 | alan, gabi | `grp-equipo-02` |
@@ -68,180 +70,192 @@ Teams (confirmed) ✅:
 | equipo-04 | mariano, jorge | `grp-equipo-04` |
 | equipo-05 | guido | `grp-equipo-05` |
 
-Defined declaratively in group_vars (`classroom_teams`), so onboarding/offboarding
-is a one-line change re-applied by Ansible.
+Se definen de forma declarativa en group_vars (`classroom_teams`), así que dar de
+alta/baja es cambiar una línea y re-aplicar con Ansible.
 
-- Each student = a normal Linux user (uid ≥ 3000), shell access, **no sudo, not
-  in the `docker` group, no access to the Docker socket**. ✅
-- Each team = a Linux group `grp-equipo-NN`; members belong to it.
-- Project dir `/srv/classroom/equipo-NN`:
-  - owner `root`, group `grp-equipo-NN`, mode **2770** (setgid → new files inherit
-    the team group), so **no cross-team access**. ✅
-  - Backed by a **per-team loopback filesystem** (hard disk quota, see §6).
+- Cada alumno = un usuario Linux normal (uid ≥ 3000), con acceso a shell, **sin
+  sudo, fuera del grupo `docker`, sin acceso al socket de Docker**. ✅
+- Cada equipo = un grupo Linux `grp-equipo-NN`; sus integrantes pertenecen a él.
+- Directorio del proyecto `/srv/classroom/equipo-NN`:
+  - propietario `root`, grupo `grp-equipo-NN`, modo **2770** (setgid → los
+    archivos nuevos heredan el grupo del equipo), por lo que **no hay acceso
+    entre equipos**. ✅
+  - respaldado por un **filesystem loopback por equipo** (cuota de disco dura,
+    ver §6).
 
 ```mermaid
 flowchart LR
-  u[student: gino] -->|member of| g[grp-equipo-03]
+  u[alumno: gino] -->|integrante de| g[grp-equipo-03]
   g -->|2770 setgid| d["/srv/classroom/equipo-03"]
-  d -->|mounted on| lo["loopback ext4 (20 GB hard cap)"]
-  u -. no membership .-x docker[docker group]
-  u -. no rule .-x sudo[sudoers]
+  d -->|montado en| lo["loopback ext4 (tope duro 20 GB)"]
+  u -. sin pertenencia .-x docker[grupo docker]
+  u -. sin regla .-x sudo[sudoers]
 ```
 
-## 4. `labctl` — the only student interface ✅
+## 4. `labctl` — la única interfaz del alumno ✅
 
-Students run, from inside their team dir:
+Los alumnos ejecutan, desde dentro del directorio de su equipo:
 
 ```
 cd /srv/classroom/equipo-03
-labctl up          # validate → enforce policy → deploy inside the team slice
+labctl up          # valida → aplica política → despliega dentro del slice del equipo
 labctl ps | logs | usage | status | restart | down | validate
 ```
 
-### Trust boundary: client + privileged broker daemon
+### Frontera de confianza: cliente + daemon broker privilegiado
 
-`labctl` (unprivileged, run by the student) never touches Docker. It talks to
-**`labctld`**, a small root/docker-capable systemd service, over a
-group-restricted Unix socket. The daemon is the **only** thing that can drive the
-engine, and it only does what policy allows. **No setuid, no student sudo.** ✅
-(Language: **Python** ✅.)
+`labctl` (sin privilegios, lo corre el alumno) nunca toca Docker. Habla con
+**`labctld`**, un pequeño servicio systemd con acceso a docker (root/grupo
+docker), a través de un socket Unix restringido por grupo. El daemon es lo
+**único** que puede manejar el engine, y solo hace lo que la política permite.
+**Sin setuid, sin sudo para el alumno.** ✅ (Lenguaje: **Python** ✅.)
 
 ```mermaid
 sequenceDiagram
-  participant S as student (grp-equipo-03)
-  participant C as labctl (unprivileged)
-  participant D as labctld (daemon, docker-capable)
+  participant S as alumno (grp-equipo-03)
+  participant C as labctl (sin privilegios)
+  participant D as labctld (daemon, con docker)
   participant E as Docker Engine
   S->>C: labctl up   (cwd=/srv/classroom/equipo-03)
-  C->>C: resolve user→team, confirm cwd is the team's own dir
-  C->>D: request{team, dir, action} over /run/labctld.sock (0660, grp)
-  D->>D: re-check caller uid∈team; jail path to /srv/classroom/equipo-03
-  D->>D: validate compose against policy (§5)
-  D->>D: inject cgroup_parent = classroom-equipo-03.slice (§6)
+  C->>C: resuelve usuario→equipo, confirma que el cwd es el dir propio del equipo
+  C->>D: pedido{equipo, dir, acción} por /run/labctld.sock (0660, grupo)
+  D->>D: revalida uid del que llama ∈ equipo; enjaula el path a /srv/classroom/equipo-03
+  D->>D: valida el compose contra la política (§5)
+  D->>D: inyecta cgroup_parent = classroom-equipo-03.slice (§6)
   D->>E: docker compose -p equipo-03 up -d
-  D->>D: append audit log (who/when/what/result)
-  D-->>C: result (+ streamed logs)
-  C-->>S: outcome
+  D->>D: agrega registro de auditoría (quién/cuándo/qué/resultado)
+  D-->>C: resultado (+ logs en streaming)
+  C-->>S: resultado
 ```
 
-Every request is audited to `/var/log/labctl/audit.log`. `labctl` refuses to act
-outside the caller's own team directory.
+Cada pedido se audita en `/var/log/labctl/audit.log`. `labctl` se niega a actuar
+fuera del directorio del propio equipo del que llama.
 
-## 5. Docker Compose policy ✅
+## 5. Política de Docker Compose ✅
 
-`labctld` **rejects** any Compose that contains:
+`labctld` **rechaza** cualquier Compose que contenga:
 
 - `privileged: true`, `network_mode: host`, `pid: host`, `ipc: host`
-- the Docker socket (`/var/run/docker.sock`) or dangerous `cap_add`
-- bind mounts of `/`, `/etc`, or anything **outside** the team project dir
-- images with `:latest` or no tag
-- missing resource limits (`cpus`, `memory`), missing log rotation
-- ports published on `0.0.0.0` or outside the allowed range
-- more than **5 services** per team
+- el socket de Docker (`/var/run/docker.sock`) o `cap_add` peligrosas
+- bind mounts de `/`, `/etc`, o cualquier cosa **fuera** del directorio del equipo
+- imágenes con `:latest` o sin tag
+- ausencia de límites de recursos (`cpus`, `memory`), ausencia de rotación de logs
+- puertos publicados en `0.0.0.0` o fuera del rango permitido
+- más de **5 servicios** por equipo
 
-It **requires** on every service: CPU limit, memory limit, `pids_limit`, log
-rotation, `restart` policy, and (where sensible) a `healthcheck`. Publishing is
-allowed **only** on `127.0.0.1` (Caddy is the sole ingress, §7).
+**Exige** en cada servicio: límite de CPU, límite de memoria, `pids_limit`,
+rotación de logs, política `restart` y (cuando tenga sentido) un `healthcheck`.
+La publicación se permite **solo** en `127.0.0.1` (Caddy es el único ingress, §7).
 
-**IoT note (evaluation stack):** Mosquitto, Node-RED and n8n fit within 5
-services and the RAM ceiling — especially if n8n/Node-RED use the **shared
-Postgres** instead of their own DB. Inter-service traffic (Node-RED ⇄ Mosquitto
-⇄ n8n) flows on the team's private Compose network. External MQTT/HTTP access, if
-needed for grading, is granted per-team by the operator via the exposure registry
-(§7), never by the student.
+**Nota IoT (stack de evaluación):** Mosquitto, Node-RED y n8n entran en 5
+servicios y en el techo de RAM — sobre todo si n8n/Node-RED usan el **Postgres
+compartido** en lugar de su propia base. El tráfico entre servicios (Node-RED ⇄
+Mosquitto ⇄ n8n) va por la red privada del Compose del equipo. El acceso externo
+MQTT/HTTP, si hace falta para corregir, lo habilita el operador por equipo vía el
+registro de publicación (§7), nunca el alumno.
 
-## 6. Resource model — hard ceilings on modest hardware ✅
+## 6. Modelo de recursos — techos duros en hardware modesto ✅
 
-Budget on the real box (**15 GiB / 4 cores**, measured):
+Presupuesto sobre la máquina real (**15 GiB / 4 núcleos**, medido):
 
-| Consumer | RAM |
+| Consumidor | RAM |
 |---|---|
-| OS + desktop / family (Firefox, streaming) | ~4.0 GiB reserved |
-| Shared infra (Caddy, Prom, Grafana, exporters, homepage, **+ Postgres, Redis, Mailpit**) | ~2.5 GiB |
-| 5 teams × 1.25 GiB max | 6.25 GiB |
-| **Peak total** | **~12.75 / 15 GiB** (≈2 GiB headroom) |
+| SO + escritorio / familia (Firefox, streaming) | ~4.0 GiB reservados |
+| Infra compartida (Caddy, Prom, Grafana, exporters, homepage, **+ Postgres, Redis, Mailpit**) | ~2.5 GiB |
+| 5 equipos × 1.25 GiB máx | 6.25 GiB |
+| **Total pico** | **~12.75 / 15 GiB** (≈2 GiB de aire) |
 
-Per team: **1 CPU** max, **1 GiB** recommended / **1.25 GiB** hard, **≤5
-services**, **15 GB soft / 20 GB hard** disk.
+Por equipo: **1 CPU** máx, **1 GiB** recomendado / **1.25 GiB** duro, **≤5
+servicios**, **15 GB soft / 20 GB hard** de disco.
 
-**Two enforcement layers:**
+**Dos capas de aplicación de límites:**
 
-1. **systemd slice per team** (cgroup v2, driver already `systemd` ✅):
-   `classroom-equipo-NN.slice` with `MemoryMax=1.25G`, `MemoryHigh=1G`,
-   `CPUQuota=100%`, `TasksMax`. `labctld` runs each team's containers under
-   `cgroup_parent: classroom-equipo-NN.slice`, so the **kernel caps the whole
-   team** regardless of what the student wrote. CPU is oversubscribed 5:4 on
-   purpose (bursty lab loads); the desktop slice keeps priority.
-2. **Compose-level limits**, checked by policy (§5) — teaches students to write
-   correct limits, and bounds each individual service.
+1. **Slice systemd por equipo** (cgroup v2, driver ya en `systemd` ✅):
+   `classroom-equipo-NN.slice` con `MemoryMax=1.25G`, `MemoryHigh=1G`,
+   `CPUQuota=100%`, `TasksMax`. `labctld` corre los contenedores del equipo bajo
+   `cgroup_parent: classroom-equipo-NN.slice`, así el **kernel capa a todo el
+   equipo** sin importar lo que haya escrito el alumno. La CPU se sobre-suscribe
+   5:4 a propósito (cargas de lab bursty); el slice del escritorio mantiene
+   prioridad.
+2. **Límites en el Compose**, verificados por la política (§5) — le enseña al
+   alumno a escribir límites correctos y acota cada servicio individual.
 
-**Disk (hard):** each team dir is a **loopback filesystem** sized to the 20 GB
-hard cap; the policy forces persistent data to live **inside** the project dir,
-so a team physically cannot exceed its cap. The 15 GB **soft** threshold is a
-monitored warning surfaced by `labctl usage` and Grafana. (Shared image layers
-live in `/var/lib/docker` and are deliberately deduplicated across teams.)
+**Disco (duro):** el directorio de cada equipo es un **filesystem loopback**
+dimensionado al tope duro de 20 GB; la política obliga a que los datos
+persistentes vivan **dentro** del directorio del proyecto, así un equipo no puede
+físicamente exceder su cupo. El umbral **soft** de 15 GB es una advertencia
+monitoreada que aparece en `labctl usage` y en Grafana. (Las capas de imagen
+compartidas viven en `/var/lib/docker` y se deduplican deliberadamente entre
+equipos.)
 
-## 7. Publication — operator-controlled ingress ✅
+## 7. Publicación — ingress controlado por el operador ✅
 
-Students **never** expose public ports; Compose may only publish on `127.0.0.1`.
-Caddy is the single ingress. A declarative registry decides what the world sees:
+Los alumnos **nunca** exponen puertos públicos; el Compose solo puede publicar en
+`127.0.0.1`. Caddy es el único ingress. Un registro declarativo decide qué ve el
+mundo:
 
 ```yaml
 student_exposures:
   - team: equipo-01
-    hostname: equipo01.lucasland.duckdns.org   # real base domain
+    hostname: equipo01.lucasland.duckdns.org   # dominio base real
     service: web
     port: 8080
     enabled: true
 ```
 
-Ansible renders these into Caddy vhosts. The **operator** flips `enabled`; nothing
-is public until then.
+Ansible los renderiza en vhosts de Caddy. El **operador** activa `enabled`; nada
+es público hasta entonces.
 
-## 8. Observability — provisioned as code
+## 8. Observabilidad — provisionada como código
 
-Extend the existing Prometheus + Grafana + cAdvisor with three dashboards:
+Extender el Prometheus + Grafana + cAdvisor existente con tres dashboards:
 
-- **Classroom Overview** — teams, members, CPU/RAM/disk, container counts,
-  restarts, unhealthy, published projects.
-- **Team Detail** — one team: every container, CPU/mem/disk/net, uptime, recent
-  logs, restarts.
-- **Capacity Planning** — free RAM/CPU/disk, image growth, per-team utilisation.
+- **Classroom Overview** — equipos, integrantes, CPU/RAM/disco, cantidad de
+  contenedores, reinicios, unhealthy, proyectos publicados.
+- **Team Detail** — un equipo: cada contenedor, CPU/mem/disco/red, uptime, logs
+  recientes, reinicios.
+- **Capacity Planning** — RAM/CPU/disco libres, crecimiento de imágenes,
+  utilización por equipo.
 
-Container metrics come from cAdvisor; per-team aggregation uses the
-`classroom-equipo-NN.slice` cgroup path / Compose project labels.
+Las métricas de contenedores vienen de cAdvisor; la agregación por equipo usa la
+ruta cgroup del `classroom-equipo-NN.slice` / las labels del proyecto Compose.
 
-## 9. Security summary
+## 9. Resumen de seguridad
 
-Caddy is the only public entry; Prometheus, node-exporter, cAdvisor stay private;
-Grafana sits behind Caddy. Students have no Docker/sudo/socket. Every deploy is
-policy-validated and audited. Team isolation is enforced at three layers: Linux
-perms (2770+setgid), cgroup slices, and the loopback filesystem.
+Caddy es la única entrada pública; Prometheus, node-exporter y cAdvisor quedan
+privados; Grafana detrás de Caddy. Los alumnos no tienen Docker/sudo/socket. Cada
+despliegue se valida por política y se audita. El aislamiento entre equipos se
+aplica en tres capas: permisos Linux (2770+setgid), slices cgroup y el filesystem
+loopback.
 
 ## 10. Onboarding / offboarding
 
-- **Onboard**: add the member to `classroom_teams` in group_vars, `make apply
-  --tags classroom`. Ansible creates the user, group membership, home, and (for a
-  new team) the dir, slice, loopback and shared-service credentials.
-- **Offboard**: remove the member (or set `state: absent`); re-apply. Team data is
-  retained or archived per policy.
+- **Alta**: agregar al integrante en `classroom_teams` en group_vars, `make apply
+  --tags classroom`. Ansible crea el usuario, la pertenencia al grupo, el home y
+  (para un equipo nuevo) el directorio, el slice, el loopback y las credenciales
+  de los servicios compartidos.
+- **Baja**: quitar al integrante (o poner `state: absent`); re-aplicar. Los datos
+  del equipo se conservan o archivan según la política.
 
-## Roadmap
+## Hoja de ruta
 
-Atomic commits on `feat/classroom-platform`, one reviewable PR:
+Commits atómicos en `feat/classroom-platform`, un PR revisable:
 
-1. **Base** — `classroom` role: users, groups, `/srv/classroom/*` (2770+setgid),
-   per-team loopback quotas, systemd slices, `classroom_teams` registry. + tests.
-2. **`labctl` + `labctld`** — Python client + broker daemon + Compose policy
-   validator + audit. + unit tests for the validator (reject privileged, socket,
-   host net, missing limits, bad ports, >5 services…).
-3. **Shared services** — Postgres (per-team DB/user/pass), Redis (per-team
-   namespace), Mailpit; documented tenant contract; credentials generated and
-   delivered to each team dir.
-4. **Publication** — `student_exposures` registry → Caddy vhosts.
-5. **Observability** — the three Grafana dashboards as provisioned JSON.
-6. **Docs & tests** — `labctl.md`, `student-guide.md`, `operator-guide.md`,
-   `docker-compose-policy.md`, `resource-model.md`; testinfra for permissions,
-   isolation, policy rejection, limits, ports; idempotence; CI green.
+1. **Base** — rol `classroom`: usuarios, grupos, `/srv/classroom/*`
+   (2770+setgid), cuotas loopback por equipo, slices systemd, registro
+   `classroom_teams`. + tests.
+2. **`labctl` + `labctld`** — cliente Python + daemon broker + validador de
+   política de Compose + auditoría. + tests unitarios del validador (rechazar
+   privileged, socket, host net, límites faltantes, puertos malos, >5
+   servicios…).
+3. **Servicios compartidos** — Postgres (DB/usuario/pass por equipo), Redis
+   (namespace por equipo), Mailpit; contrato de tenancy documentado; credenciales
+   generadas y entregadas al directorio de cada equipo.
+4. **Publicación** — registro `student_exposures` → vhosts de Caddy.
+5. **Observabilidad** — los tres dashboards de Grafana como JSON provisionado.
+6. **Docs y tests** — `labctl.md`, `student-guide.md`, `operator-guide.md`,
+   `docker-compose-policy.md`, `resource-model.md` (todos en español); testinfra
+   para permisos, aislamiento, rechazo de política, límites, puertos;
+   idempotencia; CI verde.
 
-Nothing is claimed "working" without a test that demonstrates it.
+Nada se declara "funcionando" sin un test que lo demuestre.
