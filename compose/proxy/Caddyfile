@@ -44,27 +44,24 @@ demo.{$CADDY_BASE_DOMAIN} {
 }
 
 # =========================================================================
-# PRIVATE — tailnet / LAN / loopback only. Even with 443 port-forwarded, the
-# public internet gets a 403. The `route` block makes the deny run BEFORE the
-# reverse_proxy. TAILSCALE_CIDR / LAN_CIDR come from the rendered .env.
+# METRICS BACKENDS (Prometheus, cAdvisor).
+#
+# NOTE: a remote_ip allow-list does NOT work here — Docker masquerades the
+# client IP to the bridge gateway (Caddy sees 172.x, not the real source), so
+# an IP gate can't tell tailnet from internet. These stay private by TOPOLOGY:
+# as long as the router does NOT forward 443, they're only reachable over the
+# LAN / tailnet. Before exposing 443 publicly, protect them with basic_auth
+# (see the deployment guide) — Prometheus and cAdvisor have no auth of their own.
 # =========================================================================
 
 prometheus.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
 	encode zstd gzip
-	@external not remote_ip {$TAILSCALE_CIDR} {$LAN_CIDR} 127.0.0.1/8 ::1
-	route {
-		respond @external "This service is reachable only from Tailscale or the LAN." 403
-		reverse_proxy prometheus:9090
-	}
+	reverse_proxy prometheus:9090
 }
 
 cadvisor.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
 	encode zstd gzip
-	@external not remote_ip {$TAILSCALE_CIDR} {$LAN_CIDR} 127.0.0.1/8 ::1
-	route {
-		respond @external "This service is reachable only from Tailscale or the LAN." 403
-		reverse_proxy cadvisor:8080
-	}
+	reverse_proxy cadvisor:8080
 }

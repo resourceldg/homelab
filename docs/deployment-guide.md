@@ -417,8 +417,8 @@ Everything sits behind the Caddy reverse proxy at `https://*.<domain>`, with a
 | Dashboard (Homepage) | `https://<domain>` | public + private |
 | Grafana | `https://grafana.<domain>` | public + private |
 | Demo app | `https://demo.<domain>` | public + private |
-| Prometheus | `https://prometheus.<domain>` | **tailnet/LAN only** (403 from internet) |
-| cAdvisor | `https://cadvisor.<domain>` | **tailnet/LAN only** (403 from internet) |
+| Prometheus | `https://prometheus.<domain>` | **private by topology** (see below) |
+| cAdvisor | `https://cadvisor.<domain>` | **private by topology** (see below) |
 
 ### From the web (any browser, anywhere)
 Forward **TCP 443** (and 80) on the router to the server's LAN IP; DuckDNS keeps
@@ -447,8 +447,8 @@ running on the laptop.
 > resolving elsewhere. Prefer the tailnet IP unless you routinely run with
 > Tailscale off.
 
-Either source passes the private-service gate: the LAN (`LAN_CIDR`) and the
-tailnet (`100.64.0.0/10`) are both allowed; the public internet gets a 403.
+Both the LAN and the tailnet reach Caddy directly; the metrics backends stay
+private by topology (see below), not by an IP filter.
 
 ### Future: your own DNS (no per-device edits)
 
@@ -463,13 +463,28 @@ your whole network without editing each machine, set up one of:
 Deferred for now — the tailnet-IP `/etc/hosts` line above is enough for the
 laptop.
 
-### How the private gating works
-The `prometheus.` and `cadvisor.` Caddy sites `respond 403` to any client whose
-IP isn't in `TAILSCALE_CIDR`, `LAN_CIDR`, or loopback (values rendered into the
-proxy `.env` from group_vars). This relies on Caddy seeing the **real client
-IP**, which works here because the Docker daemon runs with
-`userland-proxy: false`. The dashboard's tiles for those services still show, but
-only resolve when you're on the tailnet/LAN.
+### How the metrics backends stay private
+Prometheus and cAdvisor have **no authentication of their own**, so they must not
+be reachable from the internet. They're kept private **by topology**: the router
+does **not** forward 443, so the only route to Caddy is the LAN / tailnet. From
+the notebook you reach them via the tailnet-IP `/etc/hosts` entry above.
+
+> A Caddy `remote_ip` allow-list does **not** work here: Docker masquerades the
+> client IP to the bridge gateway, so Caddy sees `172.x`, not the real source
+> (confirmed in Caddy's access log: `"client_ip":"172.18.0.1"`). An IP gate would
+> therefore 403 everyone, including legitimate tailnet clients.
+>
+> **Before forwarding 443 for public access**, protect the metrics backends with
+> HTTP basic auth so they're safe on the internet. Generate a hash with
+> `docker exec caddy caddy hash-password --plaintext '<password>'`, then wrap the
+> two sites:
+> ```
+> prometheus.{$CADDY_BASE_DOMAIN} {
+>     basic_auth { <user> <bcrypt-hash> }
+>     reverse_proxy prometheus:9090
+> }
+> ```
+> Grafana keeps its own login, so it's safe to expose as-is.
 
 ### Enabling / disabling
 The dashboard is controlled by `dashboard_enabled` (default true) in the
