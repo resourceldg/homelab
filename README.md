@@ -29,7 +29,10 @@ Built by a two-plane design:
 | Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule matrix (Ubuntu 22.04 + 24.04) via GitHub Actions |
 
 See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
-rationale behind each decision.
+rationale behind each decision, and
+**[docs/deployment-guide.md](docs/deployment-guide.md)** for the exhaustive,
+pedagogical deploy walkthrough — the access model, every gotcha, and break-glass
+recovery. Read that one before deploying (or re-deploying after a while).
 
 ## Repository layout
 
