@@ -35,6 +35,11 @@ the guides ([student](docs/student-guide.md), [operator](docs/operator-guide.md)
 [labctl](docs/labctl.md), [policy](docs/docker-compose-policy.md),
 [resources](docs/resource-model.md), [shared services](docs/servicios-compartidos.md)).
 
+📚 **Architecture Handbook (Spanish):** a beginner-friendly study book covering
+Linux, Docker, observability, DevSecOps and IaC using this repo as a real case
+study — see [docs/handbook/](docs/handbook/index.md) (build with
+`pip install mkdocs-material && mkdocs serve`).
+
 See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
 rationale behind each decision, and
 **[docs/deployment-guide.md](docs/deployment-guide.md)** for the exhaustive,

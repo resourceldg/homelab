@@ -1,0 +1,45 @@
+---
+site_name: Manual de Arquitectura del Homelab
+site_description: Libro de estudio de Linux, Docker, DevSecOps e IaC usando el homelab como caso real
+docs_dir: docs/handbook
+theme:
+  name: material
+  language: es
+  palette:
+    - scheme: default
+      primary: teal
+      toggle: { icon: material/weather-night, name: Modo oscuro }
+    - scheme: slate
+      primary: teal
+      toggle: { icon: material/weather-sunny, name: Modo claro }
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - toc.integrate
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - toc: { permalink: true }
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - pymdownx.details
+  - tables
+nav:
+  - Inicio: index.md
+  - 1. Visión general: 01-vision-general.md
+  - 2. Fundamentos (compu, Linux, redes): 02-fundamentos.md
+  - 3. Docker y contenedores: 03-docker.md
+  - 4. Ansible e Infraestructura como Código: 04-ansible-iac.md
+  - 5. Los servicios uno por uno: 05-servicios.md
+  - 6. Observabilidad: 06-observabilidad.md
+  - 7. Seguridad (DevSecOps en el host): 07-seguridad.md
+  - 8. El pipeline (Git, CI, tests): 08-pipeline.md
+  - 9. La plataforma de aula: 09-plataforma-aula.md
+  - 10. Casos prácticos: 10-casos-practicos.md
+  - Glosario: glosario.md
+  - Mejoras futuras: mejoras-futuras.md
