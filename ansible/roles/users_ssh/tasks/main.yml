@@ -122,6 +122,16 @@
   when: ssh_lockdown_enabled | bool
   tags: [ssh, ssh-lockdown]
 
+- name: Ensure the sshd runtime directory exists (needed by 'sshd -t')
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: ssh_lockdown_enabled | bool
+  tags: [ssh, ssh-lockdown]
+
 - name: Deploy hardened sshd_config
   ansible.builtin.template:
     src: sshd_config.j2
