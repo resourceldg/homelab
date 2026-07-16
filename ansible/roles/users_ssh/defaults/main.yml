@@ -29,7 +29,11 @@ ssh_lockdown_enabled: true
 extra_users: []
 
 # Users permitted to log in over SSH (rendered into AllowUsers): the automation
-# account plus every extra_user flagged ssh: true. Computed, not hand-edited.
+# account, every extra_user flagged ssh: true, and all classroom students (who
+# authenticate with a password from the LAN/tailnet — see sshd_config.j2).
+# Computed, not hand-edited.
 ssh_allow_users: >-
-  {{ ([admin_user] + (extra_users | selectattr('ssh', 'equalto', true)
-      | map(attribute='name') | list)) | unique }}
+  {{ ([admin_user]
+      + (extra_users | selectattr('ssh', 'equalto', true) | map(attribute='name') | list)
+      + (classroom_teams | default([]) | map(attribute='members') | flatten | list)
+     ) | unique }}

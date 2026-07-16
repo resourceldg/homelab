@@ -44,3 +44,10 @@ Banner /etc/issue.net
 # UFW enforces this at the packet level too).
 Match Address {{ lan_cidr }},{{ tailscale_cidr }}
     AllowUsers {{ ssh_allow_users | join(' ') }}
+
+# Classroom students have no SSH key: let the 'classroom' group authenticate with
+# a PASSWORD, but only from the LAN / tailnet (never the public internet), and
+# only for that group (overriding the global publickey requirement).
+Match Group classroom Address {{ lan_cidr }},{{ tailscale_cidr }}
+    PasswordAuthentication yes
+    AuthenticationMethods password
