@@ -14,6 +14,7 @@
     - proxy
     - monitoring
     - dashboard
+  register: monitoring_stack_files
   when: monitoring_enabled | bool
 
 - name: Render proxy .env (DuckDNS token + domain for Caddy TLS)
@@ -48,6 +49,15 @@
     project_src: "{{ stacks_root }}/proxy"
     state: present
     pull: missing
+
+# The Caddyfile is a bind-mounted FILE; Ansible replaces it atomically (new
+# inode), so a running Caddy keeps serving the old inode until the container is
+# restarted. Restart it when the stack files changed so config edits take effect.
+- name: Restart Caddy when its config changed
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/proxy"
+    state: restarted
+  when: monitoring_stack_files is changed
 
 - name: Bring up the monitoring stack
   community.docker.docker_compose_v2:
