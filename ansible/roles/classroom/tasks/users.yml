@@ -22,7 +22,16 @@
     shell: "{{ classroom_user_shell }}"
     create_home: true
     state: present
+    # Password = the student's SSO password (one credential for web and SSH).
+    # Deterministic salt keeps the hash stable, so it's idempotent. If the
+    # student has no vault_sso_passwords entry yet, the password is left unset.
+    password: >-
+      {{ (vault_sso_passwords[item.1] | password_hash('sha512', (item.1 ~ 'clsrm')[:16]))
+         if (vault_sso_passwords is defined and item.1 in vault_sso_passwords)
+         else omit }}
+    update_password: always
   loop: "{{ classroom_teams | subelements('members') }}"
   loop_control:
     label: "{{ item.1 }} ({{ item.0.name }})"
+  no_log: true
   when: classroom_enabled | bool
