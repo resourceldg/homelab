@@ -19,20 +19,37 @@
 	}
 }
 
+# Authelia single sign-on: protect a site behind the login portal. Authelia's
+# access rules (per group) decide who gets in; it forwards Remote-User/-Groups.
+(authelia) {
+	forward_auth authelia:9091 {
+		uri /api/authz/forward-auth
+		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+	}
+}
+
+# The Authelia login portal (always public — it IS the login page).
+auth.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	reverse_proxy authelia:9091
+}
+
 # =========================================================================
 # PUBLIC — reachable from the internet if the router forwards 443 (and 80).
 # =========================================================================
 
-# Dashboard / launchpad at the root domain.
+# Dashboard / launchpad — behind SSO (operators + students).
 {$CADDY_BASE_DOMAIN} {
 	import secure_headers
+	import authelia
 	encode zstd gzip
 	reverse_proxy homepage:3000
 }
 
-# Grafana (has its own login).
+# Grafana — behind SSO; Grafana trusts Authelia's Remote-User header (auth proxy).
 grafana.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
+	import authelia
 	encode zstd gzip
 	reverse_proxy grafana:3000
 }
@@ -44,24 +61,21 @@ demo.{$CADDY_BASE_DOMAIN} {
 }
 
 # =========================================================================
-# METRICS BACKENDS (Prometheus, cAdvisor).
-#
-# NOTE: a remote_ip allow-list does NOT work here — Docker masquerades the
-# client IP to the bridge gateway (Caddy sees 172.x, not the real source), so
-# an IP gate can't tell tailnet from internet. These stay private by TOPOLOGY:
-# as long as the router does NOT forward 443, they're only reachable over the
-# LAN / tailnet. Before exposing 443 publicly, protect them with basic_auth
-# (see the deployment guide) — Prometheus and cAdvisor have no auth of their own.
+# METRICS BACKENDS (Prometheus, cAdvisor) — behind SSO, operators only.
+# Authelia's access rules restrict these to group:operators, so even with 443
+# port-forwarded they are safe (Prometheus/cAdvisor have no auth of their own).
 # =========================================================================
 
 prometheus.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
+	import authelia
 	encode zstd gzip
 	reverse_proxy prometheus:9090
 }
 
 cadvisor.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
+	import authelia
 	encode zstd gzip
 	reverse_proxy cadvisor:8080
 }

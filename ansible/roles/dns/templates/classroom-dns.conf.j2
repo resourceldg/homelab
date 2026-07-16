@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Resolve the classroom domain (and subdomains) to the server's tailnet IP.
+# Bound ONLY to the Tailscale interface so it never clashes with
+# systemd-resolved on 127.0.0.53.
+bind-dynamic
+interface={{ dns_tailscale_interface }}
+except-interface=lo
+listen-address={{ dns_tailscale_ip }}
+no-resolv
+no-hosts
+address=/{{ dns_domain }}/{{ dns_tailscale_ip }}

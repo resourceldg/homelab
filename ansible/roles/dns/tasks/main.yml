@@ -1,0 +1,23 @@
+---
+- name: Install dnsmasq
+  ansible.builtin.apt:
+    name: dnsmasq
+    state: present
+  when: dns_enabled | bool
+
+- name: Configure dnsmasq for the classroom domain (Tailscale split DNS)
+  ansible.builtin.template:
+    src: classroom-dns.conf.j2
+    dest: /etc/dnsmasq.d/classroom.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart dnsmasq
+  when: dns_enabled | bool
+
+- name: Enable and start dnsmasq
+  ansible.builtin.systemd:
+    name: dnsmasq
+    enabled: true
+    state: started
+  when: dns_enabled | bool

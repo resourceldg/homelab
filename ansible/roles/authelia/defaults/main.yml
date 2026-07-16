@@ -1,0 +1,8 @@
+---
+# authelia — single sign-on for the classroom web services.
+authelia_enabled: true
+
+# Users are declared per environment in group_vars (sso_users); passwords live in
+# the vault (vault_sso_passwords). Groups: operators (see everything), students
+# (Grafana viewer + their app), family (only public apps).
+sso_users: []

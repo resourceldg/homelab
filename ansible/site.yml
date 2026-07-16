@@ -27,6 +27,7 @@
     - { role: bootstrap, tags: ["base", "bootstrap"] }
     - { role: users_ssh, tags: ["base", "ssh", "users"] }
     - { role: tailscale, tags: ["network", "tailscale"] }
+    - { role: dns, tags: ["network", "dns"] }
     - { role: ddns, tags: ["network", "ddns"] }
 
     # --- Security plane ----------------------------------------------------
@@ -39,6 +40,7 @@
 
     # --- Service plane -----------------------------------------------------
     - { role: docker, tags: ["docker"] }
+    - { role: authelia, tags: ["services", "auth"] }
     - { role: monitoring, tags: ["services", "monitoring"] }
     - { role: backups, tags: ["backups"] }
 

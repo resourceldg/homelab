@@ -1,0 +1,58 @@
+# {{ ansible_managed }}
+theme: dark
+
+server:
+  address: 'tcp://:9091'
+
+log:
+  level: info
+
+identity_validation:
+  reset_password:
+    jwt_secret: '{{ vault_authelia_jwt_secret }}'
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: sha2crypt
+      sha2crypt:
+        variant: sha512
+
+access_control:
+  default_policy: deny
+  rules:
+    # The login portal itself must always be reachable.
+    - domain: 'auth.{{ caddy_base_domain }}'
+      policy: bypass
+    # Metrics backends: operators only.
+    - domain:
+        - 'prometheus.{{ caddy_base_domain }}'
+        - 'cadvisor.{{ caddy_base_domain }}'
+      policy: one_factor
+      subject: ['group:operators']
+    # Grafana + the launchpad: operators and students.
+    - domain:
+        - 'grafana.{{ caddy_base_domain }}'
+        - '{{ caddy_base_domain }}'
+      policy: one_factor
+      subject: ['group:operators', 'group:students']
+
+session:
+  secret: '{{ vault_authelia_session_secret }}'
+  cookies:
+    - domain: '{{ caddy_base_domain }}'
+      authelia_url: 'https://auth.{{ caddy_base_domain }}'
+      default_redirection_url: 'https://{{ caddy_base_domain }}'
+      expiration: '1 hour'
+      inactivity: '15 minutes'
+
+storage:
+  encryption_key: '{{ vault_authelia_storage_key }}'
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  # File notifier: password-reset links land in this file (no SMTP needed).
+  filesystem:
+    filename: /config/notification.txt
