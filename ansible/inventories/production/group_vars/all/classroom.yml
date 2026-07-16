@@ -18,15 +18,15 @@ classroom_teams:
 # (vault_sso_passwords), one entry per username here.
 sso_users:
   - { username: operator, displayname: "Operador", email: "resourceldg@gmail.com", groups: [operators] }
-  - { username: jessi,   displayname: "Jessi",   groups: [students] }
-  - { username: alan,    displayname: "Alan",    groups: [students] }
-  - { username: gabi,    displayname: "Gabi",    groups: [students] }
-  - { username: santi,   displayname: "Santi",   groups: [students] }
-  - { username: mijael,  displayname: "Mijael",  groups: [students] }
-  - { username: gino,    displayname: "Gino",    groups: [students] }
+  - { username: jessi, displayname: "Jessi", groups: [students] }
+  - { username: alan, displayname: "Alan", groups: [students] }
+  - { username: gabi, displayname: "Gabi", groups: [students] }
+  - { username: santi, displayname: "Santi", groups: [students] }
+  - { username: mijael, displayname: "Mijael", groups: [students] }
+  - { username: gino, displayname: "Gino", groups: [students] }
   - { username: mariano, displayname: "Mariano", groups: [students] }
-  - { username: jorge,   displayname: "Jorge",   groups: [students] }
-  - { username: guido,   displayname: "Guido",   groups: [students] }
+  - { username: jorge, displayname: "Jorge", groups: [students] }
+  - { username: guido, displayname: "Guido", groups: [students] }
 
 # Operator-controlled ingress. Nothing is public until you add an entry with
 # enabled: true and re-apply `--tags publish`. `service`/`port` name the compose
