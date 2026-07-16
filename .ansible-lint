@@ -5,6 +5,7 @@ exclude_paths:
   - compose/
   - tests/
   - "**/molecule/"
+  - mkdocs.yml  # not an Ansible file; its !!python/name tag breaks the YAML loader
 skip_list:
   - yaml[line-length]
   - fqcn[action-core]  # allow short module names for readability in a homelab
