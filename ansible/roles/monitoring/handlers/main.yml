@@ -1,0 +1,7 @@
+---
+# The Caddyfile is a bind-mounted FILE; Ansible replaces it atomically (new
+# inode), so a running Caddy serves the old inode until the container restarts.
+- name: Restart caddy proxy
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/proxy"
+    state: restarted
