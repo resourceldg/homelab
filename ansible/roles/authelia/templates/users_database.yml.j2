@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# Users are declared in group_vars (sso_users); passwords come from the vault
+# (vault_sso_passwords) and are hashed here with sha512crypt.
+users:
+{% for u in sso_users %}
+  {{ u.username }}:
+    displayname: "{{ u.displayname | default(u.username) }}"
+    password: "{{ vault_sso_passwords[u.username] | password_hash('sha512') }}"
+    email: "{{ u.email | default(u.username ~ '@' ~ caddy_base_domain) }}"
+    groups:
+{% for g in u.groups %}
+      - {{ g }}
+{% endfor %}
+{% endfor %}

@@ -1,0 +1,31 @@
+---
+# Authelia — single sign-on / forward-auth for the classroom platform. Caddy
+# calls it to authorize requests; unauthenticated users get the login portal.
+# Config + users database are rendered by the authelia role into ./config.
+name: auth
+
+services:
+  authelia:
+    image: authelia/authelia:4.38
+    container_name: authelia
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - ./config:/config
+    networks: [edge]
+    environment:
+      TZ: ${TZ}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 192M
+    healthcheck:
+      test: ["CMD", "authelia", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  edge:
+    external: true

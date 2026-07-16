@@ -1,0 +1,10 @@
+---
+# dns — a tiny dnsmasq bound to the Tailscale interface that resolves the
+# classroom domain to the server's tailnet IP. Register it as a Tailscale
+# Split-DNS nameserver so every one of your devices reaches the services by name
+# over the tailnet, with no /etc/hosts. (Optional; students use the public path.)
+dns_enabled: true
+dns_tailscale_interface: "tailscale0"
+# The server's own tailnet IP (stable per node). Set per environment.
+dns_tailscale_ip: "100.110.123.76"
+dns_domain: "{{ caddy_base_domain }}"

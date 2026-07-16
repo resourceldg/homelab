@@ -20,3 +20,10 @@ vault_borg_passphrase: "REPLACE_WITH_LONG_RANDOM_PASSPHRASE"
 
 # Postgres superuser password for the shared classroom database.
 vault_postgres_superuser_password: "REPLACE_WITH_STRONG_PASSWORD"
+
+# Authelia SSO secrets + user passwords.
+vault_authelia_jwt_secret: "REPLACE_WITH_64_CHAR_RANDOM"
+vault_authelia_session_secret: "REPLACE_WITH_64_CHAR_RANDOM"
+vault_authelia_storage_key: "REPLACE_WITH_64_CHAR_RANDOM"
+vault_sso_passwords:
+  operator: "REPLACE_WITH_A_PASSWORD"

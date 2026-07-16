@@ -1,0 +1,57 @@
+---
+- name: Deploy the auth (Authelia) stack
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../compose/auth/"
+    dest: "{{ stacks_root }}/auth/"
+    mode: "0644"
+    directory_mode: "0755"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: authelia_enabled | bool
+
+- name: Ensure Authelia config directory exists
+  ansible.builtin.file:
+    path: "{{ stacks_root }}/auth/config"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0750"
+  when: authelia_enabled | bool
+
+- name: Render Authelia .env
+  ansible.builtin.template:
+    src: auth.env.j2
+    dest: "{{ stacks_root }}/auth/.env"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0644"
+  when: authelia_enabled | bool
+
+- name: Render Authelia configuration
+  ansible.builtin.template:
+    src: configuration.yml.j2
+    dest: "{{ stacks_root }}/auth/config/configuration.yml"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0600"
+  no_log: true
+  notify: Restart authelia
+  when: authelia_enabled | bool
+
+- name: Render Authelia users database
+  ansible.builtin.template:
+    src: users_database.yml.j2
+    dest: "{{ stacks_root }}/auth/config/users_database.yml"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0600"
+  no_log: true
+  notify: Restart authelia
+  when: authelia_enabled | bool
+
+- name: Bring up the auth stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/auth"
+    state: present
+    pull: missing
+  when: authelia_enabled | bool

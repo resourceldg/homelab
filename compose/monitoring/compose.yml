@@ -43,6 +43,11 @@ services:
       GF_SERVER_ROOT_URL: "https://grafana.${GRAFANA_DOMAIN}"
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
+      # Access is gated by Authelia (operators + students). Anyone who gets past
+      # Authelia views dashboards as Viewer without a Grafana account; the
+      # operator elevates by signing in with the admin user above.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
