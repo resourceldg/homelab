@@ -1,5 +1,5 @@
 ---
 # shared_services — multi-tenant Postgres/Redis/Mailpit for the classroom.
 shared_services_enabled: true
-shared_services_secrets_dir: "/etc/classroom/secrets"   # per-team DB passwords (root-only)
+shared_services_secrets_dir: "/etc/classroom/secrets"   # per-team DB + MQTT passwords (root-only)
 # stacks_root and classroom_teams come from shared group_vars / the roster.
