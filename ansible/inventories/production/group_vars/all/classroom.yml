@@ -3,7 +3,7 @@
 # re-apply `--tags classroom`. Members must be valid Linux usernames.
 classroom_teams:
   - name: equipo-01
-    members: [jessi]
+    members: [jessi, dardo]
   - name: equipo-02
     members: [alan, gabi]
   - name: equipo-03
@@ -27,13 +27,14 @@ sso_users:
   - { username: mariano, displayname: "Mariano", groups: [students] }
   - { username: jorge, displayname: "Jorge", groups: [students] }
   - { username: guido, displayname: "Guido", groups: [students] }
+  - { username: dardo, displayname: "Dardo", groups: [students] }
 
 # Operator-controlled ingress. Nothing is public until you add an entry with
 # enabled: true and re-apply `--tags publish`. `service`/`port` name the compose
 # service and container port in the team's project.
-student_exposures: []
-  # - team: equipo-01
-  #   hostname: equipo01.lucasland.duckdns.org
-  #   service: web
-  #   port: 8080
-  #   enabled: true
+student_exposures:
+  - team: equipo-01
+    hostname: equipo01.lucasland.duckdns.org
+    service: web
+    port: 8080
+    enabled: true

@@ -1,0 +1,64 @@
+---
+# Ejemplo de laboratorio: Node-RED + Mosquitto (MQTT) + Postgres.
+# Cumple la política del aula (labctl validate):
+#   - imágenes pinneadas (no :latest)
+#   - límites cpus/memory/pids en cada servicio
+#   - logging con rotación
+#   - restart policy
+#   - puertos SOLO en 127.0.0.1 (nunca 0.0.0.0)
+#   - sin volúmenes nombrados: bind-mount de ./data (queda dentro de tu cuota)
+#
+# Cómo usarlo (desde tu directorio de equipo, ej. /srv/classroom/equipo-06):
+#   mkdir -p data/nodered data/mosquitto data/postgres mosquitto
+#   # copiá este compose.yml y mosquitto.conf
+#   labctl validate && labctl up
+#
+# Node-RED se conecta a MQTT usando el host `mosquitto` (puerto 1883) y a la base
+# usando el host `db` (puerto 5432) — nombres de la red interna de tu compose.
+services:
+  nodered:
+    image: nodered/node-red:4.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1880:1880"        # UI de Node-RED (accesible por túnel SSH -L)
+    volumes:
+      - ./data/nodered:/data
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 256M, pids: 200 }
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1883:1883"        # broker MQTT (accesible por túnel SSH -L)
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./data/mosquitto:/mosquitto/data
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 128M, pids: 100 }
+
+  db:
+    image: postgres:16.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nodered
+      POSTGRES_PASSWORD: cambia-esta-clave     # cambiala antes de usar
+      POSTGRES_DB: nodered
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 256M, pids: 200 }
