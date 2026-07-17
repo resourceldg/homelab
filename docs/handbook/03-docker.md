@@ -95,8 +95,9 @@ flowchart TB
 ```
 
 > **Ejemplo completo:** [`ejemplos/nodered-mqtt/`](ejemplos/nodered-mqtt/) — un
-> `compose.yml` de laboratorio (Node-RED + Mosquitto + Postgres) que cumple la
-> política del aula y se levanta con `labctl validate && labctl up`.
+> `compose.yml` de laboratorio (Node-RED + Mosquitto) que usa la **Postgres
+> compartida** del aula vía `.shared-services.env` (no una db propia), cumple la
+> política y se levanta con `labctl validate && labctl up`.
 
 ### Volúmenes y bind mounts
 Un contenedor es **efímero**: si lo borrás, se pierde lo que escribió adentro.
