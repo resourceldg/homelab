@@ -1,3 +1,4 @@
+---
 # Ejemplo de laboratorio: Node-RED + Mosquitto (MQTT) + Postgres.
 # Cumple la política del aula (labctl validate):
 #   - imágenes pinneadas (no :latest)
