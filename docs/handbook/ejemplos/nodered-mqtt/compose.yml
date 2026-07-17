@@ -1,5 +1,8 @@
 ---
-# Ejemplo de laboratorio: Node-RED + Mosquitto (MQTT) + Postgres.
+# Ejemplo de laboratorio: Node-RED + Mosquitto (MQTT) usando la Postgres
+# COMPARTIDA del aula (el patrón "profesional": el estado que importa va a la
+# base gestionada y respaldada, no a una db propia dentro del proyecto).
+#
 # Cumple la política del aula (labctl validate):
 #   - imágenes pinneadas (no :latest)
 #   - límites cpus/memory/pids en cada servicio
@@ -8,23 +11,38 @@
 #   - puertos SOLO en 127.0.0.1 (nunca 0.0.0.0)
 #   - sin volúmenes nombrados: bind-mount de ./data (queda dentro de tu cuota)
 #
-# Cómo usarlo (desde tu directorio de equipo, ej. /srv/classroom/equipo-06):
-#   mkdir -p data/nodered data/mosquitto data/postgres mosquitto
-#   # copiá este compose.yml y mosquitto.conf
+# La base de datos NO se define acá. El aula te provisiona una Postgres propia,
+# aislada por equipo y respaldada. Sus credenciales ya están en tu dir de equipo,
+# en `.shared-services.env` (root:grp-<equipo>, 0640 — la leés, no la editás):
+#   PGHOST=postgres  PGPORT=5432  PGUSER=<equipo>  PGPASSWORD=...  PGDATABASE=db_<equipo>
+# `labctl up` conecta los contenedores compartidos (`postgres`, `redis`,
+# `mailpit`) a la red privada de tu proyecto, así `postgres` resuelve como host.
+#
+# Cómo usarlo (desde tu directorio de equipo, ej. /srv/classroom/equipo-01):
+#   mkdir -p data/nodered data/mosquitto mosquitto
+#   # copiá este compose.yml y mosquitto/mosquitto.conf
 #   labctl validate && labctl up
 #
-# Node-RED se conecta a MQTT usando el host `mosquitto` (puerto 1883) y a la base
-# usando el host `db` (puerto 5432) — nombres de la red interna de tu compose.
+# Los servicios escuchan solo en loopback; se acceden desde tu máquina por túnel
+# SSH (sobre Tailscale si es desde casa):
+#   ssh -L 1880:localhost:1880 -L 1883:localhost:1883 <usuario>@<server>
+#   # navegador -> http://localhost:1880   |   cliente MQTT -> localhost:1883
+#
+# En Node-RED, para guardar en TU base: instalá el nodo `node-red-contrib-postgresql`
+# (menú Manage Palette) y en el config-node usá ${PGHOST} ${PGUSER} ${PGPASSWORD}
+# ${PGDATABASE} — Node-RED sustituye esas variables desde el env_file.
 services:
   nodered:
     image: nodered/node-red:4.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:1880:1880"        # UI de Node-RED (accesible por túnel SSH -L)
-    volumes:
-      - ./data/nodered:/data
+    env_file:
+      - .shared-services.env         # credenciales de la Postgres compartida del equipo
     environment:
       TZ: America/Argentina/Buenos_Aires
+    volumes:
+      - ./data/nodered:/data         # flows y credentials persisten acá (en tu cuota)
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -46,19 +64,3 @@ services:
     deploy:
       resources:
         limits: { cpus: "0.25", memory: 128M, pids: 100 }
-
-  db:
-    image: postgres:16.4
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: nodered
-      POSTGRES_PASSWORD: cambia-esta-clave     # cambiala antes de usar
-      POSTGRES_DB: nodered
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    logging:
-      driver: json-file
-      options: { max-size: "10m", max-file: "3" }
-    deploy:
-      resources:
-        limits: { cpus: "0.50", memory: 256M, pids: 200 }
