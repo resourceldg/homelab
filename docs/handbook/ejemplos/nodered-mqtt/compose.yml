@@ -18,10 +18,16 @@
 # `labctl up` conecta los contenedores compartidos (`postgres`, `redis`,
 # `mailpit`) a la red privada de tu proyecto, así `postgres` resuelve como host.
 #
-# Cómo usarlo (desde tu directorio de equipo, ej. /srv/classroom/equipo-01):
+# Puesta en marcha (el OPERADOR siembra y ajusta permisos; el ALUMNO levanta):
+#   # 1) Operador (root), una vez, en el dir del equipo (ej. /srv/classroom/equipo-01):
 #   mkdir -p data/nodered data/mosquitto mosquitto
-#   # copiá este compose.yml y mosquitto/mosquitto.conf
+#   # copiá este compose.yml y mosquitto/mosquitto.conf al dir del equipo, y:
+#   chown -R 1000:1000 data/nodered     # Node-RED corre como uid 1000 adentro
+#   chown -R 1883:1883 data/mosquitto   # Mosquitto corre como uid 1883 adentro
+#   # (sin este chown, los contenedores no pueden escribir en /data y no arrancan)
+#   # 2) Alumno:
 #   labctl validate && labctl up
+#   # Si Node-RED queda "Restarting" con EACCES sobre /data, faltó el chown de (1).
 #
 # Los servicios escuchan solo en loopback; se acceden desde tu máquina por túnel
 # SSH (sobre Tailscale si es desde casa):
