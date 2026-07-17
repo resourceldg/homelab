@@ -32,9 +32,11 @@ sso_users:
 # Operator-controlled ingress. Nothing is public until you add an entry with
 # enabled: true and re-apply `--tags publish`. `service`/`port` name the compose
 # service and container port in the team's project.
-student_exposures:
-  - team: equipo-01
-    hostname: equipo01.lucasland.duckdns.org
-    service: web
-    port: 8080
-    enabled: true
+student_exposures: []
+  # equipo-01 se accede por túnel SSH sobre Tailscale (Node-RED 1880 / MQTT 1883
+  # quedan en loopback, no se publican). Ejemplo de publicación HTTP por Caddy:
+  # - team: equipo-01
+  #   hostname: equipo01.lucasland.duckdns.org
+  #   service: web
+  #   port: 8080
+  #   enabled: true

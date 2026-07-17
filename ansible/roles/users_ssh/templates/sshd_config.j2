@@ -51,3 +51,7 @@ Match Address {{ lan_cidr }},{{ tailscale_cidr }}
 Match Group classroom Address {{ lan_cidr }},{{ tailscale_cidr }}
     PasswordAuthentication yes
     AuthenticationMethods password
+    # Allow `ssh -L` tunnels so students can reach their loopback-bound lab
+    # services (e.g. Node-RED 1880, MQTT 1883) from home over Tailscale. Local
+    # forwarding only (no -R), and only for this group from the LAN/tailnet.
+    AllowTcpForwarding local
