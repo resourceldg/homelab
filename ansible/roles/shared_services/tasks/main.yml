@@ -75,6 +75,31 @@
   no_log: true
   when: shared_services_enabled | bool
 
+# MQTT credential per team, generated once and stored root-only (same pattern as
+# the DB password). The broker ships anonymous by default; these creds are dropped
+# in .shared-services.env so a team can opt into Mosquitto auth without touching
+# the vault (see the nodered-mqtt handbook example).
+- name: Generate an MQTT password per team (once)
+  ansible.builtin.shell:
+    cmd: "printf %s \"$(openssl rand -hex 16)\" > {{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+    creates: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+  args:
+    executable: /bin/bash
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: shared_services_enabled | bool
+
+- name: Read per-team MQTT passwords
+  ansible.builtin.slurp:
+    src: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: team_mqttpass
+  no_log: true
+  when: shared_services_enabled | bool
+
 - name: Create a Postgres role per team
   community.postgresql.postgresql_user:
     login_host: "127.0.0.1"
