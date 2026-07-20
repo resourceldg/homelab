@@ -1,7 +1,6 @@
 ---
-# Converges the backups role across LTS versions. This is where the
-# version-specific borgmatic schema (sectioned on 22.04 / flat on 24.04+) is
-# actually exercised: `borgmatic init` parses the rendered config, so an
+# Converges the backups role. This is where the rendered borgmatic config (flat
+# schema, 24.04+) is actually exercised: `borgmatic init` parses it, so an
 # invalid schema fails the converge.
 role_name_check: 1
 
