@@ -102,8 +102,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 2204 = 22.04 jammy, 2404 = 24.04 noble.
-        ubuntu: ["2204", "2404"]
+        # 2404 = 24.04 noble (versión de producción). 22.04 quedó fuera de soporte.
+        ubuntu: ["2404"]
     steps:
       - uses: actions/checkout@v5
 

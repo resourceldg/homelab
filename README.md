@@ -26,7 +26,7 @@ Built by a two-plane design:
 | Dynamic DNS | DuckDNS (systemd timer) |
 | Monitoring | Prometheus + Grafana (auto-provisioned dashboard) + node-exporter + cAdvisor |
 | Backups | Borg via borgmatic (encrypted, local repo, retention) |
-| Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule matrix (Ubuntu 22.04 + 24.04) via GitHub Actions |
+| Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule (Ubuntu 24.04) via GitHub Actions |
 
 A **multi-user Docker Compose teaching lab** runs on top of this server — 5
 student teams deploy isolated stacks via `labctl`, with no Docker/sudo/socket
