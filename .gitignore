@@ -27,3 +27,6 @@ __pycache__/
 
 # MkDocs build output
 site/
+
+# Local Claude Code settings (per-machine, not shared)
+.claude/
