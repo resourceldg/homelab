@@ -61,6 +61,10 @@ labctl up          # despliega
 labctl ps | logs | usage | status | restart | down
 ```
 
+> **Guía práctica:** el paso a paso para trabajar en tu proyecto (conectarte por
+> túnel, rutas, ejemplos de `compose.yml` verificados, base compartida y cómo salir a
+> la web) está en la [Guía práctica del equipo](guia-equipo.md).
+
 ## Servicios compartidos
 
 Los alumnos **no** levantan su propia base de datos: el laboratorio les da

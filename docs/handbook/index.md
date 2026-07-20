@@ -60,6 +60,7 @@ arquitectónica**.
 | 8 | [El pipeline](08-pipeline.md) | Git, PR, CI, lint, tests, idempotencia |
 | 9 | [La plataforma de aula](09-plataforma-aula.md) | `labctl`, aislamiento, política, cuotas |
 | 10 | [Casos prácticos](10-casos-practicos.md) | Recorridos paso a paso ante problemas reales |
+| — | [Guía práctica del equipo](guia-equipo.md) | Cómo trabajar en tu proyecto: conectarte, config, base compartida, salir a la web |
 | — | [Glosario](glosario.md) | Todas las palabras y siglas, de la A a la Z |
 | — | [Mejoras futuras](mejoras-futuras.md) | Deuda de documentación y mejoras propuestas |
 
