@@ -13,7 +13,7 @@ automática, antes de que un cambio llegue al servidor.
 - **Los chequeos:**
   - *yamllint / ansible-lint* — estilo y buenas prácticas.
   - *Playbook syntax check* — que el playbook parsea (en prod y staging).
-  - *Molecule* — prueba roles en contenedores (Ubuntu 22.04 y 24.04).
+  - *Molecule* — prueba roles en contenedores (Ubuntu 24.04).
   - *Tests unitarios* — el validador de política de Compose + los dashboards.
   - *Gitleaks* — busca secretos filtrados.
 - **testinfra:** pruebas sobre el server ya provisionado (permisos, servicios…).
