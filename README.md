@@ -77,8 +77,8 @@ homelab/
 
 ## Quickstart
 
-Prerequisites: fresh Ubuntu **24.04 LTS** (primary target; 22.04 and a future
-26.04 also supported), a sudo user, a DuckDNS token, and your SSH public key.
+Prerequisites: fresh Ubuntu **24.04 LTS** (primary target; a future 26.04 also
+planned), a sudo user, a DuckDNS token, and your SSH public key.
 
 > Ubuntu Pro is **optional** and off by default (`usg_enabled: false`). It only
 > unlocks the `usg` CIS tooling; all the complementary hardening (sysctl,

@@ -8,8 +8,8 @@ driver:
   name: docker
 
 platforms:
-  # Image tag is parametrised so CI can run the same scenario across LTS
-  # versions (2204, 2404). Defaults to 24.04 for local runs.
+  # Image tag is parametrised (UBUNTU_IMAGE_TAG); CI runs 2404. Defaults to
+  # 24.04 for local runs.
   - name: "molecule-ddns-${UBUNTU_IMAGE_TAG:-2404}"
     image: "geerlingguy/docker-ubuntu${UBUNTU_IMAGE_TAG:-2404}-ansible:latest"
     command: /usr/lib/systemd/systemd

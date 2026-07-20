@@ -1,11 +1,8 @@
 # {{ ansible_managed }}
 # Borgmatic configuration — local encrypted, deduplicated backups.
-# The config schema changed across releases, so it is rendered per version:
-#   - Ubuntu 24.04+  -> borgmatic >= 1.8 (flat schema)
-#   - Ubuntu 22.04   -> borgmatic 1.5.x  (sectioned schema)
+# Flat schema (borgmatic >= 1.8, Ubuntu 24.04+).
 # List values are quoted because patterns like "**/*.tmp" start with '*',
 # which is YAML alias syntax when unquoted.
-{% if ansible_distribution_version is version('24.04', '>=') %}
 source_directories:
 {% for path in borg_paths %}
     - "{{ path }}"
@@ -47,46 +44,3 @@ after_backup:
 #     - name: app
 #       hostname: 127.0.0.1
 #       username: postgres
-{% else %}
-location:
-    source_directories:
-{% for path in borg_paths %}
-        - "{{ path }}"
-{% endfor %}
-    repositories:
-        - "{{ borg_repo }}"
-    exclude_patterns:
-{% for pattern in borg_exclude %}
-        - "{{ pattern }}"
-{% endfor %}
-    one_file_system: true
-
-storage:
-    encryption_passphrase: "{{ vault_borg_passphrase }}"
-    compression: zstd,6
-    checkpoint_interval: 900
-
-retention:
-    keep_hourly: {{ borg_retention.hourly }}
-    keep_daily: {{ borg_retention.daily }}
-    keep_weekly: {{ borg_retention.weekly }}
-    keep_monthly: {{ borg_retention.monthly }}
-
-consistency:
-    checks:
-        - repository
-        - archives
-
-hooks:
-    before_backup:
-        - echo "Starting borgmatic backup on $(date -Is)"
-    on_error:
-        - 'logger -t borgmatic "BACKUP FAILED"'
-    after_backup:
-        - 'logger -t borgmatic "backup completed OK"'
-    # Dump databases consistently before the snapshot. Uncomment and adapt.
-    # postgresql_databases:
-    #     - name: app
-    #       hostname: 127.0.0.1
-    #       username: postgres
-{% endif %}

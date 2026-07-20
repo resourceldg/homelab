@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm *)",
+      "Bash(ansible-playbook site.yml -i inventories/production --syntax-check)",
+      "Bash(ansible-playbook site.yml -i inventories/staging --syntax-check)",
+      "Bash(gh pr create --base main --head refactor/modular-environments --title 'refactor\\(ansible\\): modular role defaults + per-env inventories + repo governance' --body ' *)"
+    ]
+  }
+}
