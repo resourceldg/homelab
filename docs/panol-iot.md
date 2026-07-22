@@ -230,10 +230,14 @@ sudo bash -c 'set -a; . /etc/panol/app.env; \
   docker exec panol-mosquitto mosquitto_sub -h 127.0.0.1 \
     -u "$MQTT_USER" -P "$MQTT_PASSWORD" -t "\$SYS/broker/uptime" -C 1 -W 3'
 
-# La ACL: el nodo NO puede escribir fuera de su rama (tiene que fallar)
-mosquitto_pub -h 192.168.100.48 -p 1883 \
+# La ACL: el nodo NO puede escribir fuera de su rama.
+# El -V 5 no es decorativo: con MQTT 3.1.1 el broker descarta el mensaje EN
+# SILENCIO y el cliente cree que publicó. Con MQTT 5 avisa "Not authorized".
+# Ojo igual: mosquitto_pub sale con código 0 en los dos casos, hay que LEER.
+mosquitto_pub -h 192.168.100.48 -p 1883 -V 5 -q 1 \
   -u nodo-panol-puerta -P cambiar-nodo-puerta \
-  -t panol/panol-lab01/panol-lab01-armarios/evento/acceso -m '{}' -q 1
+  -t panol/panol-lab01/panol-lab01-armarios/evento/acceso -m '{}'
+#  -> Warning: Publish 1 failed: Not authorized.
 
 # Suite de humo completa (en el servidor)
 py.test -v --hosts=local:// --sudo tests/test_panol.py
