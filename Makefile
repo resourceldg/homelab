@@ -14,7 +14,7 @@ VENV := $(CURDIR)/.venv
 export PATH := $(VENV)/bin:$(PATH)
 
 .PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
-        harden firewall updates backups monitoring idempotence test verify \
+        harden firewall updates backups monitoring panol idempotence test verify \
         precommit secrets
 
 help: ## Show this help
@@ -66,6 +66,9 @@ firewall: ## Apply only the firewall role
 
 monitoring: ## Redeploy the monitoring + proxy stacks
 	$(RUN) $(PLAY) --tags "services,docker"
+
+panol: ## Redeploy the Pañol IoT plane (broker MQTT + auditoría + Node-RED)
+	$(RUN) $(PLAY) --tags panol
 
 backups: ## Configure backups and run one now
 	$(RUN) $(PLAY) --tags backups

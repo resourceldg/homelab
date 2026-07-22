@@ -1,0 +1,88 @@
+---
+# panol — plano de servicios del proyecto Pañol IoT (control de acceso).
+# stacks_root, admin_user, lan_cidr y tailscale_cidr son valores compartidos
+# (group_vars). Las contraseñas NO están acá: se generan en el host, una vez,
+# bajo panol_secrets_dir (root only) — ver tasks/main.yml.
+panol_enabled: true
+
+# --- Dónde vive -------------------------------------------------------------
+panol_stack_dir: "{{ stacks_root }}/panol"
+panol_secrets_dir: "/etc/panol/secrets"
+
+# Imagen del broker. Se usa además para correr `mosquitto_passwd` al construir
+# el archivo de contraseñas: DEBE coincidir con el tag de compose/panol/compose.yml
+# (hay un test que lo verifica: tests/test_panol_stack.py).
+panol_mosquitto_image: "eclipse-mosquitto:2.0.20"
+
+# --- Puertos ----------------------------------------------------------------
+# MQTT es el único puerto en interfaz ruteable: los ESP32 son hardware en la
+# red y no pueden entrar por el proxy. UFW lo limita a panol_device_cidrs.
+panol_mqtt_port: 1883
+panol_mqtt_bind: "0.0.0.0"
+# Los demás quedan en loopback. 15432 y no 5432 porque el 5432 del host ya lo
+# ocupa el Postgres compartido del aula (rol shared_services).
+panol_mqtt_ws_port: 19001
+panol_pg_port: 15432
+panol_nodered_port: 11880
+
+# Puerto HTTP de la API del pañol (la despliega el repo panol-iot sobre esta
+# misma red). Se abre a las redes de dispositivos porque el nodo ESP32 reporta
+# por HTTP: el MQTT es del puente, no del firmware todavía.
+panol_api_port: 18500
+
+# --- Base de auditoría ------------------------------------------------------
+panol_db_name: "panol"
+panol_db_user: "panol"
+
+# --- Credenciales por defecto -----------------------------------------------
+# CLAVES CONOCIDAS, A PROPÓSITO: con esto el sistema arranca andando extremo a
+# extremo (firmware, puente, tablero y base traen la clave escrita) sin tener
+# que ir a leer un archivo. Se llaman `cambiar-*` porque eso es exactamente lo
+# que hay que hacer antes de montar en el colegio.
+#
+# Para rotar UNA identidad:  sudo rm /etc/panol/secrets/mqtt-<usuario>.pass
+#                            (y sacarla o cambiarla en este diccionario)
+#                            make panol
+# Si una identidad NO figura acá, el rol le sortea una clave aleatoria.
+panol_mqtt_default_passwords:
+  panol-servidor: "cambiar-servidor-panol"
+  panol-nodered: "cambiar-nodered-panol"
+  nodo-panol-puerta: "cambiar-nodo-puerta"
+  nodo-panol-armarios: "cambiar-nodo-armarios"
+
+# Misma idea para la base de auditoría. Vaciá el valor ("") y el rol sortea una
+# clave aleatoria en el host.
+panol_db_default_password: "cambiar-db-panol"
+
+# --- Identidades MQTT -------------------------------------------------------
+# Un usuario por rol, no uno solo compartido: si mañana hay que rotar la clave
+# de un nodo que se perdió, no se cae el servidor.
+panol_mqtt_server_user: "panol-servidor"    # api + puente: lee y escribe todo
+panol_mqtt_reader_user: "panol-nodered"     # tablero: solo lee
+
+# Nodos ESP32. Cada uno solo puede publicar en SU rama del árbol de topics
+# (panol/<ubicacion>/<nodo>/...), que es lo que hace verificable la auditoría.
+# `ubicacion` y `nodo` NO son decorativos: forman el topic y tienen que ser
+# idénticos a UBICACION_ID / NODO_ID del firmware
+# (panol-iot/firmware/nodo_panol/config.py). Si difieren, el nodo publica en
+# una rama que su propia ACL le prohíbe y el broker lo rechaza en silencio.
+panol_mqtt_nodes:
+  - usuario: "nodo-panol-puerta"
+    ubicacion: "panol-lab01"
+    nodo: "panol-lab01-puerta"
+    descripcion: "ESP32 #1 — RFID + reed + PIR + relé"
+  - usuario: "nodo-panol-armarios"
+    ubicacion: "panol-lab01"
+    nodo: "panol-lab01-armarios"
+    descripcion: "ESP32 #2 — MCP23017 + IR (etapa posterior)"
+
+# --- Red de los dispositivos ------------------------------------------------
+# Desde dónde se acepta MQTT. Si mañana los nodos van a una VLAN IoT propia,
+# se agrega ese CIDR acá y se corre `--tags panol`.
+panol_device_cidrs:
+  - "{{ lan_cidr }}"
+  - "{{ tailscale_cidr }}"
+
+# --- Publicación ------------------------------------------------------------
+# Node-RED se sirve en https://<subdominio>.<caddy_base_domain> detrás de SSO.
+panol_subdomain: "panol"

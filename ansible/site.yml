@@ -44,6 +44,9 @@
     - { role: monitoring, tags: ["services", "monitoring"] }
     - { role: backups, tags: ["backups"] }
 
+    # --- Proyecto Pañol IoT (broker MQTT + auditoría + tablero) ------------
+    - { role: panol, tags: ["services", "panol", "iot"] }
+
     # --- Classroom plane (multi-user Docker Compose lab) -------------------
     - { role: classroom, tags: ["classroom"] }
     - { role: shared_services, tags: ["classroom", "shared-services"] }

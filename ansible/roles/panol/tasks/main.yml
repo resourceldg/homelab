@@ -1,0 +1,216 @@
+---
+# Levanta el plano de servicios del proyecto Pañol IoT: broker MQTT (al que
+# hablan los ESP32), base de auditoría y tablero Node-RED. La aplicación
+# (api + puente) vive en el repo panol-iot y se enchufa a la red `panol`.
+#
+# Las contraseñas se generan EN EL HOST, una sola vez, y quedan bajo
+# /etc/panol/secrets (root). No van al vault: así se puede agregar un nodo sin
+# editar secretos cifrados, y el que rota una clave es el que tiene la máquina.
+
+- name: Ensure the panol config root exists
+  ansible.builtin.file:
+    path: "{{ panol_secrets_dir | dirname }}"
+    state: directory
+    owner: root
+    group: "{{ admin_user }}"
+    mode: "0750"
+  when: panol_enabled | bool
+
+- name: Ensure the panol secret store exists (root only)
+  ansible.builtin.file:
+    path: "{{ panol_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: panol_enabled | bool
+
+# `creates:` es lo que hace esto idempotente: la clave se fija una vez y después
+# sobrevive a todas las converges. Si hay una clave por defecto declarada, se
+# usa esa (sistema andando de entrada, credenciales conocidas); si no, se
+# sortea en el host — nunca con el lookup `password` del controlador, para que
+# el secreto no salga de la máquina. Borrar el .pass es lo que fuerza la rotación.
+- name: Set the Postgres password (default or random, once)
+  ansible.builtin.shell:
+    cmd: |
+      umask 077
+      clave='{{ panol_db_default_password }}'
+      [ -n "$clave" ] || clave="$(openssl rand -hex 24)"
+      printf %s "$clave" > {{ panol_secrets_dir }}/postgres.pass
+    creates: "{{ panol_secrets_dir }}/postgres.pass"
+  args:
+    executable: /bin/bash
+  when: panol_enabled | bool
+
+- name: Set one MQTT password per identity (default or random, once)
+  ansible.builtin.shell:
+    cmd: |
+      umask 077
+      clave='{{ panol_mqtt_default_passwords[item] | default("") }}'
+      [ -n "$clave" ] || clave="$(openssl rand -hex 24)"
+      printf %s "$clave" > {{ panol_secrets_dir }}/mqtt-{{ item }}.pass
+    creates: "{{ panol_secrets_dir }}/mqtt-{{ item }}.pass"
+  args:
+    executable: /bin/bash
+  loop: "{{ panol_mqtt_users | list }}"
+  when: panol_enabled | bool
+
+- name: Read the Postgres password
+  ansible.builtin.slurp:
+    src: "{{ panol_secrets_dir }}/postgres.pass"
+  register: panol_pgpass_raw
+  no_log: true
+  when: panol_enabled | bool
+
+- name: Read the MQTT passwords
+  ansible.builtin.slurp:
+    src: "{{ panol_secrets_dir }}/mqtt-{{ item }}.pass"
+  loop: "{{ panol_mqtt_users | list }}"
+  register: panol_mqttpass_raw
+  no_log: true
+  when: panol_enabled | bool
+
+- name: Assemble the credentials for templating
+  ansible.builtin.set_fact:
+    panol_db_password: "{{ panol_pgpass_raw.content | b64decode }}"
+    panol_mqtt_passwords: "{{ dict(panol_mqtt_users | list | zip(panol_mqtt_secret_values)) }}"
+  vars:
+    panol_mqtt_secret_values: "{{ panol_mqttpass_raw.results | map(attribute='content') | map('b64decode') | list }}"
+  no_log: true
+  when: panol_enabled | bool
+
+# --- Stack ------------------------------------------------------------------
+- name: Deploy the panol stack files
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../compose/panol/"
+    dest: "{{ panol_stack_dir }}/"
+    mode: "0644"
+    directory_mode: "0750"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  notify: Restart panol mosquitto
+  when: panol_enabled | bool
+
+- name: Render the panol .env (ports, DB and broker credentials)
+  ansible.builtin.template:
+    src: panol.env.j2
+    dest: "{{ panol_stack_dir }}/.env"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0600"
+  no_log: true
+  when: panol_enabled | bool
+
+# --- Broker: identidades y permisos ----------------------------------------
+# uid/gid 1883 es el usuario `mosquitto` dentro de la imagen: los archivos se
+# montan read-only y tienen que ser legibles por él, y por nadie más.
+- name: Render the mosquitto ACL (each node owns only its branch of the tree)
+  ansible.builtin.template:
+    src: mosquitto-acl.j2
+    dest: "{{ panol_stack_dir }}/mosquitto/acl"
+    owner: "1883"
+    group: "1883"
+    mode: "0640"
+  notify: Restart panol mosquitto
+  when: panol_enabled | bool
+
+- name: Render the MQTT user list used to build the password file
+  ansible.builtin.template:
+    src: mqtt-users.tsv.j2
+    dest: "{{ panol_secrets_dir }}/mqtt-users.tsv"
+    owner: root
+    group: root
+    mode: "0600"
+  register: panol_mqtt_userlist
+  no_log: true
+  when: panol_enabled | bool
+
+- name: Check whether the mosquitto password file exists
+  ansible.builtin.stat:
+    path: "{{ panol_stack_dir }}/mosquitto/passwd"
+  register: panol_passwd_file
+  when: panol_enabled | bool
+
+# mosquitto_passwd hashea; no hay forma de reproducir el hash desde Ansible.
+# Se reconstruye solo cuando cambió la lista de usuarios o falta el archivo:
+# regenerarlo siempre daría hashes nuevos en cada corrida (salt aleatorio) y
+# rompería la idempotencia.
+- name: Build the mosquitto password file (hashed with mosquitto_passwd)
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      work="$(mktemp -d -p {{ panol_secrets_dir }})"
+      trap 'rm -rf "$work"' EXIT
+      : > "$work/passwd"
+      while IFS=$'\t' read -r usuario clave; do
+        [ -n "$usuario" ] || continue
+        docker run --rm --user 0:0 --entrypoint mosquitto_passwd \
+          -v "$work":/work {{ panol_mosquitto_image }} \
+          -b /work/passwd "$usuario" "$clave"
+      done < {{ panol_secrets_dir }}/mqtt-users.tsv
+      install -o 1883 -g 1883 -m 0640 "$work/passwd" {{ panol_stack_dir }}/mosquitto/passwd
+  args:
+    executable: /bin/bash
+  when:
+    - panol_enabled | bool
+    - panol_mqtt_userlist is changed or not (panol_passwd_file.stat.exists | default(false))
+  changed_when: true
+  no_log: true
+  notify: Restart panol mosquitto
+
+# --- Credenciales para quien las necesita ----------------------------------
+- name: Render the app credentials file (api + puente del repo panol-iot)
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: "{{ panol_secrets_dir | dirname }}/app.env"
+    owner: root
+    group: "{{ admin_user }}"
+    mode: "0640"
+  no_log: true
+  when: panol_enabled | bool
+
+- name: Render the node credentials sheet (para grabar en los ESP32)
+  ansible.builtin.template:
+    src: nodos.txt.j2
+    dest: "{{ panol_secrets_dir }}/nodos.txt"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  when: panol_enabled | bool
+
+- name: Bring up the panol stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ panol_stack_dir }}"
+    state: present
+    pull: missing
+  when: panol_enabled | bool
+
+# --- Firewall ---------------------------------------------------------------
+# El puerto MQTT lo publica Docker, así que el tráfico entra por FORWARD y no
+# por INPUT: con ufw-docker instalado, la regla que manda es `ufw route`. Una
+# `ufw allow 1883` normal NO alcanzaría (y dejaría creer que está cerrado).
+- name: Allow MQTT from the device networks
+  community.general.ufw:
+    rule: allow
+    route: true
+    src: "{{ item }}"
+    port: "{{ panol_mqtt_port }}"
+    proto: tcp
+    comment: "Panol MQTT from {{ item }}"
+  loop: "{{ panol_device_cidrs }}"
+  when: panol_enabled | bool
+
+# El firmware del nodo reporta por HTTP a /api/eventos (el MQTT lo habla el
+# puente, no la placa). Sin esta regla el ESP32 encola en flash y el sistema
+# parece andar... hasta que se mira la base y está vacía.
+- name: Allow the panol API from the device networks
+  community.general.ufw:
+    rule: allow
+    route: true
+    src: "{{ item }}"
+    port: "{{ panol_api_port }}"
+    proto: tcp
+    comment: "Panol API from {{ item }}"
+  loop: "{{ panol_device_cidrs }}"
+  when: panol_enabled | bool

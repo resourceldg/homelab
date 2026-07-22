@@ -13,4 +13,8 @@ regexes = [
   '''REPLACE_WITH_[A-Z_]+''',
   '''AAAA\.\.\.REPLACE_ME''',
   '''ci-not-a-real-password''',
+  # Credenciales por defecto del plano Pañol IoT: conocidas a propósito para
+  # que el sistema arranque andando, y nombradas para que se vea que hay que
+  # cambiarlas (ver docs/panol-iot.md).
+  '''cambiar-[a-z-]+''',
 ]

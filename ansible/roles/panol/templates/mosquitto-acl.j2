@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+# Permisos por usuario del broker. Sin ACL, cualquier credencial válida podría
+# publicar un evento a nombre de cualquier nodo: la auditoría dejaría de ser
+# verificable. Con ACL, un nodo comprometido solo puede mentir sobre sí mismo.
+
+# Servidor (api + puente): lee y escribe todo el árbol, y $SYS para el healthcheck.
+user {{ panol_mqtt_server_user }}
+topic readwrite panol/#
+topic read $SYS/#
+
+# Tablero Node-RED: solo mira.
+user {{ panol_mqtt_reader_user }}
+topic read panol/#
+{% for n in panol_mqtt_nodes %}
+
+# {{ n.usuario }} — {{ n.descripcion | default('nodo ESP32') }}
+user {{ n.usuario }}
+topic write panol/{{ n.ubicacion }}/{{ n.nodo }}/evento/#
+topic write panol/{{ n.ubicacion }}/{{ n.nodo }}/heartbeat
+topic read panol/{{ n.ubicacion }}/{{ n.nodo }}/cmd/#
+{% endfor %}

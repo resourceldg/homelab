@@ -1,0 +1,4 @@
+{# Insumo del task que construye passwd: usuario<TAB>clave, una línea por identidad. #}
+{% for usuario in panol_mqtt_users | list %}
+{{ usuario }}	{{ panol_mqtt_passwords[usuario] }}
+{% endfor %}

@@ -60,6 +60,18 @@ demo.{$CADDY_BASE_DOMAIN} {
 	reverse_proxy demo-app:80
 }
 
+# Pañol IoT — tablero Node-RED del control de acceso. Detrás de SSO: desde acá
+# se ven (y se disparan) automatizaciones sobre una puerta real. Los nodos ESP32
+# NO pasan por acá: hablan MQTT directo al broker en la LAN.
+# Cuando la API del pañol se despliegue, se publica igual: un bloque con
+# `reverse_proxy panol-api:18500` y su regla en Authelia.
+{$PANOL_SUBDOMAIN}.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	import authelia
+	encode zstd gzip
+	reverse_proxy panol-nodered:1880
+}
+
 # =========================================================================
 # METRICS BACKENDS (Prometheus, cAdvisor) — behind SSO, operators only.
 # Authelia's access rules restrict these to group:operators, so even with 443

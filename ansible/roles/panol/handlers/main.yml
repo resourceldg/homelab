@@ -1,0 +1,8 @@
+---
+# Mosquitto lee passwd/acl al arrancar: un cambio en esos archivos no llega al
+# broker hasta que el contenedor se reinicia.
+- name: Restart panol mosquitto
+  community.docker.docker_compose_v2:
+    project_src: "{{ panol_stack_dir }}"
+    services: [mosquitto]
+    state: restarted

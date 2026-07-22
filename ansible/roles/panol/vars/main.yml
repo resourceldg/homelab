@@ -1,0 +1,6 @@
+---
+# Derivados — no tocar desde el inventario (cambiá panol_mqtt_* en su lugar).
+
+# Todas las identidades MQTT que necesitan contraseña, en un solo lugar: el
+# generador de claves, el archivo passwd y la ACL recorren esta misma lista.
+panol_mqtt_users: "{{ [panol_mqtt_server_user, panol_mqtt_reader_user] + (panol_mqtt_nodes | map(attribute='usuario') | list) }}"
