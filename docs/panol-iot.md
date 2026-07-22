@@ -28,9 +28,17 @@ esos programas y esos dispositivos necesitan para hablarse.
 
 | Servicio | Contenedor | Escucha | Por qué así |
 |---|---|---|---|
-| Mosquitto | `panol-mosquitto` | `0.0.0.0:1883` (MQTT) y `127.0.0.1:19001` (websockets) | los ESP32 son hardware en la red: no pueden entrar por el proxy. UFW limita el 1883 a las redes de dispositivos |
+| Mosquitto | `panol-mosquitto` | `<IP de la LAN>:1883` (MQTT) y `127.0.0.1:19001` (websockets) | los ESP32 son hardware en la red: no pueden entrar por el proxy. UFW limita el 1883 a las redes de dispositivos |
 | PostgreSQL | `panol-postgres` | `127.0.0.1:15432` | **no** el 5432: ese puerto del host ya lo usa el Postgres compartido del aula |
 | Node-RED | `panol-nodered` | `127.0.0.1:11880` + Caddy | se publica en `https://panol.<dominio>` detrás de Authelia, solo operadores |
+
+Dos puertos del host no son los "de siempre" por la misma razón: **el aula ya
+está ahí**. El `5432` lo tiene el Postgres compartido, y el `127.0.0.1:1883` lo
+publica el Mosquitto de un equipo. Por eso la base va en `15432` y el broker se
+ata a la IP de la LAN en vez de a `0.0.0.0` (pedir `0.0.0.0:1883` choca con la
+reserva de loopback). Efecto lateral bueno: el broker no queda accesible desde
+loopback, que es donde vive el laboratorio de los alumnos. Efecto lateral a
+tener presente: por Tailscale no se llega al broker, sí a la API.
 
 Los tres cuelgan de la red Docker **`panol`**. Cualquier stack que se una a esa
 red resuelve `mosquitto`, `postgres` y `nodered` por nombre.

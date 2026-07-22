@@ -18,7 +18,12 @@ panol_mosquitto_image: "eclipse-mosquitto:2.0.20"
 # MQTT es el único puerto en interfaz ruteable: los ESP32 son hardware en la
 # red y no pueden entrar por el proxy. UFW lo limita a panol_device_cidrs.
 panol_mqtt_port: 1883
-panol_mqtt_bind: "0.0.0.0"
+# Se ata a la IP de la LAN, no a 0.0.0.0, por dos razones que apuntan al mismo
+# lado: en loopback el 1883 ya lo usa un stack del aula (y pedir 0.0.0.0 choca
+# con esa reserva), y los nodos llegan por la LAN. Atarlo acá deja el loopback
+# para el aula y no expone el broker en ninguna otra interfaz.
+# Consecuencia: por Tailscale el broker NO se alcanza; la API (18500) sí.
+panol_mqtt_bind: "{{ ansible_default_ipv4.address }}"
 # Los demás quedan en loopback. 15432 y no 5432 porque el 5432 del host ya lo
 # ocupa el Postgres compartido del aula (rol shared_services).
 panol_mqtt_ws_port: 19001

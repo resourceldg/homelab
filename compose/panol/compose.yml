@@ -32,7 +32,8 @@ services:
     ports:
       # Única escucha en interfaz ruteable del stack: los ESP32 hablan MQTT
       # plano contra este puerto. UFW la limita a las redes de dispositivos
-      # (reglas `ufw route` del rol panol).
+      # (reglas `ufw route` del rol panol). El bind es la IP de la LAN, no
+      # 0.0.0.0: en loopback el 1883 ya lo ocupa un stack del aula.
       - "${PANOL_MQTT_BIND:-0.0.0.0}:${PANOL_MQTT_PORT:-1883}:1883"
       # WebSockets: solo loopback. Node-RED lo alcanza por la red interna;
       # exponerlo afuera sería otra puerta al mismo broker sin necesidad.
