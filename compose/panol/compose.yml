@@ -52,10 +52,12 @@ services:
       test:
         - "CMD-SHELL"
         - >-
-          mosquitto_sub -h 127.0.0.1 -p 1883
+          mosquitto_sub -h 127.0.0.1 -p 1883 -i panol-healthcheck
           -u "$$PANOL_MQTT_SERVER_USER" -P "$$PANOL_MQTT_SERVER_PASSWORD"
           -t '$$SYS/broker/uptime' -C 1 -W 3 >/dev/null
-      interval: 30s
+      # -i con nombre fijo y cada 60 s (no 30): el chequeo deja tres líneas en
+      # el log cada vez, y si se llama "auto-C14B7B54-..." tapa lo que importa.
+      interval: 60s
       timeout: 10s
       retries: 3
       start_period: 10s
