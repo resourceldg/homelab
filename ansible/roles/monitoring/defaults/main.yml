@@ -6,5 +6,10 @@ monitoring_enabled: true
 grafana_admin_user: "admin"
 prometheus_retention: "15d"
 
+# Logs en vivo (Loki + Alloy). `logs_enabled` instala el stack y el interruptor;
+# NO lo enciende. Encenderlo es una decisión de quien está mirando, porque el
+# costo es permanente y el uso es puntual.
+logs_enabled: true
+
 # Homepage dashboard (launchpad) at the root domain, behind Caddy.
 dashboard_enabled: true

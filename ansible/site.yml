@@ -8,6 +8,12 @@
 - name: Converge home server
   hosts: homeserver
   become: true
+  # Si el play falla a la mitad, Ansible descarta los handlers pendientes y el
+  # servidor queda con la config nueva EN DISCO pero el servicio corriendo con
+  # la vieja — drift silencioso, y el síntoma aparece lejos de la causa (pasó
+  # con Authelia: regla escrita, contenedor sin releerla, 403 inexplicable).
+  # Con esto los reinicios pendientes corren igual.
+  force_handlers: true
   # vault.yml is auto-loaded from the selected inventory's group_vars/all/,
   # e.g. inventories/production/group_vars/all/vault.yml — no vars_files needed.
 
@@ -43,6 +49,9 @@
     - { role: authelia, tags: ["services", "auth"] }
     - { role: monitoring, tags: ["services", "monitoring"] }
     - { role: backups, tags: ["backups"] }
+
+    # --- Proyecto Pañol IoT (broker MQTT + auditoría + tablero) ------------
+    - { role: panol, tags: ["services", "panol", "iot"] }
 
     # --- Classroom plane (multi-user Docker Compose lab) -------------------
     - { role: classroom, tags: ["classroom"] }

@@ -51,7 +51,9 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
-    networks: [monitoring, edge]
+    # 'panol' le da acceso a la base de auditoria del panol para sus paneles.
+    # La red la crea el rol docker, no este stack: por eso es external.
+    networks: [monitoring, edge, panol]
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -93,6 +95,8 @@ services:
 networks:
   monitoring:
   edge:
+    external: true
+  panol:
     external: true
 
 volumes:

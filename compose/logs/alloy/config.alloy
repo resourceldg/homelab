@@ -1,0 +1,48 @@
+// Recolector de logs de TODOS los contenedores del host.
+//
+// Descubre por el socket de Docker (solo lectura) y etiqueta cada línea con el
+// contenedor y el stack de Compose al que pertenece, que es como uno los busca:
+// "mostrame todo el stack panol" o "solo panol-puente-mqtt".
+
+discovery.docker "contenedores" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "15s"
+}
+
+discovery.relabel "contenedores" {
+  targets = discovery.docker.contenedores.targets
+
+  // Docker devuelve el nombre con una barra adelante: "/panol-api".
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "contenedor"
+  }
+
+  // El proyecto de Compose = el stack (panol, monitoring, auth, classroom…).
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "stack"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "servicio"
+  }
+}
+
+loki.source.docker "contenedores" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.contenedores.output
+  labels     = { origen = "docker" }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+  // Si Loki se cae, se descarta en vez de acumular en memoria: esto es
+  // observación en vivo, no un canal que deba garantizar entrega.
+  external_labels = {}
+}

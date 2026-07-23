@@ -66,3 +66,11 @@
   community.docker.docker_network:
     name: edge
     state: present
+
+# Igual que `edge`: la crea el host, no un stack. Así el stack del pañol y el
+# de monitoreo pueden declararla `external` sin depender de cuál se levanta
+# primero — Grafana necesita alcanzar la base del pañol para sus paneles.
+- name: Create dedicated docker network for the panol project
+  community.docker.docker_network:
+    name: panol
+    state: present

@@ -35,6 +35,11 @@ the guides ([student](docs/student-guide.md), [operator](docs/operator-guide.md)
 [labctl](docs/labctl.md), [policy](docs/docker-compose-policy.md),
 [resources](docs/resource-model.md), [shared services](docs/servicios-compartidos.md)).
 
+A **Pañol IoT service plane** (MQTT broker + audit database + Node-RED) hosts the
+access-control project whose code lives in the `panol-iot` repo: ESP32 nodes talk
+authenticated MQTT to the broker over the LAN, and the dashboard is published
+behind SSO. See [docs/panol-iot.md](docs/panol-iot.md).
+
 📚 **Architecture Handbook (Spanish):** a beginner-friendly study book covering
 Linux, Docker, observability, DevSecOps and IaC using this repo as a real case
 study — see [docs/handbook/](docs/handbook/index.md) (build with
@@ -64,12 +69,14 @@ homelab/
 │   └── roles/                   # each role owns its defaults/main.yml
 │       ├── bootstrap/ users_ssh/ tailscale/ ddns/
 │       ├── firewall/ fail2ban/ apparmor/ hardening/ auto_updates/ audit/
-│       └── docker/ monitoring/ backups/
+│       ├── docker/ monitoring/ backups/
+│       └── panol/                # Pañol IoT service plane (MQTT + audit DB)
 ├── compose/
 │   ├── proxy/                   # Caddy (custom build w/ DuckDNS DNS-01)
 │   ├── dashboard/               # Homepage launchpad (links every service)
 │   ├── monitoring/              # Prometheus + Grafana + exporters
-│   └── apps/                    # example educational project
+│   ├── apps/                    # example educational project
+│   └── panol/                   # Pañol IoT: Mosquitto + Postgres + Node-RED
 ├── tests/                       # testinfra + verify playbook
 ├── docs/                        # architecture, runbook, diagrams
 └── Makefile                     # operator interface

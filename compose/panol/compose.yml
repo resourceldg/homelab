@@ -1,0 +1,133 @@
+---
+# Plano de servicios del proyecto Pañol IoT (control de acceso y auditabilidad).
+# Stack del OPERADOR — no es un stack de aula, no pasa por labctl.
+#
+#   mosquitto   broker MQTT al que publican los nodos ESP32 (LAN/WLAN)
+#   postgres    base de auditoría (sesiones, eventos, idempotencia)
+#   nodered     tablero y automatizaciones, publicado por Caddy detrás de SSO
+#
+# El "cerebro" (api + puente MQTT) vive en el repo panol-iot y se conecta a
+# estos servicios uniéndose a la red externa `panol`. Ver docs/panol-iot.md.
+#
+# PUERTOS: el broker es el único que escucha fuera de loopback — los nodos son
+# hardware en la red, no pueden pasar por el proxy. Todo lo demás se publica en
+# 127.0.0.1 (Postgres en 15432 porque el 5432 del host ya lo usa el Postgres
+# compartido del aula) o se sirve por Caddy.
+name: panol
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20
+    container_name: panol-mosquitto
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+    env_file: .env
+    environment:
+      TZ: ${TZ}
+    ports:
+      # Única escucha en interfaz ruteable del stack: los ESP32 hablan MQTT
+      # plano contra este puerto. UFW la limita a las redes de dispositivos
+      # (reglas `ufw route` del rol panol). El bind es la IP de la LAN, no
+      # 0.0.0.0: en loopback el 1883 ya lo ocupa un stack del aula.
+      - "${PANOL_MQTT_BIND:-0.0.0.0}:${PANOL_MQTT_PORT:-1883}:1883"
+      # WebSockets: solo loopback. Node-RED lo alcanza por la red interna;
+      # exponerlo afuera sería otra puerta al mismo broker sin necesidad.
+      - "127.0.0.1:${PANOL_MQTT_WS_PORT:-19001}:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      # passwd y acl los genera el rol Ansible en el host (uid 1883, 0640).
+      - ./mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    networks: [panol]
+    healthcheck:
+      # Se autentica como el usuario del servidor y lee $SYS: comprueba que el
+      # broker responde Y que el archivo de contraseñas quedó bien cargado.
+      test:
+        - "CMD-SHELL"
+        - >-
+          mosquitto_sub -h 127.0.0.1 -p 1883 -i panol-healthcheck
+          -u "$$PANOL_MQTT_SERVER_USER" -P "$$PANOL_MQTT_SERVER_PASSWORD"
+          -t '$$SYS/broker/uptime' -C 1 -W 3 >/dev/null
+      # -i con nombre fijo y cada 60 s (no 30): el chequeo deja tres líneas en
+      # el log cada vez, y si se llama "auto-C14B7B54-..." tapa lo que importa.
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: panol-postgres
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${PANOL_DB_NAME}
+      POSTGRES_USER: ${PANOL_DB_USER}
+      POSTGRES_PASSWORD: ${PANOL_DB_PASSWORD}
+      TZ: ${TZ}
+    ports:
+      # Solo loopback, para psql/backups desde el host y para la etapa de
+      # migraciones. Los servicios de la app entran por la red `panol`.
+      - "127.0.0.1:${PANOL_PG_PORT:-15432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [panol]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nodered:
+    # Pin a la serie 4.0: Node-RED publica parches con frecuencia y el tag de
+    # minor evita quedar clavados en un patch que ya no existe en Docker Hub.
+    image: nodered/node-red:4.0
+    container_name: panol-nodered
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    env_file: .env
+    environment:
+      TZ: ${TZ}
+    ports:
+      - "127.0.0.1:${PANOL_NODERED_PORT:-11880}:1880"
+    volumes:
+      - nodered_data:/data
+    # 'edge' deja que Caddy lo sirva en panol.<dominio> detrás de Authelia;
+    # 'panol' es su casa, por donde habla con el broker y la base.
+    networks: [panol, edge]
+    depends_on:
+      mosquitto:
+        condition: service_started
+
+networks:
+  # Red del proyecto, creada por el rol `docker` (como `edge`). El stack de la
+  # app (repo panol-iot) y Grafana se unen a ella como red externa y así
+  # resuelven `mosquitto` y `postgres` por nombre.
+  panol:
+    external: true
+  edge:
+    external: true
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  postgres_data:
+  nodered_data:

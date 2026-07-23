@@ -63,3 +63,26 @@
     state: present
     pull: missing
   when: dashboard_enabled | bool
+
+# --- Logs en vivo (efímero, apagado por defecto) ---------------------------
+# Se instala pero NO se levanta: indexar los logs de todos los contenedores
+# cuesta RAM y disco de forma permanente, y este servidor también corre el
+# laboratorio del aula. Lo prende `logs-en-vivo`, que además lo apaga solo.
+- name: Deploy the live-logs stack (installed, not started)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../compose/logs/"
+    dest: "{{ stacks_root }}/logs/"
+    mode: "0644"
+    directory_mode: "0755"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: logs_enabled | bool
+
+- name: Install the live-logs switch
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../scripts/logs-en-vivo.sh"
+    dest: /usr/local/bin/logs-en-vivo
+    owner: root
+    group: root
+    mode: "0755"
+  when: logs_enabled | bool

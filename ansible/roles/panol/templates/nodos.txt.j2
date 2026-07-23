@@ -1,0 +1,25 @@
+{{ '#' }} {{ ansible_managed }}
+{{ '#' }} Credenciales de los nodos ESP32 del pañol — para grabar en el firmware.
+{{ '#' }} Solo root. Si se pierde un nodo: borrá su archivo .pass de este mismo
+{{ '#' }} directorio, corré `--tags panol` y regrabá SOLO ese nodo.
+
+Broker (desde la LAN/WLAN):  {{ ansible_default_ipv4.address | default('IP-DEL-SERVIDOR') }}:{{ panol_mqtt_port }}
+Broker (desde la red panol): mosquitto:1883
+Redes aceptadas por UFW:     {{ panol_device_cidrs | join(', ') }}
+{% for n in panol_mqtt_nodes %}
+
+=== {{ n.usuario }} — {{ n.descripcion | default('nodo ESP32') }} ===
+usuario:   {{ n.usuario }}
+clave:     {{ panol_mqtt_passwords[n.usuario] }}
+publica:   panol/{{ n.ubicacion }}/{{ n.nodo }}/evento/<tipo>
+           panol/{{ n.ubicacion }}/{{ n.nodo }}/heartbeat
+escucha:   panol/{{ n.ubicacion }}/{{ n.nodo }}/cmd/#
+{% endfor %}
+
+=== servidor (api + puente) ===
+usuario:   {{ panol_mqtt_server_user }}
+clave:     ver /etc/panol/app.env
+
+=== tablero (Node-RED, solo lectura) ===
+usuario:   {{ panol_mqtt_reader_user }}
+clave:     {{ panol_mqtt_passwords[panol_mqtt_reader_user] }}

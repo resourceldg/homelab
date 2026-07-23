@@ -1,0 +1,279 @@
+{
+  "uid": "panol-logs",
+  "title": "Pañol IoT — logs en vivo",
+  "description": "Logs de todos los contenedores del host + escrituras en la base del pañol. Los logs solo responden con el stack `logs` prendido (make logs-on): está apagado por defecto a propósito.",
+  "tags": [
+    "panol",
+    "logs",
+    "tiempo real"
+  ],
+  "timezone": "America/Argentina/Buenos_Aires",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "stack",
+        "label": "Stack",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "query": "label_values(stack)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "panol",
+          "value": "panol"
+        }
+      },
+      {
+        "name": "contenedor",
+        "label": "Contenedor",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "query": "label_values({stack=~\"$stack\"}, contenedor)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "buscar",
+        "label": "Buscar texto",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Cómo se prende (y por qué está apagado)",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Indexar los logs de todos los contenedores cuesta RAM, CPU y disco **todo el tiempo**, y este servidor también corre el laboratorio del aula. Por eso el stack de logs vive apagado.\n\nEn el servidor: `logs-en-vivo` (o `make logs-on` desde el repo). Pregunta cada 5 minutos si seguir y **se apaga solo** si no contestás — también si cerrás la terminal.\n\nSi los paneles de abajo dicen *connection refused*, está apagado: no es un error de configuración. Los paneles de la base, en cambio, andan siempre."
+      }
+    },
+    {
+      "id": 2,
+      "type": "logs",
+      "title": "Logs — $stack / $contenedor",
+      "description": "Todos los contenedores del host, filtrables. Elegí 'All' en Stack para ver el servidor entero.",
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{stack=~\"$stack\", contenedor=~\"$contenedor\"} |= \"$buscar\"",
+          "queryType": "range",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": true,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Ascending"
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Escrituras en la base, por tabla",
+      "description": "Cada barra es una fila nueva en la auditoría. Esto sí anda siempre: sale de Postgres, no de Loki.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "panol-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(t, '1m', 0), tabla AS metric, count(*) AS value FROM (SELECT timestamp AS t, 'accesos' AS tabla FROM eventos_acceso WHERE $__timeFilter(timestamp) UNION ALL SELECT timestamp, 'puerta' FROM eventos_puerta WHERE $__timeFilter(timestamp) UNION ALL SELECT timestamp, 'pir' FROM eventos_pir WHERE $__timeFilter(timestamp) UNION ALL SELECT timestamp, 'alarmas' FROM alarmas WHERE $__timeFilter(timestamp)) x GROUP BY 1, 2 ORDER BY 1",
+          "datasource": {
+            "type": "postgres",
+            "uid": "panol-postgres"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "alarmas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "timeFrom": "24h"
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Lo último que entró a la base",
+      "description": "Feed unificado de las cuatro tablas de eventos, lo más nuevo arriba.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "panol-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT t AS hora, tabla, ubicacion, detalle FROM (SELECT timestamp AS t, 'acceso' AS tabla, ubicacion_id AS ubicacion, uid_hex || ' → ' || resultado AS detalle FROM eventos_acceso WHERE $__timeFilter(timestamp) UNION ALL SELECT timestamp, 'puerta', ubicacion_id, estado_reed FROM eventos_puerta WHERE $__timeFilter(timestamp) UNION ALL SELECT timestamp, 'pir', ubicacion_id, 'movimiento' FROM eventos_pir WHERE $__timeFilter(timestamp) UNION ALL SELECT timestamp, 'ALARMA', ubicacion_id, codigo || ' (' || severidad || ')' FROM alarmas WHERE $__timeFilter(timestamp)) x ORDER BY t DESC LIMIT 100",
+          "datasource": {
+            "type": "postgres",
+            "uid": "panol-postgres"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tabla"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "ALARMA": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "acceso": {
+                        "color": "green",
+                        "index": 1
+                      },
+                      "puerta": {
+                        "color": "blue",
+                        "index": 2
+                      },
+                      "pir": {
+                        "color": "text",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "timeFrom": "24h"
+    }
+  ]
+}

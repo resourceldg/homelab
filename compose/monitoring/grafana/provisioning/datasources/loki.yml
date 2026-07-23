@@ -1,0 +1,17 @@
+---
+# Logs en vivo. El datasource queda SIEMPRE provisionado, pero el stack que lo
+# responde (compose/logs) vive apagado: se prende con `make logs-on` y se apaga
+# solo. Si los paneles de logs dicen "connection refused", es que está apagado —
+# no es un error de configuración.
+apiVersion: 1
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      # Ventana corta: esto es para mirar lo que pasa ahora.
+      maxLines: 2000
+      timeout: 30

@@ -14,7 +14,8 @@ VENV := $(CURDIR)/.venv
 export PATH := $(VENV)/bin:$(PATH)
 
 .PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
-        harden firewall updates backups monitoring idempotence test verify \
+        harden firewall updates backups monitoring panol idempotence test verify \
+        logs-on logs-off logs-estado \
         precommit secrets
 
 help: ## Show this help
@@ -66,6 +67,18 @@ firewall: ## Apply only the firewall role
 
 monitoring: ## Redeploy the monitoring + proxy stacks
 	$(RUN) $(PLAY) --tags "services,docker"
+
+logs-on: ## Prender los logs en vivo (pregunta cada 5 min; se apagan solos)
+	ssh -t ansible@homelab-01 logs-en-vivo
+
+logs-off: ## Apagar los logs en vivo
+	ssh ansible@homelab-01 logs-en-vivo --off
+
+logs-estado: ## ¿Están prendidos los logs en vivo?
+	ssh ansible@homelab-01 logs-en-vivo --estado
+
+panol: ## Redeploy the Pañol IoT plane (broker MQTT + auditoría + Node-RED)
+	$(RUN) $(PLAY) --tags panol
 
 backups: ## Configure backups and run one now
 	$(RUN) $(PLAY) --tags backups

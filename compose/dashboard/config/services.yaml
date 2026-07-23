@@ -21,3 +21,7 @@
         href: https://demo.{{HOMEPAGE_VAR_BASE_DOMAIN}}
         description: Example educational project
         icon: mdi-application
+    - Pañol IoT:
+        href: https://panol.{{HOMEPAGE_VAR_BASE_DOMAIN}}
+        description: Node-RED del control de acceso — operadores
+        icon: node-red.png

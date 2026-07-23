@@ -1,0 +1,75 @@
+---
+# Logs en vivo — stack EFÍMERO. Ansible lo deja instalado pero APAGADO.
+#
+# Se prende con `make logs-on` (o `logs-en-vivo` en el server), que además lo
+# apaga solo si nadie confirma que lo quiere seguir usando. La razón es simple:
+# indexar los logs de todos los contenedores cuesta RAM y disco todo el tiempo,
+# y este servidor también corre el laboratorio del aula. Un observador que
+# consume más que lo observado no sirve.
+#
+#   loki    guarda los logs (retención corta, en su volumen)
+#   alloy   los junta de TODOS los contenedores del host y se los manda
+name: logs
+
+services:
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: loki
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    ports:
+      # Solo loopback: Grafana llega por la red docker, esto es para depurar.
+      - "127.0.0.1:3100:3100"
+    networks: [monitoring]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3100/ready | grep -q ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  alloy:
+    image: grafana/alloy:v1.5.1
+    container_name: alloy
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "/etc/alloy/config.alloy"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # El socket es SOLO LECTURA y solo mientras el stack está prendido: es la
+      # forma de descubrir contenedores y leer sus logs. Aun así es acceso al
+      # demonio, y es otra razón para que esto no viva encendido.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    networks: [monitoring]
+    depends_on:
+      loki:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+networks:
+  # La red del stack de monitoreo, para que Grafana resuelva `loki` por nombre.
+  monitoring:
+    name: monitoring_monitoring
+    external: true
+
+volumes:
+  loki_data:
+  alloy_data:

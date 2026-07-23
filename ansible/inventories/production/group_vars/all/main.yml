@@ -40,3 +40,8 @@ usg_enabled: false
 caddy_base_domain: "lucasland.duckdns.org"
 caddy_acme_email: "resourceldg@gmail.com"
 duckdns_domains: "lucasland"          # -> lucasland.duckdns.org (no suffix)
+
+# --- Pañol IoT -------------------------------------------------------------
+# Cada alarma del pañol se convierte en un ticket de EMATP. La URL no es
+# secreta; el token va aparte, en /etc/panol/secrets/ematp.token del servidor.
+panol_ematp_url: "https://ematp.vercel.app/api/integraciones/panol"

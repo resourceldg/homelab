@@ -1,0 +1,16 @@
+---
+# Mosquitto lee passwd/acl al arrancar: un cambio en esos archivos no llega al
+# broker hasta que el contenedor se reinicia.
+- name: Restart panol mosquitto
+  community.docker.docker_compose_v2:
+    project_src: "{{ panol_stack_dir }}"
+    services: [mosquitto]
+    state: restarted
+
+# El datasource del pañol lo escribe este rol dentro del stack de monitoreo;
+# Grafana lee la carpeta de provisioning al arrancar.
+- name: Restart grafana
+  community.docker.docker_compose_v2:
+    project_src: "{{ stacks_root }}/monitoring"
+    services: [grafana]
+    state: restarted
