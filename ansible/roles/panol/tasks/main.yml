@@ -186,6 +186,89 @@
     pull: missing
   when: panol_enabled | bool
 
+# --- Grafana: acceso de SOLO LECTURA a la auditoría -------------------------
+# Un panel que puede escribir en un registro de auditoría no es un panel, es un
+# agujero. Por eso Grafana entra con su propio rol y solo con SELECT.
+- name: Install psycopg2 for Postgres provisioning
+  ansible.builtin.apt:
+    name: python3-psycopg2
+    state: present
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
+- name: Wait for the panol database to accept connections
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ panol_pg_port }}"
+    timeout: 90
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
+- name: Set the Grafana read-only password (default or random, once)
+  ansible.builtin.shell:
+    cmd: |
+      umask 077
+      clave='{{ panol_grafana_default_password }}'
+      [ -n "$clave" ] || clave="$(openssl rand -hex 24)"
+      printf %s "$clave" > {{ panol_secrets_dir }}/grafana-ro.pass
+    creates: "{{ panol_secrets_dir }}/grafana-ro.pass"
+  args:
+    executable: /bin/bash
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
+- name: Read the Grafana read-only password
+  ansible.builtin.slurp:
+    src: "{{ panol_secrets_dir }}/grafana-ro.pass"
+  register: panol_grafana_pass_raw
+  no_log: true
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
+- name: Create the Grafana read-only role
+  community.postgresql.postgresql_user:
+    login_host: "127.0.0.1"
+    login_port: "{{ panol_pg_port }}"
+    login_user: "{{ panol_db_user }}"
+    login_password: "{{ panol_db_password }}"
+    db: "{{ panol_db_name }}"
+    name: "{{ panol_grafana_db_user }}"
+    password: "{{ panol_grafana_pass_raw.content | b64decode }}"
+  no_log: true
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
+- name: Grant the Grafana role read access
+  community.postgresql.postgresql_privs:
+    login_host: "127.0.0.1"
+    login_port: "{{ panol_pg_port }}"
+    login_user: "{{ panol_db_user }}"
+    login_password: "{{ panol_db_password }}"
+    db: "{{ panol_db_name }}"
+    role: "{{ panol_grafana_db_user }}"
+    type: "{{ item.type }}"
+    objs: "{{ item.objs }}"
+    privs: "{{ item.privs }}"
+    schema: "{{ item.schema | default(omit) }}"
+  loop:
+    - { type: database, objs: "{{ panol_db_name }}", privs: CONNECT }
+    - { type: schema, objs: public, privs: USAGE }
+    - { type: table, objs: ALL_IN_SCHEMA, privs: SELECT, schema: public }
+    # Sin esto, una tabla nueva del esquema nace invisible para el panel y el
+    # síntoma es un dashboard a medias meses después.
+    - { type: default_privs, objs: TABLES, privs: SELECT, schema: public }
+  no_log: true
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
+# El datasource se renderiza acá, en el stack de monitoreo, porque necesita un
+# secreto que solo este rol conoce. Grafana corre con uid 472: el archivo tiene
+# que ser legible por él y por nadie más.
+- name: Provision the panol datasource in Grafana
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ stacks_root }}/monitoring/grafana/provisioning/datasources/panol.yml"
+    owner: "472"
+    group: "472"
+    mode: "0640"
+  no_log: true
+  notify: Restart grafana
+  when: panol_enabled | bool and panol_grafana_enabled | bool
+
 # --- Firewall ---------------------------------------------------------------
 # El puerto MQTT lo publica Docker, así que el tráfico entra por FORWARD y no
 # por INPUT: con ufw-docker instalado, la regla que manda es `ufw route`. Una

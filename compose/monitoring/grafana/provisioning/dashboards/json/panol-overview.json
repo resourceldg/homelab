@@ -1,0 +1,387 @@
+{
+  "uid": "panol-overview",
+  "title": "Pañol IoT — auditoría",
+  "description": "Estado del pañol y su auditoría, leído de la base del proyecto (solo lectura). Para accionar sobre la puerta está Node-RED, no este panel.",
+  "tags": ["panol", "iot", "seguridad"],
+  "timezone": "America/Argentina/Buenos_Aires",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Responsable actual",
+      "description": "Tarjeta de la sesión EN_CURSO. 'sin sesión' = el pañol no tiene responsable asignado ahora.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE((SELECT uid_hex FROM sesiones WHERE estado = 'EN_CURSO' ORDER BY hora_inicio DESC LIMIT 1), 'sin sesión') AS responsable",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "text" },
+          "mappings": [
+            {
+              "type": "value",
+              "options": { "sin sesión": { "color": "text", "index": 0, "text": "sin sesión" } }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Puerta",
+      "description": "Último cambio reportado por el reed. El reed solo reporta cambios: si dice ABIERTO, sigue abierta.",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE((SELECT estado_reed FROM eventos_puerta ORDER BY timestamp DESC, id DESC LIMIT 1), 'sin datos') AS puerta",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "text" },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "ABIERTO": { "color": "orange", "index": 0, "text": "ABIERTA" },
+                "CERRADO": { "color": "green", "index": 1, "text": "cerrada" },
+                "sin datos": { "color": "text", "index": 2, "text": "sin datos" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Minutos desde el último heartbeat",
+      "description": "Cuánto hace que el nodo más silencioso no da señal. El nodo late cada 60 s: pasados unos minutos, o se cayó la red o se cayó el nodo.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(MAX(EXTRACT(EPOCH FROM (now() - ultimo_heartbeat)) / 60), 999) AS minutos FROM nodos",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Alarmas en el rango",
+      "description": "Cantidad de alarmas registradas en la ventana de tiempo del dashboard.",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS alarmas FROM alarmas WHERE $__timeFilter(timestamp)",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Accesos por hora",
+      "description": "CONCEDIDO / DENEGADO / SIN_INGRESO. Un pico de DENEGADO es una tarjeta que no está en la whitelist… o alguien probando.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp, '1h', 0), resultado AS metric, count(*) AS value FROM eventos_acceso WHERE $__timeFilter(timestamp) GROUP BY 1, 2 ORDER BY 1",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": [] },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "stacking": { "mode": "normal", "group": "A" }
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "DENEGADO" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "CONCEDIDO" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Nodos",
+      "description": "Un nodo en modo degradado decide igual la apertura contra su whitelist local: lo que no puede es reportar ni refrescarla.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id AS nodo, ubicacion_id AS ubicacion, rol, ultimo_heartbeat, modo_degradado AS degradado, rssi, uptime_s AS uptime FROM nodos ORDER BY id",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": false } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "degradado" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "true": { "color": "red", "index": 0, "text": "SÍ" },
+                      "false": { "color": "green", "index": 1, "text": "no" }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "rssi" },
+            "properties": [{ "id": "unit", "value": "dBm" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "uptime" },
+            "properties": [{ "id": "unit", "value": "s" }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Alarmas",
+      "description": "SIN_SESION es el caso que más importa: actividad en el pañol sin nadie que se haya hecho responsable.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp, codigo, severidad, ubicacion_id AS ubicacion, sesion_id AS sesion, detalle::text AS detalle FROM alarmas WHERE $__timeFilter(timestamp) ORDER BY timestamp DESC LIMIT 100",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severidad" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "CRITICA": { "color": "red", "index": 0 },
+                      "ALTA": { "color": "orange", "index": 1 },
+                      "MEDIA": { "color": "yellow", "index": 2 },
+                      "BAJA": { "color": "text", "index": 3 }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Accesos",
+      "description": "Cada lectura de tarjeta, con la sesión que abrió o cerró. 'modo degradado' marca las decididas sin servidor.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp, uid_hex AS tarjeta, resultado, ubicacion_id AS ubicacion, modo_degradado AS degradado FROM eventos_acceso WHERE $__timeFilter(timestamp) ORDER BY timestamp DESC LIMIT 100",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "resultado" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "CONCEDIDO": { "color": "green", "index": 0 },
+                      "DENEGADO": { "color": "red", "index": 1 },
+                      "SIN_INGRESO": { "color": "yellow", "index": 2 }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Sesiones",
+      "description": "La cadena de responsabilidad: quién tuvo el pañol, desde cuándo y por qué se cerró.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
+      "datasource": { "type": "postgres", "uid": "panol-postgres" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id, ubicacion_id AS ubicacion, uid_hex AS tarjeta, hora_inicio, hora_fin, estado, motivo_cierre AS cierre, ultima_actividad FROM sesiones WHERE $__timeFilter(hora_inicio) ORDER BY hora_inicio DESC LIMIT 100",
+          "datasource": { "type": "postgres", "uid": "panol-postgres" }
+        }
+      ],
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "estado" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "EN_CURSO": { "color": "blue", "index": 0 },
+                      "COMPLETA": { "color": "green", "index": 1 },
+                      "INCONSISTENTE": { "color": "red", "index": 2 }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

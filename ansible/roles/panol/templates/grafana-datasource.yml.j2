@@ -1,0 +1,24 @@
+---
+# {{ ansible_managed }}
+# Datasource de solo lectura sobre la auditoría del pañol.
+# Lo escribe el rol `panol` (no el de monitoreo) porque la contraseña vive en
+# /etc/panol/secrets y solo ese rol la conoce.
+apiVersion: 1
+datasources:
+  - name: Panol
+    uid: panol-postgres
+    type: postgres
+    # `postgres` resuelve dentro de la red docker `panol`, a la que Grafana
+    # está unida. No pasa por el puerto publicado en loopback.
+    url: postgres:5432
+    database: {{ panol_db_name }}
+    user: {{ panol_grafana_db_user }}
+    secureJsonData:
+      password: '{{ panol_grafana_pass_raw.content | b64decode }}'
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    # No editable desde la UI: el que manda es este archivo. Si alguien
+    # "arregla" la conexión a mano, el próximo converge lo pisa igual.
+    editable: false

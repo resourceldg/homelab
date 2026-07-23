@@ -116,10 +116,11 @@ services:
         condition: service_started
 
 networks:
-  # Red del proyecto. El stack de la app (repo panol-iot) se une a ella como
-  # red externa `panol` y así resuelve `mosquitto` y `postgres` por nombre.
+  # Red del proyecto, creada por el rol `docker` (como `edge`). El stack de la
+  # app (repo panol-iot) y Grafana se unen a ella como red externa y así
+  # resuelven `mosquitto` y `postgres` por nombre.
   panol:
-    name: panol
+    external: true
   edge:
     external: true
 

@@ -88,6 +88,14 @@ panol_device_cidrs:
   - "{{ lan_cidr }}"
   - "{{ tailscale_cidr }}"
 
+# --- Grafana ----------------------------------------------------------------
+# Panel de lectura sobre la auditoría. Grafana entra con su PROPIO rol y solo
+# con SELECT: un panel que puede escribir en un registro de auditoría no es un
+# panel. Vaciá la clave por defecto para que se sortee una aleatoria.
+panol_grafana_enabled: true
+panol_grafana_db_user: "grafana_ro"
+panol_grafana_default_password: "cambiar-grafana-panol"
+
 # --- Publicación ------------------------------------------------------------
 # Node-RED se sirve en https://<subdominio>.<caddy_base_domain> detrás de SSO.
 panol_subdomain: "panol"

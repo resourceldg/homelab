@@ -65,7 +65,7 @@ secretos cifrados.
 
 | Archivo | Permisos | Contenido |
 |---|---|---|
-| `/etc/panol/secrets/*.pass` | `root` 0700 | una clave por identidad (fuente de verdad) |
+| `/etc/panol/secrets/*.pass` | `root` 0700 | una clave por identidad, incluida la de Grafana (fuente de verdad) |
 | `/etc/panol/secrets/nodos.txt` | `root` 0600 | hoja para grabar el firmware: broker, usuario, clave y topics de cada nodo |
 | `/etc/panol/app.env` | `root:ansible` 0640 | `PANOL_DSN` + credenciales MQTT del servidor |
 | `/opt/homelab/stacks/panol/.env` | `ansible` 0600 | puertos y claves que consume Compose |
@@ -88,7 +88,8 @@ porque eso es lo que hay que hacer antes de montar en producción.
 | `panol-nodered` | `cambiar-nodered-panol` | tablero Node-RED (se carga a mano en el nodo MQTT) |
 | `nodo-panol-puerta` | `cambiar-nodo-puerta` | ESP32 #1 (`firmware/nodo_panol/config.py`) |
 | `nodo-panol-armarios` | `cambiar-nodo-armarios` | ESP32 #2 (etapa posterior) |
-| Postgres `panol` | `cambiar-db-panol` | base de auditoría |
+| Postgres `panol` | `cambiar-db-panol` | base de auditoría (dueño) |
+| Postgres `grafana_ro` | `cambiar-grafana-panol` | Grafana, solo SELECT |
 
 **Rotar una clave** — el `.pass` es la fuente de verdad, así que se borra el
 archivo (y se saca o se cambia el valor en `panol_mqtt_default_passwords`; si
@@ -144,6 +145,50 @@ sudo ufw status | grep 1883
 
 Si mañana los nodos van a una VLAN IoT propia, agregás ese CIDR a
 `panol_device_cidrs` y corrés `make panol`.
+
+## Ver: Grafana
+
+Dashboard **Pañol IoT — auditoría** (`https://grafana.<dominio>`, carpeta
+Homelab). Lee la base del pañol directamente, con un rol propio
+(`grafana_ro`) que **solo tiene SELECT**: un panel que puede escribir en un
+registro de auditoría no es un panel, es un agujero.
+
+| Panel | Para qué |
+|---|---|
+| Responsable actual | qué tarjeta tiene la sesión `EN_CURSO`, o "sin sesión" |
+| Puerta | último estado del reed (el reed solo reporta cambios: si dice ABIERTA, sigue abierta) |
+| Minutos desde el último heartbeat | el nodo late cada 60 s; en rojo pasados 10 min |
+| Accesos por hora | CONCEDIDO/DENEGADO apilados — un pico de DENEGADO es alguien probando tarjetas |
+| Nodos | heartbeat, RSSI y modo degradado por nodo |
+| Alarmas / Accesos / Sesiones | el detalle, filtrable, con la ventana de tiempo del dashboard |
+
+Grafana llega a la base por la red docker `panol` (que crea el rol `docker`,
+igual que `edge`), no por el puerto de loopback. El datasource lo escribe el rol
+`panol` dentro del stack de monitoreo, porque la contraseña la conoce ese rol y
+no el de monitoreo.
+
+## Accionar: Node-RED, no Grafana
+
+Grafana **no** es para botones: los que hay son plugins de terceros y quedan a
+mitad de camino. El lugar para accionar es Node-RED, que ya está desplegado y
+tiene credencial en el broker (`panol-nodered`).
+
+Ahora bien, hoy un botón no tendría a quién hablarle. La rama de comandos
+`panol/<ubicacion>/<nodo>/cmd/#` está reservada en la ACL —el nodo tiene
+permiso de lectura sobre ella— pero **el firmware todavía no escucha MQTT**:
+reporta por HTTP y no hay canal de comandos en la API. Para que un botón "abrir
+puerta" funcione hay que, en este orden:
+
+1. Que el nodo se suscriba a su rama `cmd/#` (etapa 2b del firmware), o que la
+   API exponga una cola de comandos que el nodo lea en su polling.
+2. Decidir qué comandos existen y cuáles NO. Abrir a distancia una puerta con
+   control de acceso es exactamente lo que el sistema existe para auditar: si
+   se agrega, el comando tiene que quedar registrado como un evento más, con
+   quién lo disparó.
+
+Mientras tanto Node-RED sirve igual para lo que no es accionar: mostrar en
+pantalla las sesiones y alarmas que el puente publica (`panol/<ubicacion>/sesion`
+y `panol/<ubicacion>/alarma/<codigo>`), y mandar avisos.
 
 ## Backups
 
