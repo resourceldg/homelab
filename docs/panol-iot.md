@@ -229,6 +229,23 @@ Mientras tanto Node-RED sirve igual para lo que no es accionar: mostrar en
 pantalla las sesiones y alarmas que el puente publica (`panol/<ubicacion>/sesion`
 y `panol/<ubicacion>/alarma/<codigo>`), y mandar avisos.
 
+## Tickets en EMATP
+
+Cada alarma se convierte en un ticket. La URL va en el inventario
+(`panol_ematp_url`, no es secreta); el **token se pone a mano en el servidor**,
+con el mismo criterio que el resto de los secretos de este rol — viene de otro
+sistema y no tiene por qué pasar por el repo ni por el vault:
+
+```bash
+sudo tee /etc/panol/secrets/ematp.token <<< '<el token de EMATP>'
+sudo chmod 600 /etc/panol/secrets/ematp.token
+make panol
+```
+
+El rol avisa en la corrida si la integración queda activa o qué le falta. Sin
+URL o sin token no se envía nada y el sistema funciona igual: las alarmas se
+acumulan en su tabla hasta que se configure.
+
 ## Backups
 
 No hay que configurar nada: los tres lugares donde vive el estado del pañol ya

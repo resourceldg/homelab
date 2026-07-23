@@ -158,6 +158,35 @@
   no_log: true
   notify: Restart panol mosquitto
 
+# --- Integración con EMATP --------------------------------------------------
+# El token lo pone una persona en el servidor, no Ansible: viene de otro
+# sistema (Vercel) y no tiene por qué pasar por este repo.
+- name: Check whether the EMATP token is present
+  ansible.builtin.stat:
+    path: "{{ panol_secrets_dir }}/ematp.token"
+  register: panol_ematp_token_file
+  when: panol_enabled | bool
+
+- name: Read the EMATP token
+  ansible.builtin.slurp:
+    src: "{{ panol_secrets_dir }}/ematp.token"
+  register: panol_ematp_token_raw
+  no_log: true
+  when:
+    - panol_enabled | bool
+    - panol_ematp_token_file.stat.exists | default(false)
+
+- name: Note whether the EMATP integration will be active
+  ansible.builtin.debug:
+    msg: >-
+      EMATP: {{ 'configurado (' ~ panol_ematp_url ~ ')'
+                if (panol_ematp_url | length > 0
+                    and panol_ematp_token_file.stat.exists | default(false))
+                else 'inactivo — falta ' ~
+                     ('la URL' if panol_ematp_url | length == 0 else 'el token en '
+                      ~ panol_secrets_dir ~ '/ematp.token') }}
+  when: panol_enabled | bool
+
 # --- Credenciales para quien las necesita ----------------------------------
 - name: Render the app credentials file (api + puente del repo panol-iot)
   ansible.builtin.template:

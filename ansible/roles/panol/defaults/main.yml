@@ -88,6 +88,20 @@ panol_device_cidrs:
   - "{{ lan_cidr }}"
   - "{{ tailscale_cidr }}"
 
+# --- Integración con EMATP --------------------------------------------------
+# Cada alarma del pañol se convierte en un ticket. La URL no es secreta y va
+# acá; el token SÍ lo es y no se escribe en el repo ni en el vault: se deja en
+# un archivo del servidor (mismo criterio que el resto de los secretos de este
+# rol) y este rol lo lee si está.
+#
+#   sudo install -m 600 -o root -g root /dev/null /etc/panol/secrets/ematp.token
+#   sudo tee /etc/panol/secrets/ematp.token <<< '<el token>'
+#   make panol
+#
+# Sin URL o sin token, la integración queda inactiva y el sistema funciona
+# igual: las alarmas se acumulan en su tabla hasta que se configure.
+panol_ematp_url: ""
+
 # --- Grafana ----------------------------------------------------------------
 # Panel de lectura sobre la auditoría. Grafana entra con su PROPIO rol y solo
 # con SELECT: un panel que puede escribir en un registro de auditoría no es un
