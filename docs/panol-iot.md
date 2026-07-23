@@ -167,6 +167,45 @@ igual que `edge`), no por el puerto de loopback. El datasource lo escribe el rol
 `panol` dentro del stack de monitoreo, porque la contraseña la conoce ese rol y
 no el de monitoreo.
 
+## Logs en vivo (prendidos a pedido, se apagan solos)
+
+Dashboard **Pañol IoT — logs en vivo** (`/d/panol-logs`). Tiene dos mitades que
+se comportan distinto:
+
+- **Los logs de los contenedores** (Loki + Alloy) andan solo con el stack `logs`
+  encendido. Si dicen *connection refused*, está apagado — no es un error.
+- **Las escrituras en la base** (qué entró a la auditoría, por tabla y en vivo)
+  andan **siempre**: salen de Postgres, no de Loki.
+
+Prender y apagar, en el servidor:
+
+```bash
+logs-en-vivo            # prende y pregunta cada 5 min si seguir
+logs-en-vivo 15         # turnos de 15 minutos
+logs-en-vivo --off      # apagar
+logs-en-vivo --estado   # ¿está prendido?
+```
+
+(desde la notebook: `make logs-on`, `make logs-off`, `make logs-estado`)
+
+**Por qué no queda prendido.** Indexar los logs de todos los contenedores cuesta
+RAM, CPU y disco de forma permanente, y este servidor además corre el
+laboratorio del aula. El uso, en cambio, es puntual: uno mira los logs cuando
+algo anda mal. Así que el stack vive apagado y se enciende mientras haya alguien
+mirando.
+
+El corte no depende de que te acuerdes: el script tiene un `trap`, así que se
+apaga aunque cierres la terminal, aunque cortes con Ctrl+C o aunque falle. Si no
+contestás la pregunta en 60 segundos, se apaga. Un observador que queda prendido
+solo es justo lo que se quiere evitar.
+
+Retención de Loki: **48 h**, con límites de ingesta por stream. Es observación,
+no archivo — lo que hay que conservar (la auditoría) está en Postgres.
+
+Alloy monta el socket de Docker en **solo lectura** para descubrir contenedores
+y leer sus logs. Es acceso al demonio, y es la otra razón para que esto no viva
+encendido.
+
 ## Accionar: Node-RED, no Grafana
 
 Grafana **no** es para botones: los que hay son plugins de terceros y quedan a
