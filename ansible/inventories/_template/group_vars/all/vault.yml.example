@@ -1,0 +1,33 @@
+---
+# =============================================================================
+# SECRETS TEMPLATE — copy to vault.yml and encrypt:
+#     cp vault.yml.example vault.yml
+#     ansible-vault encrypt vault.yml
+# Edit later with:  ansible-vault edit vault.yml
+# =============================================================================
+
+# Ubuntu Pro token (needed for `usg` CIS tooling). Get it at ubuntu.com/pro.
+vault_ubuntu_pro_token: "REPLACE_WITH_UBUNTU_PRO_TOKEN"
+
+# DuckDNS token from https://www.duckdns.org (top of the page after login).
+vault_duckdns_token: "REPLACE_WITH_DUCKDNS_TOKEN"
+
+# Grafana admin password.
+vault_grafana_admin_password: "REPLACE_WITH_STRONG_PASSWORD"
+
+# Borg repository passphrase — LOSE THIS AND YOU LOSE THE BACKUPS.
+vault_borg_passphrase: "REPLACE_WITH_LONG_RANDOM_PASSPHRASE"
+
+# Postgres superuser password for the shared classroom database.
+vault_postgres_superuser_password: "REPLACE_WITH_STRONG_PASSWORD"
+
+# Authelia SSO — three long random secrets (64+ chars each), e.g.
+#   tr -dc 'A-Za-z0-9' </dev/urandom | head -c 64; echo
+vault_authelia_jwt_secret: "REPLACE_WITH_64_CHAR_RANDOM"
+vault_authelia_session_secret: "REPLACE_WITH_64_CHAR_RANDOM"
+vault_authelia_storage_key: "REPLACE_WITH_64_CHAR_RANDOM"
+
+# Login passwords for the SSO users (one per entry in sso_users).
+vault_sso_passwords:
+  operator: "REPLACE_WITH_A_PASSWORD"
+  # jessi: "..."   # one line per student

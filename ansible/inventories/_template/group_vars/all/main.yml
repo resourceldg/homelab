@@ -1,0 +1,51 @@
+---
+# =============================================================================
+# IDENTIDAD DEL SITIO — lo que cambia de un servidor replicado a otro.
+# Todo lo marcado REPLACE_ es obligatorio; el resto tiene defaults sensatos.
+# Los secretos van al lado, en vault.yml (cifrado).
+#
+# Regla práctica: si un valor es igual en TODOS tus sitios, no va acá — va en
+# ../../group_vars/all/main.yml (la línea base compartida del repo).
+# =============================================================================
+
+# --- Identidad -------------------------------------------------------------
+# Tiene que coincidir con el hostname que figura en hosts.ini.
+server_hostname: "REPLACE_HOSTNAME"
+server_timezone: "America/Argentina/Buenos_Aires"
+server_locale: "es_AR.UTF-8"
+
+# --- Red -------------------------------------------------------------------
+# El CIDR REAL de la LAN de este sitio. Un valor equivocado te deja afuera de
+# tu propia red al aplicar el firewall: verificalo con `ip -4 addr`.
+lan_cidr: "REPLACE_WITH_LAN_CIDR"          # p. ej. 192.168.0.0/24
+tailscale_cidr: "100.64.0.0/10"            # igual en todos: rango CGNAT de Tailscale
+
+# --- Accesos ---------------------------------------------------------------
+# Clave pública de la máquina desde la que administrás este sitio.
+admin_ssh_authorized_keys:
+  - "REPLACE_WITH_YOUR_SSH_PUBLIC_KEY"
+
+# Cuentas humanas. `operador` entra por SSH con sudo por contraseña.
+# El gate de hardening se niega a cerrar SSH mientras quede un REPLACE_ acá.
+extra_users:
+  - name: operador
+    groups: [sudo]
+    ssh: true
+    authorized_keys:
+      - "REPLACE_WITH_YOUR_SSH_PUBLIC_KEY"
+
+# --- Hardening -------------------------------------------------------------
+# Sin Ubuntu Pro, USG/CIS queda apagado; el resto del endurecimiento aplica
+# igual. Poner true solo si cargás un token de Pro en el vault.
+usg_enabled: false
+
+# --- Proxy inverso / DNS ---------------------------------------------------
+# Dominio propio de este sitio (DuckDNS es gratis). El token va en el vault.
+caddy_base_domain: "REPLACE_WITH_DOMAIN"    # p. ej. misitio.duckdns.org
+caddy_acme_email: "REPLACE_WITH_EMAIL"
+duckdns_domains: "REPLACE_WITH_DUCKDNS_SUBDOMAIN"   # p. ej. misitio (sin .duckdns.org)
+
+# --- Pañol IoT (opcional) --------------------------------------------------
+# Solo si este sitio hospeda el control de acceso. Si no, dejar en false.
+# panol_enabled: false
+# panol_ematp_url: "https://ematp.vercel.app/api/integraciones/panol"

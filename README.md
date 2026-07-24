@@ -45,6 +45,9 @@ Linux, Docker, observability, DevSecOps and IaC using this repo as a real case
 study — see [docs/handbook/](docs/handbook/index.md) (build with
 `pip install mkdocs-material && mkdocs serve`).
 
+To run the same server on more machines or manage several sites, see
+**[docs/replicar-y-escalar.md](docs/replicar-y-escalar.md)**.
+
 See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
 rationale behind each decision, and
 **[docs/deployment-guide.md](docs/deployment-guide.md)** for the exhaustive,

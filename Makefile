@@ -15,7 +15,7 @@ export PATH := $(VENV)/bin:$(PATH)
 
 .PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
         harden firewall updates backups monitoring panol idempotence test verify \
-        logs-on logs-off logs-estado \
+        logs-on logs-off logs-estado new-site \
         precommit secrets
 
 help: ## Show this help
@@ -45,6 +45,16 @@ secrets: ## Scan the repo for leaked secrets (gitleaks)
 molecule: ## Run Molecule for ddns + backups roles (set UBUNTU_IMAGE_TAG=2204|2404)
 	cd $(ANSIBLE_DIR)/roles/ddns && molecule test
 	cd $(ANSIBLE_DIR)/roles/backups && molecule test
+
+new-site: ## Crear un inventario nuevo desde la plantilla: make new-site NAME=colegio-norte
+	@test -n "$(NAME)" || { echo "Falta NAME. Uso: make new-site NAME=colegio-norte"; exit 2; }
+	@test ! -d "$(ANSIBLE_DIR)/inventories/$(NAME)" || { echo "Ya existe inventories/$(NAME)"; exit 2; }
+	@cp -r $(ANSIBLE_DIR)/inventories/_template $(ANSIBLE_DIR)/inventories/$(NAME)
+	@echo "✅ inventories/$(NAME) creado. Ahora:"
+	@echo "   1. Editar inventories/$(NAME)/hosts.ini y group_vars/all/main.yml (los REPLACE_)"
+	@echo "   2. make vault-create ENV=$(NAME)"
+	@echo "   3. make dry-run ENV=$(NAME)   # revisar sin aplicar"
+	@echo "   4. make apply ENV=$(NAME)"
 
 vault-create: ## Create the encrypted vault for $(ENV) from the example
 	cp $(ANSIBLE_DIR)/$(VAULT).example $(ANSIBLE_DIR)/$(VAULT)
