@@ -36,6 +36,20 @@ change often and want the fast Compose loop. Installing apps with Ansible `apt`
 would couple them and make rollbacks painful. Ansible *deposits* compose files
 and renders `.env` from Vault, Docker *runs* them.
 
+The diagram shows the **core** service plane. Two larger subsystems run on top of
+it, each with its own architecture doc so this one stays about the core:
+
+- **Teaching lab** — multi-user Docker Compose sandbox for student teams
+  (`labctl`, per-team networks, shared Postgres/Redis/Mailpit). See
+  [classroom-architecture.md](classroom-architecture.md).
+- **Pañol IoT** — access-control service plane (Mosquitto + audit Postgres +
+  Node-RED) for the ESP32 nodes, deployed by the `panol` role and connected to
+  EMATP for tickets. See [panol-iot.md](panol-iot.md).
+
+The same replication model applies to both: one inventory = one site; see
+[replicar-y-escalar.md](replicar-y-escalar.md) to stand the whole thing up on
+another machine.
+
 ## 2. Network & access model
 
 ```mermaid

@@ -60,6 +60,28 @@ make vault-edit          # change the value
 make apply               # re-renders env files and restarts affected services
 ```
 
+## Replicate the whole thing to another machine
+
+```bash
+make new-site NAME=<sitio>   # clone the inventory template, then fill the REPLACE_ values
+```
+
+Full flow (one inventory = one site, several servers per site with host_vars) in
+[replicar-y-escalar.md](replicar-y-escalar.md).
+
+## Pañol IoT (access control)
+
+The `panol` role owns the broker + audit DB + Node-RED; the brain (api, bridge,
+scheduler) deploys from the `panol-iot` repo. Everything —credentials, rotation,
+firewall, the test-data reset, the end-to-end walkthrough— lives in
+[panol-iot.md](panol-iot.md). Quick ones:
+
+```bash
+make panol                                      # redeploy the plane
+sudo cat /etc/panol/secrets/nodos.txt           # node credentials for flashing
+systemctl status panol-reset-prueba.timer       # test-mode reset (temporary)
+```
+
 ## Backups
 
 - Manual run: `sudo borgmatic --verbosity 1`
