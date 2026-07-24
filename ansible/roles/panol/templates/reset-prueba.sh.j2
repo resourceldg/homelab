@@ -34,8 +34,12 @@ NEON_URL_FILE="{{ panol_secrets_dir }}/ematp-db.url"
 if [ -s "$NEON_URL_FILE" ]; then
   log "limpiando la base de EMATP…"
   # Se usa el psql del contenedor para no depender de tener psql en el host.
-  docker exec -i -e NEON_URL="$(cat "$NEON_URL_FILE")" panol-postgres \
-    psql "$NEON_URL" -v ON_ERROR_STOP=1 -q <<'SQL'
+  # La URL entra como variable de entorno del contenedor y se expande DENTRO
+  # (comillas simples en el sh -c), no en el host: así psql la recibe bien y no
+  # aparece como argumento suelto.
+  neon_url="$(cat "$NEON_URL_FILE")"
+  docker exec -i -e NEON_URL="$neon_url" panol-postgres \
+    sh -c 'psql "$NEON_URL" -v ON_ERROR_STOP=1 -q' <<'SQL'
 TRUNCATE ordenes_trabajo, alarmas_panol, notificaciones, comentarios,
          ticket_fotos, movimientos_equipo
     RESTART IDENTITY CASCADE;
