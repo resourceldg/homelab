@@ -20,7 +20,9 @@ log() { echo "[$(date '+%F %T')] reset-prueba: $*"; }
 # --- Base del pañol (local, en el contenedor) ------------------------------
 # El id vuelve a 1 y las tablas de identidad/topología quedan intactas.
 log "limpiando la base del pañol…"
-docker exec panol-postgres psql -U {{ panol_db_user }} -d {{ panol_db_name }} -v ON_ERROR_STOP=1 -q <<'SQL'
+# -i es imprescindible: sin él, docker exec no conecta el heredoc al stdin de
+# psql, y psql sale sin ejecutar nada (con éxito, engañosamente).
+docker exec -i panol-postgres psql -U {{ panol_db_user }} -d {{ panol_db_name }} -v ON_ERROR_STOP=1 -q <<'SQL'
 TRUNCATE eventos_acceso, eventos_armario, eventos_pir, eventos_puerta,
          eventos_procesados, alarmas, sesiones
     RESTART IDENTITY CASCADE;
