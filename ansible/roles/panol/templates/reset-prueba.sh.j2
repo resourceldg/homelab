@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+#
+# RESET DE MODO PRUEBA — borra los datos de las dos bases cada pocas horas para
+# que el sistema arranque limpio en cada sesión de pruebas. NO es una operación
+# normal: existe solo mientras se está probando, y se apaga poniendo
+# `panol_reset_prueba_enabled: false` y corriendo `--tags panol`.
+#
+# Preserva lo que NO es dato de prueba:
+#   - Pañol:  usuarios, credenciales, nodos, ubicaciones (identidad y topología)
+#   - EMATP:  users, aulas, equipos, insumos (personas y configuración)
+#
+# Borra el resto: eventos, sesiones, alarmas, tickets, notificaciones. Como es
+# un TRUNCATE, además reinicia los contadores de id, así cada sesión de prueba
+# arranca desde 1.
+set -euo pipefail
+
+log() { echo "[$(date '+%F %T')] reset-prueba: $*"; }
+
+# --- Base del pañol (local, en el contenedor) ------------------------------
+# El id vuelve a 1 y las tablas de identidad/topología quedan intactas.
+log "limpiando la base del pañol…"
+docker exec panol-postgres psql -U {{ panol_db_user }} -d {{ panol_db_name }} -v ON_ERROR_STOP=1 -q <<'SQL'
+TRUNCATE eventos_acceso, eventos_armario, eventos_pir, eventos_puerta,
+         eventos_procesados, alarmas, sesiones
+    RESTART IDENTITY CASCADE;
+SQL
+log "pañol OK"
+
+# --- Base de EMATP (Neon, por internet) ------------------------------------
+# La connection string vive fuera del repo. Si no está, se avisa y se sigue:
+# el reset del pañol ya corrió y no tiene sentido abortar por eso.
+NEON_URL_FILE="{{ panol_secrets_dir }}/ematp-db.url"
+if [ -s "$NEON_URL_FILE" ]; then
+  log "limpiando la base de EMATP…"
+  # Se usa el psql del contenedor para no depender de tener psql en el host.
+  docker exec -i -e NEON_URL="$(cat "$NEON_URL_FILE")" panol-postgres \
+    psql "$NEON_URL" -v ON_ERROR_STOP=1 -q <<'SQL'
+TRUNCATE ordenes_trabajo, alarmas_panol, notificaciones, comentarios,
+         ticket_fotos, movimientos_equipo
+    RESTART IDENTITY CASCADE;
+SQL
+  log "EMATP OK"
+else
+  log "sin $NEON_URL_FILE — se omite EMATP (solo se reseteó el pañol)"
+fi
+
+log "listo"

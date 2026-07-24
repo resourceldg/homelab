@@ -246,6 +246,39 @@ El rol avisa en la corrida si la integración queda activa o qué le falta. Sin
 URL o sin token no se envía nada y el sistema funciona igual: las alarmas se
 acumulan en su tabla hasta que se configure.
 
+## Modo prueba: reset cada 6 h (temporal)
+
+Mientras se prueba, un timer de systemd vacía las dos bases cada 6 h y deja el
+sistema limpio para la próxima sesión. **Preserva lo que no es dato de prueba**:
+usuarios, credenciales, nodos y ubicaciones en el pañol; usuarios, aulas,
+equipos e insumos en EMATP. Borra eventos, sesiones, alarmas, tickets y
+notificaciones, y reinicia los contadores de id.
+
+Se controla por Ansible, no a mano:
+
+```yaml
+panol_reset_prueba_enabled: true    # inventario de producción, hoy en true
+panol_reset_prueba_horas: 6
+```
+
+Para **apagarlo** cuando el sistema deje de ser de prueba: poner la variable en
+`false` y correr `make panol`. El timer se detiene y se deshabilita solo.
+
+Para que el reset también limpie EMATP (Neon), dejá su connection string en el
+servidor —fuera del repo, como el resto de los secretos—:
+
+```bash
+sudo tee /etc/panol/secrets/ematp-db.url <<< 'postgresql://…?sslmode=require'
+sudo chmod 600 /etc/panol/secrets/ematp-db.url
+```
+
+Sin ese archivo, el reset toca solo la base del pañol. Verificar cuándo corrió:
+
+```bash
+systemctl status panol-reset-prueba.timer
+journalctl -u panol-reset-prueba.service --since today
+```
+
 ## Backups
 
 No hay que configurar nada: los tres lugares donde vive el estado del pañol ya

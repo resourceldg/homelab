@@ -45,3 +45,8 @@ duckdns_domains: "lucasland"          # -> lucasland.duckdns.org (no suffix)
 # Cada alarma del pañol se convierte en un ticket de EMATP. La URL no es
 # secreta; el token va aparte, en /etc/panol/secrets/ematp.token del servidor.
 panol_ematp_url: "https://ematp.vercel.app/api/integraciones/panol"
+
+# --- Modo prueba (TEMPORAL) ------------------------------------------------
+# Reset de las dos bases cada 6 h mientras se prueba. Apagar (false) antes de
+# operar en serio.
+panol_reset_prueba_enabled: true

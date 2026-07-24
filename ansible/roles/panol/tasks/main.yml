@@ -298,6 +298,54 @@
   notify: Restart grafana
   when: panol_enabled | bool and panol_grafana_enabled | bool
 
+# --- Reset de modo prueba (temporal) ---------------------------------------
+# Un timer que vacía las dos bases cada pocas horas, preservando usuarios y
+# configuración. Existe solo mientras se prueba; se apaga con
+# `panol_reset_prueba_enabled: false`. El estado del timer sigue a la variable:
+# si se apaga, la tarea de abajo lo detiene y deshabilita.
+- name: Deploy the test-reset script
+  ansible.builtin.template:
+    src: reset-prueba.sh.j2
+    dest: "{{ panol_stack_dir }}/reset-prueba.sh"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0750"
+  when: panol_enabled | bool
+
+- name: Deploy the test-reset systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - panol-reset-prueba.service
+    - panol-reset-prueba.timer
+  register: panol_reset_units
+  when: panol_enabled | bool
+
+- name: Reload systemd if the units changed
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: panol_enabled | bool and panol_reset_units is changed
+
+- name: Enable or disable the test-reset timer to match the flag
+  ansible.builtin.systemd:
+    name: panol-reset-prueba.timer
+    enabled: "{{ panol_reset_prueba_enabled | bool }}"
+    state: "{{ 'started' if panol_reset_prueba_enabled | bool else 'stopped' }}"
+  when: panol_enabled | bool
+
+- name: Announce the test-reset state
+  ansible.builtin.debug:
+    msg: >-
+      Reset de prueba: {{ 'ACTIVO, cada ' ~ panol_reset_prueba_horas ~ ' h'
+                          if panol_reset_prueba_enabled | bool
+                          else 'apagado' }}.
+      EMATP se incluye si existe {{ panol_secrets_dir }}/ematp-db.url
+  when: panol_enabled | bool
+
 # --- Firewall ---------------------------------------------------------------
 # El puerto MQTT lo publica Docker, así que el tráfico entra por FORWARD y no
 # por INPUT: con ufw-docker instalado, la regla que manda es `ufw route`. Una

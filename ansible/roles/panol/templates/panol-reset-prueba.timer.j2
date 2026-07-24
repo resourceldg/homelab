@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+# Dispara el reset cada {{ panol_reset_prueba_horas }} h. TEMPORAL: es de modo
+# prueba. Se apaga con `panol_reset_prueba_enabled: false` + `--tags panol`.
+[Unit]
+Description=Pañol IoT — timer del reset de datos de prueba
+
+[Timer]
+# Cada N horas contadas desde el arranque del timer, no a horas fijas del reloj:
+# así el reset no cae siempre a la misma hora del día de trabajo.
+OnActiveSec={{ panol_reset_prueba_horas }}h
+OnUnitActiveSec={{ panol_reset_prueba_horas }}h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+# Reset de modo prueba del pañol + EMATP. Lo dispara el timer, no se arranca solo.
+[Unit]
+Description=Pañol IoT — reset de datos de prueba (borra bases, preserva usuarios)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ panol_stack_dir }}/reset-prueba.sh
+# Sale con error si falla, para que `systemctl status` lo muestre.
