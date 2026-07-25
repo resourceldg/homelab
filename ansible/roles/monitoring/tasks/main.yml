@@ -49,6 +49,13 @@
     project_src: "{{ stacks_root }}/proxy"
     state: present
     pull: missing
+    # Caddy es una imagen CUSTOM (build local con módulos xcaddy). Sin build el
+    # compose usa la imagen cacheada: un cambio en el Dockerfile —agregar un
+    # módulo, p. ej. rate_limit— no se aplica y el Caddyfile nuevo puede pedir
+    # una directiva que el binario viejo no conoce, y el proxy entra en
+    # crash-loop. `always` rebuildea respetando el cache de capas: si el
+    # Dockerfile no cambió, son segundos.
+    build: always
 
 - name: Bring up the monitoring stack
   community.docker.docker_compose_v2:

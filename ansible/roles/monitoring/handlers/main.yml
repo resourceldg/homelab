@@ -5,3 +5,6 @@
   community.docker.docker_compose_v2:
     project_src: "{{ stacks_root }}/proxy"
     state: restarted
+    # Rebuild por si cambió el Dockerfile de Caddy (módulos xcaddy): reiniciar
+    # sin reconstruir dejaría corriendo el binario viejo con un Caddyfile nuevo.
+    build: always
