@@ -55,6 +55,24 @@
   loop: "{{ panol_mqtt_users | list }}"
   when: panol_enabled | bool
 
+# Token con el que el nodo autentica contra la API cuando llega por internet.
+# Aleatorio y fuerte (32 bytes): no es una clave que alguien tipee, así que no
+# hay razón para que sea corta. Se sortea una vez y sobrevive a las converges.
+- name: Set the API token (random, once)
+  ansible.builtin.shell:
+    cmd: "umask 077; printf %s \"$(openssl rand -hex 32)\" > {{ panol_secrets_dir }}/api.token"
+    creates: "{{ panol_secrets_dir }}/api.token"
+  args:
+    executable: /bin/bash
+  when: panol_enabled | bool
+
+- name: Read the API token
+  ansible.builtin.slurp:
+    src: "{{ panol_secrets_dir }}/api.token"
+  register: panol_api_token_raw
+  no_log: true
+  when: panol_enabled | bool
+
 - name: Read the Postgres password
   ansible.builtin.slurp:
     src: "{{ panol_secrets_dir }}/postgres.pass"

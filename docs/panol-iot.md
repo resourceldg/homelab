@@ -146,6 +146,30 @@ sudo ufw status | grep 1883
 Si mañana los nodos van a una VLAN IoT propia, agregás ese CIDR a
 `panol_device_cidrs` y corrés `make panol`.
 
+## API por internet (nodo en otra red)
+
+En la LAN el nodo habla HTTP directo al `18500`. Para que reporte estando en
+**otra red** (el homelab en un lado, el pañol en otro), la API se publica por
+Caddy en `https://panol-api.<dominio>`, con defensa en capas:
+
+| Capa | Qué hace |
+|---|---|
+| TLS | Caddy, certificado automático |
+| Whitelist de rutas | solo `/api/evento/*`, `/api/eventos`, `/api/heartbeat`, `/api/whitelist`; el resto responde 404 en el proxy. Los endpoints de consulta (estado, sesiones, alarmas) **no** se exponen — se ven solo por LAN/Tailscale |
+| Rate limit | 60 req/min por IP (`caddy-ratelimit`, compilado en el proxy) |
+| Cuerpo acotado | 64 KB — un evento de auditoría son cientos de bytes |
+| Token | la **API** lo valida (`before_request`, tiempo constante): si alguien enruta al 18500 sin pasar por Caddy, igual lo rechaza |
+
+El token se sortea solo (`/etc/panol/secrets/api.token`) y aparece en
+`nodos.txt` para grabar en el ESP32 (`API_TOKEN` en `secrets.py`, y
+`SERVER_URL = https://panol-api.<dominio>`). En la LAN, con `API_TOKEN=""`, el
+nodo usa la IP directa sin token.
+
+El puerto 443 ya está abierto por el rol `firewall`; no hace falta abrir nada
+más. La primera corrida **recompila Caddy** para incluir el módulo de rate
+limit (`compose/proxy/Dockerfile`), así que `make monitoring` tarda algo más esa
+vez.
+
 ## Ver: Grafana
 
 Dashboard **Pañol IoT — auditoría** (`https://grafana.<dominio>`, carpeta

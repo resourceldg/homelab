@@ -63,13 +63,53 @@ demo.{$CADDY_BASE_DOMAIN} {
 # Pañol IoT — tablero Node-RED del control de acceso. Detrás de SSO: desde acá
 # se ven (y se disparan) automatizaciones sobre una puerta real. Los nodos ESP32
 # NO pasan por acá: hablan MQTT directo al broker en la LAN.
-# Cuando la API del pañol se despliegue, se publica igual: un bloque con
-# `reverse_proxy panol-api:18500` y su regla en Authelia.
 {$PANOL_SUBDOMAIN}.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
 	import authelia
 	encode zstd gzip
 	reverse_proxy panol-nodered:1880
+}
+
+# =========================================================================
+# API del pañol — para que un nodo ESP32 en OTRA red pueda reportar.
+# NO va detrás de Authelia: del otro lado hay una placa, no una persona; se
+# autentica con un token que valida la propia API. Defensa en capas:
+#   1. TLS (automático).
+#   2. Solo se enrutan los paths que usa un nodo; el resto responde 403 acá,
+#      sin llegar a la app. Los endpoints de consulta (estado, sesiones,
+#      alarmas) NO se exponen: se ven solo por LAN/Tailscale.
+#   3. Rate limit por IP: frena fuerza bruta del token y abuso.
+#   4. Cuerpo acotado: un POST de auditoría son cientos de bytes, no megas.
+#   5. La API igual exige el token (no se confía solo en el proxy).
+panol-api.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	encode zstd gzip
+
+	# Un nodo legítimo hace unas pocas por minuto (heartbeat, algún evento).
+	# 60/min por IP deja margen para vaciar una cola sin habilitar abuso.
+	rate_limit {
+		zone panol_api {
+			key {remote_host}
+			events 60
+			window 1m
+		}
+	}
+
+	request_body {
+		max_size 64KB
+	}
+
+	# Whitelist de rutas: exactamente lo que un nodo necesita.
+	@nodo {
+		path /api/evento/* /api/eventos /api/heartbeat /api/whitelist
+	}
+	handle @nodo {
+		reverse_proxy panol-api:18500
+	}
+	# Cualquier otra cosa (raíz, endpoints de admin, escaneos) ni se enruta.
+	handle {
+		respond "Not found" 404
+	}
 }
 
 # =========================================================================

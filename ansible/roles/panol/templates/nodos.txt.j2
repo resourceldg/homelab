@@ -6,6 +6,11 @@
 Broker (desde la LAN/WLAN):  {{ ansible_default_ipv4.address | default('IP-DEL-SERVIDOR') }}:{{ panol_mqtt_port }}
 Broker (desde la red panol): mosquitto:1883
 Redes aceptadas por UFW:     {{ panol_device_cidrs | join(', ') }}
+
+API desde la LAN:            http://{{ ansible_default_ipv4.address | default('IP-DEL-SERVIDOR') }}:{{ panol_api_port }}
+API desde internet (HTTPS):  https://panol-api.{{ caddy_base_domain }}
+Token de la API (secrets.py del nodo, API_TOKEN):
+{% if panol_api_token_raw.content is defined %}    {{ panol_api_token_raw.content | b64decode | trim }}{% endif %}
 {% for n in panol_mqtt_nodes %}
 
 === {{ n.usuario }} — {{ n.descripcion | default('nodo ESP32') }} ===
