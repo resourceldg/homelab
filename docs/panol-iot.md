@@ -175,8 +175,9 @@ vez.
 El port-forward del router depende de tener acceso a ese router y de que el ISP
 dé IP pública (no CGNAT). Cuando eso no se cumple —o el homelab está detrás de
 una red que no controlás—, **Tailscale Funnel** publica la API en internet con
-una conexión saliente: `https://<host>.tail<xxxx>.ts.net`, TLS incluido, sin
-abrir un solo puerto.
+una conexión saliente: `https://<host>.tail<xxxx>.ts.net:8443`, TLS incluido, sin abrir un
+solo puerto. Se usa el **8443**, no el 443: ese lo tiene Caddy en el tailnet
+(grafana, panol, dashboard); Funnel en 443 se lo robaría.
 
 Se habilita una vez en la consola de Tailscale (la primera corrida imprime la
 URL de aprobación). Después, con `panol_funnel_enabled: true`, el rol lo activa

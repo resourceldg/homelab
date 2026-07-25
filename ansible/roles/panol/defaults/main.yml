@@ -126,7 +126,10 @@ panol_reset_prueba_horas: 6
 # Publica la API por Tailscale Funnel (https://<host>.ts.net), para que un nodo
 # en otra red reporte sin port-forward ni depender del CGNAT del ISP. Requiere
 # habilitar Funnel una vez en la consola de Tailscale. false = no se toca.
+# El puerto es 8443, NO 443: el 443 del tailnet lo usa Caddy (grafana, panol,
+# dashboard). Funnel en 443 se lo robaría y tumbaría todo eso.
 panol_funnel_enabled: false
+panol_funnel_port: 8443
 
 # --- Publicación ------------------------------------------------------------
 # Node-RED se sirve en https://<subdominio>.<caddy_base_domain> detrás de SSO.

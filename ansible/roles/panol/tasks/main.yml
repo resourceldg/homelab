@@ -407,7 +407,7 @@
   when: panol_enabled | bool and panol_funnel_enabled | bool
 
 - name: Enable Funnel for the panol API
-  ansible.builtin.command: "tailscale funnel --bg {{ panol_api_port }}"
+  ansible.builtin.command: "tailscale funnel --bg --https={{ panol_funnel_port }} {{ panol_api_port }}"
   register: panol_funnel_enable
   changed_when: panol_funnel_enable.rc == 0
   failed_when:
