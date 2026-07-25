@@ -170,6 +170,28 @@ más. La primera corrida **recompila Caddy** para incluir el módulo de rate
 limit (`compose/proxy/Dockerfile`), así que `make monitoring` tarda algo más esa
 vez.
 
+## API por internet sin router: Tailscale Funnel
+
+El port-forward del router depende de tener acceso a ese router y de que el ISP
+dé IP pública (no CGNAT). Cuando eso no se cumple —o el homelab está detrás de
+una red que no controlás—, **Tailscale Funnel** publica la API en internet con
+una conexión saliente: `https://<host>.tail<xxxx>.ts.net`, TLS incluido, sin
+abrir un solo puerto.
+
+Se habilita una vez en la consola de Tailscale (la primera corrida imprime la
+URL de aprobación). Después, con `panol_funnel_enabled: true`, el rol lo activa
+apuntando al `18500`:
+
+```bash
+sudo tailscale funnel status          # ver la URL pública y a dónde enruta
+```
+
+El nodo llega por esa URL con su token. Ojo: por Funnel el nodo va **directo a
+la API**, sin pasar por Caddy, así que el rate-limit y el filtrado de rutas de
+Caddy no aplican en este camino — la defensa es el token que valida la API
+(sin token, 401). Es el modo para probar lejos del homelab; en el colegio, con
+el homelab en la misma red que el pañol, el nodo usa la LAN directa.
+
 ## Ver: Grafana
 
 Dashboard **Pañol IoT — auditoría** (`https://grafana.<dominio>`, carpeta

@@ -392,3 +392,37 @@
     comment: "Panol API from {{ item }}"
   loop: "{{ panol_device_cidrs }}"
   when: panol_enabled | bool
+
+# --- Funnel: API alcanzable desde otra red, sin tocar el router -------------
+# Tailscale Funnel publica la API en internet (https://<host>.ts.net) con una
+# conexión saliente: atraviesa CGNAT y no necesita port-forward. El nodo llega
+# por acá cuando NO está en la LAN del homelab. Requiere habilitar Funnel una
+# vez en la consola de Tailscale (manual): esta tarea lo activa si ya está
+# permitido, y avisa sin romper la converge si todavía no.
+- name: Check Tailscale Funnel status
+  ansible.builtin.command: tailscale funnel status
+  register: panol_funnel_status
+  changed_when: false
+  failed_when: false
+  when: panol_enabled | bool and panol_funnel_enabled | bool
+
+- name: Enable Funnel for the panol API
+  ansible.builtin.command: "tailscale funnel --bg {{ panol_api_port }}"
+  register: panol_funnel_enable
+  changed_when: panol_funnel_enable.rc == 0
+  failed_when:
+    - panol_funnel_enable.rc != 0
+    - "'not enabled on your tailnet' not in (panol_funnel_enable.stderr | default(''))"
+  when:
+    - panol_enabled | bool and panol_funnel_enabled | bool
+    - "'Funnel on' not in (panol_funnel_status.stdout | default(''))"
+
+- name: Announce the Funnel URL (o cómo habilitarlo)
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'API por Funnel: https://' ~ ansible_facts.hostname ~ '.<tailnet>.ts.net'
+         if (panol_funnel_status.stdout is defined and 'Funnel on' in panol_funnel_status.stdout)
+            or (panol_funnel_enable is defined and panol_funnel_enable.rc | default(1) == 0)
+         else 'Funnel pedido pero NO habilitado en el tailnet: visitá la URL que'
+              ~ ' imprime `sudo tailscale funnel --bg ' ~ panol_api_port ~ '` una vez.' }}
+  when: panol_enabled | bool and panol_funnel_enabled | bool

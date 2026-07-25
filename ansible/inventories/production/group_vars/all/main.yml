@@ -50,3 +50,6 @@ panol_ematp_url: "https://ematp.vercel.app/api/integraciones/panol"
 # Reset de las dos bases cada 6 h mientras se prueba. Apagar (false) antes de
 # operar en serio.
 panol_reset_prueba_enabled: true
+
+# API del pañol por Tailscale Funnel (nodo en otra red, modo prueba).
+panol_funnel_enabled: true

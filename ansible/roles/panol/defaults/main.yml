@@ -122,6 +122,12 @@ panol_grafana_default_password: "cambiar-grafana-panol"
 panol_reset_prueba_enabled: false
 panol_reset_prueba_horas: 6
 
+# --- Funnel (API por internet sin router) -----------------------------------
+# Publica la API por Tailscale Funnel (https://<host>.ts.net), para que un nodo
+# en otra red reporte sin port-forward ni depender del CGNAT del ISP. Requiere
+# habilitar Funnel una vez en la consola de Tailscale. false = no se toca.
+panol_funnel_enabled: false
+
 # --- Publicación ------------------------------------------------------------
 # Node-RED se sirve en https://<subdominio>.<caddy_base_domain> detrás de SSO.
 panol_subdomain: "panol"
