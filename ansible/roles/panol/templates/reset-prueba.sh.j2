@@ -17,6 +17,26 @@ set -euo pipefail
 
 log() { echo "[$(date '+%F %T')] reset-prueba: $*"; }
 
+NEON_URL_FILE="{{ panol_secrets_dir }}/ematp-db.url"
+
+# --- Refresco de identidad (EMATP -> pañol) --------------------------------
+# La identidad canónica de las personas vive en EMATP (users, en Neon); el
+# pañol mantiene un espejo local para resolver el usuario de un uid al crear la
+# sesión sin depender de una consulta por internet. Se refresca acá,
+# aprovechando el mismo acceso a Neon que usa el reset. Corre el módulo del
+# propio servicio (única fuente del mapeo), no SQL duplicado.
+if [ -s "$NEON_URL_FILE" ]; then
+  log "sincronizando identidad EMATP -> pañol…"
+  if docker exec -e EMATP_DSN="$(cat "$NEON_URL_FILE")" panol-api \
+       python -m adapters.sync_ematp; then
+    log "identidad OK"
+  else
+    # No aborta el reset: el espejo previo sigue sirviendo, y el módulo puede
+    # no estar aún en la imagen si todavía no se redeplegó panol-api.
+    log "sync de identidad falló (se sigue; se usa el espejo previo)"
+  fi
+fi
+
 # --- Base del pañol (local, en el contenedor) ------------------------------
 # El id vuelve a 1 y las tablas de identidad/topología quedan intactas.
 log "limpiando la base del pañol…"
@@ -30,9 +50,9 @@ SQL
 log "pañol OK"
 
 # --- Base de EMATP (Neon, por internet) ------------------------------------
-# La connection string vive fuera del repo. Si no está, se avisa y se sigue:
-# el reset del pañol ya corrió y no tiene sentido abortar por eso.
-NEON_URL_FILE="{{ panol_secrets_dir }}/ematp-db.url"
+# La connection string vive fuera del repo (misma que usa el sync de arriba).
+# Si no está, se avisa y se sigue: el reset del pañol ya corrió y no tiene
+# sentido abortar por eso.
 if [ -s "$NEON_URL_FILE" ]; then
   log "limpiando la base de EMATP…"
   # Se usa el psql del contenedor para no depender de tener psql en el host.
