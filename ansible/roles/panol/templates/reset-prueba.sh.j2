@@ -62,8 +62,8 @@ if [ -s "$NEON_URL_FILE" ]; then
   neon_url="$(cat "$NEON_URL_FILE")"
   docker exec -i -e NEON_URL="$neon_url" panol-postgres \
     sh -c 'psql "$NEON_URL" -v ON_ERROR_STOP=1 -q' <<'SQL'
-TRUNCATE ordenes_trabajo, alarmas_panol, notificaciones, comentarios,
-         ticket_fotos, movimientos_equipo
+TRUNCATE ordenes_trabajo, alarmas_panol, sesiones_panol, notificaciones,
+         comentarios, ticket_fotos, movimientos_equipo
     RESTART IDENTITY CASCADE;
 SQL
   log "EMATP OK"
