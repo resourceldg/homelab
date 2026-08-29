@@ -20,11 +20,9 @@ services:
         limits:
           cpus: "0.5"
           memory: 192M
-    healthcheck:
-      test: ["CMD", "authelia", "healthcheck"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+    # Sin healthcheck propio: la imagen oficial ya trae /app/healthcheck.sh.
+    # Un override con `authelia healthcheck` no existe en 4.38 y deja el
+    # contenedor permanentemente unhealthy.
 
 networks:
   edge:
