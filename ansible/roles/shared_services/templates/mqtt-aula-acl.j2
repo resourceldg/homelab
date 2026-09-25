@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+# Cada equipo lee y escribe solo su árbol. Sin esto, cualquier credencial válida
+# podría prender el LED de otro equipo o leer sus datos.
+{% for team in classroom_teams %}
+
+user {{ team.name | replace('-', '_') }}
+topic readwrite {{ team.name }}/#
+{% endfor %}

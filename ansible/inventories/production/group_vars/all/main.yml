@@ -53,3 +53,7 @@ panol_reset_prueba_enabled: true
 
 # API del pañol por Tailscale Funnel (nodo en otra red, modo prueba).
 panol_funnel_enabled: true
+
+# Broker MQTT del aula por Funnel (ESP32 de los equipos desde cualquier red).
+shared_mqtt_funnel_enabled: true
+shared_mqtt_public_host: "homelab-01.tail4eda13.ts.net"

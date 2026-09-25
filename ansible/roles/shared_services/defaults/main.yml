@@ -3,3 +3,16 @@
 shared_services_enabled: true
 shared_services_secrets_dir: "/etc/classroom/secrets"   # per-team DB + MQTT passwords (root-only)
 # stacks_root and classroom_teams come from shared group_vars / the roster.
+
+# --- Broker MQTT del aula (mqtt-aula) ---------------------------------------
+# DEBE coincidir con el tag de compose/shared-data/compose.yml: el rol usa esta
+# imagen para hashear las contraseñas (tests/test_shared_services_stack.py).
+shared_mqtt_image: "eclipse-mosquitto:2.0.20"
+shared_mqtt_host_port: 18830          # 127.0.0.1 en el host; destino del Funnel
+# Salida para dispositivos (ESP32) por Tailscale Funnel TLS: sin port-forward y
+# desde cualquier red. Funnel solo admite 443/8443/10000 (443 = Caddy, 8443 =
+# API del pañol), así que el aula usa el 10000. false = no se toca Funnel.
+shared_mqtt_funnel_enabled: false
+shared_mqtt_funnel_port: 10000
+# Nombre público que usa el dispositivo (va a .shared-services.env).
+shared_mqtt_public_host: "{{ ansible_facts.hostname }}.ts.net"

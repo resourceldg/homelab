@@ -1,0 +1,6 @@
+---
+# Mosquitto relee passwd y acl con SIGHUP: no corta a los clientes conectados.
+- name: Reload mqtt-aula
+  ansible.builtin.command: docker kill --signal HUP mqtt-aula
+  changed_when: true
+  failed_when: false
