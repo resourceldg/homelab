@@ -1,10 +1,23 @@
-# 11. Conectar tus sensores y actuadores a Grafana
+# 12. Conectar tus sensores y actuadores a Grafana
 
 🎯 **Objetivo:** que lo que mide o hace tu ESP32 aparezca **solo** en el Grafana
 del aula, en el dashboard de tu equipo, con historial de los últimos **15 días**.
 
-🧩 **Prerequisitos:** tu placa ya se conecta al broker del aula (`mqtt-aula`).
-Si todavía no, empezá por la [guía del equipo](guia-equipo.md#331-broker-del-aula-mqtt-aula-para-conectar-una-esp32).
+🧩 **Prerequisitos:** [capítulo 11 (Arquitectura IoT)](11-arquitectura-iot.md),
+para entender las piezas. Los datos de tu equipo están en la
+[guía del equipo](guia-equipo.md#33-mqtt-usa-el-broker-del-aula-mqtt-aula).
+
+> **Palabras de este capítulo** (todas explicadas en el
+> [capítulo 11](11-arquitectura-iot.md) y en el [glosario](glosario.md)):
+>
+> - **MQTT:** el idioma con el que las placas se mandan mensajes cortos.
+> - **Broker:** el programa que recibe los mensajes y los reparte (`mqtt-aula`).
+> - **Topic:** el "nombre del grupo" al que mandás un mensaje, escrito como una
+>   ruta: `equipo-04/enchufe/estado`.
+> - **Publicar:** mandar un mensaje a un topic.
+> - **Payload:** el contenido del mensaje (`23.5`, `ON`).
+> - **TLS:** el cifrado del viaje; como mandar una carta en sobre cerrado.
+> - **Grafana:** el programa de tableros donde se **ven** los datos.
 
 ---
 
@@ -77,7 +90,11 @@ equipo_04/sala/temperatura     (guion bajo: ese es el USUARIO, no el topic)
 | `online` | `offline` |
 | `alto` `si` `sí` `detectado` | `bajo` `no` `libre` |
 
-**Un JSON plano** con varios valores a la vez (útil para sensores tipo DHT):
+**Un JSON plano** con varios valores a la vez. **JSON** (*JavaScript Object
+Notation*) es una forma de escribir datos con **nombre: valor** entre llaves,
+que entienden casi todos los programas. "Plano" quiere decir sin cajas adentro
+de cajas. Es útil para sensores que miden dos cosas a la vez, como el **DHT**
+(un sensor barato de temperatura y humedad):
 
 ```json
 {"temp": 22.1, "hum": 61}
@@ -103,7 +120,9 @@ mandalo a Node-RED: Grafana grafica números.
 
 ## Datos de conexión
 
-Están en el servidor, en el archivo de tu equipo (solo lectura):
+Están en el servidor, en el archivo de tu equipo (solo lectura). Para leerlo
+tenés que entrar al servidor por **SSH** (la conexión segura por terminal; ver
+[guía del equipo, paso 1.2](guia-equipo.md#12-el-tunel-ssh-traer-tus-servicios-a-tu-compu)):
 
 ```
 /srv/classroom/equipo-NN/.shared-services.env
@@ -126,7 +145,8 @@ grep MQTT_ /srv/classroom/equipo-NN/.shared-services.env
 
 ## Bonus profesional: que Grafana sepa si tu placa está conectada
 
-Usá el **"último deseo"** (Last Will) de MQTT: al conectarte le decís al broker
+Usá el **"último deseo"** (*Last Will*) de MQTT, que es como dejarle dicho a un
+amigo "si no te contesto, avisale a los demás que me quedé sin batería": al conectarte le decís al broker
 *"si me desconecto de golpe, publicá `offline` por mí"*. Y apenas conectás,
 publicás `online`. Así Grafana muestra si la placa está viva aunque no esté
 mandando datos.
@@ -219,13 +239,30 @@ while True:
         time.sleep(5)
 ```
 
-Primera vez, en la consola de Thonny y con WiFi: `import mip; mip.install("umqtt.simple")`.
+Primera vez: la placa necesita la librería **umqtt.simple** (el código que sabe
+hablar MQTT). Se instala con **mip**, el instalador de paquetes de MicroPython.
+En la consola de **Thonny** (el programa con el que cargás código a la placa),
+con la placa ya conectada al WiFi, escribí:
+
+```
+import mip; mip.install("umqtt.simple")
+```
 
 ---
 
 ## Ejemplo B — Arduino (sensor + actuador)
 
-Librería **PubSubClient** (Herramientas → Administrar bibliotecas).
+Necesita la librería **PubSubClient** (el código que sabe hablar MQTT en
+Arduino). En el IDE de Arduino (el programa donde escribís y cargás el código):
+**Herramientas → Administrar bibliotecas** → buscar `PubSubClient` → Instalar.
+
+Dos piezas del código que conviene entender:
+
+- **`WiFiClientSecure` + `setInsecure()`:** la conexión va **cifrada** (TLS),
+  pero sin comprobar el certificado del servidor (el "documento de identidad"
+  del servidor). Para el aula alcanza; en un producto real se verificaría.
+- **`mqtt.connect(id, usuario, clave, topicDeseo, 0, true, "offline")`:** entra
+  al broker con usuario y clave, y deja registrado el último deseo.
 
 ```cpp
 #include <WiFi.h>
@@ -300,8 +337,8 @@ void loop() {
 
 ## Comprobar que llega a Grafana
 
-1. Entrá a **https://grafana-aula.lucasland.duckdns.org** (con Tailscale
-   conectado; usuario y clave del aula). Cómo usarlo: [manual 12](12-usar-grafana.md).
+1. Entrá a **https://grafana-aula.lucasland.duckdns.org** con **Tailscale**
+   conectado (la red privada del aula) y tu usuario y contraseña del aula. Cómo usarlo: [capítulo 13](13-usar-grafana.md).
 2. Menú → **Dashboards** → carpeta **equipo-NN** → **equipo-NN — sensores y actuadores**.
 3. En la tabla **Estado actual** tiene que aparecer tu `dispositivo` y tu
    `magnitud`, con el **último valor** y **hace cuántos segundos** llegó.

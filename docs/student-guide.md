@@ -9,14 +9,21 @@ un archivo que describe tu aplicación, y prenderla con **un solo comando**
 
 ---
 
+> **Esta es la guía de primeros pasos** (terminal, editor, primer proyecto). La
+> referencia completa del trabajo en equipo (puertos de cada equipo, MQTT, tu
+> página web, Grafana) está en la
+> [Guía práctica del equipo](handbook/guia-equipo.md) del manual.
+
 ## Antes de empezar
 
 Necesitás:
-- Tu **notebook** con una terminal (en Linux/Mac ya viene; en Windows usá
-  *PowerShell* o *Windows Terminal*).
-- Un **nombre de usuario** que te da el profe (por ejemplo `jessi`).
-- Que el profe ya haya cargado tu **clave** en el servidor (lo hace una vez).
-- La **dirección del servidor** (una IP o un nombre, te la pasa el profe).
+- Tu **compu** con una terminal (en Linux/Mac ya viene; en Windows usá
+  **Símbolo del sistema (CMD)** o **PowerShell**).
+- Tu **usuario** (tu nombre, por ejemplo `jessi`) y tu **contraseña del aula**.
+  Te los da el profe.
+- **Tailscale** instalado y conectado con la clave que te da el profe (es la red
+  privada que te deja llegar al servidor desde cualquier lado). Cómo hacerlo:
+  [guía del equipo, paso 1.1](handbook/guia-equipo.md#11-tailscale-la-red-privada-del-aula).
 
 > **¿Qué es una "terminal"?** Es una ventana donde escribís comandos en texto en
 > vez de hacer clic. Vas a escribir un comando, apretar Enter, y el servidor
@@ -26,30 +33,34 @@ Necesitás:
 
 ## Paso 1 — Entrar al servidor (SSH)
 
-**SSH** es la forma de conectarte a otra computadora por la red de forma segura.
-En tu terminal (la de tu notebook) escribí, reemplazando por tus datos:
+**SSH** (*Secure Shell*, "intérprete de comandos seguro") es la forma de
+conectarte a otra computadora por la red y escribirle comandos, con todo lo que
+viaja **cifrado**. Con Tailscale conectado, en tu terminal escribí (cambiá
+`tu-usuario` por el tuyo):
 
 ```bash
-ssh tu-usuario@direccion-del-servidor
+ssh tu-usuario@100.110.123.76
 ```
 
-Ejemplo real:
-```bash
-ssh jessi@192.168.100.48
-```
+`100.110.123.76` es la dirección del servidor **dentro de la red privada**
+(Tailscale). Si tu compu resuelve nombres de Tailscale, también funciona
+`ssh tu-usuario@homelab-01.tail4eda13.ts.net`.
 
 - **La primera vez** te va a mostrar algo como *"The authenticity of host…
   fingerprint… Are you sure you want to continue (yes/no)?"*. Escribí **`yes`** y
-  Enter. (Es normal: tu compu está guardando la identidad del servidor.)
-- Si todo está bien, **entrás**: el texto a la izquierda (el "prompt") cambia a
+  Enter. (Es normal: tu compu está guardando la "huella" del servidor para
+  reconocerlo la próxima vez.)
+- Después te pide tu **contraseña del aula**. Mientras la escribís **no se ve
+  nada**, ni asteriscos: es normal. Escribila y Enter.
+- Si todo está bien, **entrás**: el texto de la izquierda (el *prompt*) cambia a
   algo como `jessi@homelab-01:~$`. Eso significa que ya **estás adentro del
-  servidor**. Todo lo que escribas ahora corre allá, no en tu notebook.
+  servidor**. Todo lo que escribas ahora corre allá, no en tu compu.
 
-> Si te pide una contraseña y no la tenés, avisá al profe: el acceso es por
-> **clave**, no por contraseña.
+> Si dice `Connection timed out`: Tailscale no está conectado. Si dice
+> `Permission denied`: la contraseña está mal. Avisale al profe.
 
 Para **salir** del servidor en cualquier momento: escribí `exit` y Enter (volvés
-a tu notebook).
+a tu compu).
 
 ---
 

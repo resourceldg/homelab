@@ -67,10 +67,22 @@ labctl ps | logs | usage | status | restart | down
 
 ## Servicios compartidos
 
-Los alumnos **no** levantan su propia base de datos: el laboratorio les da
-**Postgres/Redis/Mailpit** compartidos, con **credenciales propias por equipo**
-(en `.shared-services.env`). El broker conecta esos servicios a la **red privada**
-de cada equipo en el `up`, así los alcanzan por hostname **sin verse entre sí**.
+Los alumnos **no** levantan su propia base de datos ni su propio broker: el
+laboratorio les da servicios **compartidos**, con **credenciales propias por
+equipo** (en `.shared-services.env`, un archivo de solo lectura en la carpeta del
+equipo):
+
+| Servicio | Qué es | Para qué lo usa un equipo |
+|---|---|---|
+| **PostgreSQL** | base de datos | guardar datos de su aplicación |
+| **Redis** | memoria rápida de "clave → valor" | caché, colas chicas |
+| **Mailpit** | un correo de prueba (atrapa los mails, no los manda) | probar envíos de mail |
+| **`mqtt-aula`** | el broker MQTT del aula | que sus **placas** manden y reciban mensajes (ver [cap. 11](11-arquitectura-iot.md)) |
+| **Grafana del aula** | tableros | **ver** los datos de sus placas (ver [cap. 13](13-usar-grafana.md)) |
+
+El broker de la plataforma (`labctld`) conecta esos servicios a la **red
+privada** de cada equipo cuando hace `labctl up`, así los alcanzan por nombre
+(`postgres`, `mqtt-aula`) **sin verse entre sí**.
 
 ## Publicación
 
@@ -85,8 +97,8 @@ desde afuera, lo publica el **operador** con un registro declarativo
 - **Tres barreras:** permisos Linux (2770+setgid+loopback), cgroups (slice por
   equipo) y el broker `labctl` (validación + auditoría).
 - Los alumnos **nunca** tienen Docker/sudo/socket.
-- Servicios de datos **compartidos**, con aislamiento por red y credenciales por
-  equipo.
+- Servicios **compartidos** (base de datos, broker MQTT, Grafana), con aislamiento
+  por red y credenciales por equipo.
 
 ## ⚠️ Errores comunes
 

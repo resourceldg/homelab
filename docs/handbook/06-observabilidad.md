@@ -19,6 +19,10 @@ con Prometheus y Grafana.
   `label_replace` sobre el nombre del contenedor.
 - **Grafana y dashboards:** paneles que consultan Prometheus. Los 3 dashboards del
   aula (Overview, Team Detail, Capacity) y cómo leerlos.
+- **Observar las placas (IoT):** los mensajes MQTT de los equipos se guardan como
+  series temporales en VictoriaMetrics y se ven en el **Grafana del aula**. Es la
+  misma idea (medir, guardar, mostrar) aplicada al mundo físico. Ver
+  [cap. 12](12-conectar-a-grafana.md) y [cap. 13](13-usar-grafana.md).
 
 ## Ideas clave (adelanto)
 - Prometheus **guarda**, Grafana **muestra**.

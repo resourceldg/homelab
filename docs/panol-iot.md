@@ -12,10 +12,18 @@ esos programas y esos dispositivos necesitan para hablarse.
 | Rol Ansible | `ansible/roles/panol/` | despliegue, credenciales, firewall |
 | Publicación web | `compose/proxy/Caddyfile` (bloque `{$PANOL_SUBDOMAIN}`) | Node-RED detrás de SSO |
 
+> ⚠️ **La red local cambia.** El servidor ya se mudó de red varias veces
+> (`192.168.100.x` → `192.168.0.x` → `192.168.8.x`). Por eso abajo dice
+> `<IP-LAN-del-server>`: averiguala en el servidor con `hostname -I` (la primera
+> que no empiece con `100.` ni `172.`). Mientras `lan_cidr` y el broker no se
+> actualicen a la red nueva, el broker del pañol **no se alcanza por la LAN**; los
+> nodos reportan por la API vía Funnel (ver abajo). Detalle en el capítulo 15 del
+> manual (hoja de ruta).
+
 ## Qué se levanta
 
 ```
-                LAN / WLAN 192.168.100.0/24
+                LAN / WLAN del colegio (lan_cidr)
    ESP32 puerta ─┐
    ESP32 armarios┴──► homelab-01:1883 ──► panol-mosquitto ──► red docker `panol`
                         (MQTT, con usuario y clave)             │
@@ -369,7 +377,7 @@ curl -s http://localhost:18500/salud
 
 # 3. Un evento entra por HTTP (el camino que usa el ESP32 hoy).
 #    Tipos válidos: acceso, puerta, pir, armario. La ubicación se da de alta sola.
-curl -s -X POST http://192.168.100.48:18500/api/evento/acceso \
+curl -s -X POST http://<IP-LAN-del-server>:18500/api/evento/acceso \
   -H 'Content-Type: application/json' \
   -d '{"event_id":"e2e-1","ubicacion_id":"panol-lab01","nodo_id":"panol-lab01-puerta",
        "uid_hex":"DEADBEEF","resultado":"CONCEDIDO","timestamp":"2026-07-22T10:00:00-03:00"}'
@@ -381,7 +389,7 @@ docker exec panol-postgres psql -U panol -d panol -c 'select * from sesiones;'
 
 # 5. El mismo camino por MQTT, con la credencial del nodo (lo que hará el firmware).
 #    El tipo sale del topic y la identidad también: el payload va mínimo.
-mosquitto_pub -h 192.168.100.48 -p 1883 \
+mosquitto_pub -h <IP-LAN-del-server> -p 1883 \
   -u nodo-panol-puerta -P cambiar-nodo-puerta -q 1 \
   -t panol/panol-lab01/panol-lab01-puerta/evento/acceso \
   -m '{"event_id":"e2e-2","timestamp":"2026-07-22T10:01:00-03:00",
@@ -415,7 +423,7 @@ sudo bash -c 'set -a; . /etc/panol/app.env; \
 # El -V 5 no es decorativo: con MQTT 3.1.1 el broker descarta el mensaje EN
 # SILENCIO y el cliente cree que publicó. Con MQTT 5 avisa "Not authorized".
 # Ojo igual: mosquitto_pub sale con código 0 en los dos casos, hay que LEER.
-mosquitto_pub -h 192.168.100.48 -p 1883 -V 5 -q 1 \
+mosquitto_pub -h <IP-LAN-del-server> -p 1883 -V 5 -q 1 \
   -u nodo-panol-puerta -P cambiar-nodo-puerta \
   -t panol/panol-lab01/panol-lab01-armarios/evento/acceso -m '{}'
 #  -> Warning: Publish 1 failed: Not authorized.

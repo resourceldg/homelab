@@ -1,10 +1,29 @@
-# 12. Usar Grafana (manual rápido)
+# 13. Usar Grafana (manual rápido)
 
 🎯 **Objetivo:** entrar al Grafana del aula, entender tu dashboard y
 **modificarlo**: agregar gráficos, cambiarlos y guardarlos.
 
 🧩 **Prerequisitos:** Tailscale conectado y tus datos llegando
-([manual 11](11-conectar-a-grafana.md)).
+([capítulo 12](12-conectar-a-grafana.md)).
+
+## Primero, la idea: el tablero de un auto
+
+El tablero de un auto te muestra velocidad, nafta y temperatura del motor de un
+vistazo, con agujas y luces de colores. No maneja el auto: **te deja ver** cómo
+anda. **Grafana** es eso para tus placas.
+
+> **Palabras de este capítulo:**
+>
+> - **Dashboard (tablero):** una pantalla con varios gráficos.
+> - **Panel:** cada cuadro del tablero (un gráfico, un número grande, una tabla).
+> - **Consulta (*query*):** la pregunta que el panel le hace a la base de datos
+>   ("dame la temperatura de la sala de las últimas 3 horas").
+> - **Datasource (fuente de datos):** la base de datos a la que se le pregunta.
+>   La tuya se llama **MQTT — equipo-NN** y solo tiene datos de tu equipo.
+> - **PromQL:** el idioma en que se escriben esas consultas. No hace falta
+>   aprenderlo entero: abajo hay un **recetario** para copiar.
+> - **Serie temporal:** una lista de valores con su hora, como una planilla
+>   "hora | valor".
 
 ---
 
@@ -93,8 +112,14 @@ Un **dashboard** es una pantalla con varios **paneles** (cada cuadro es un panel
 
 ## 6. Recetario de consultas
 
-Tus datos se llaman siempre **`mqtt_valor`** y tienen dos etiquetas:
-`dispositivo` y `magnitud` (las partes 2 y 3 de tu topic).
+Tus datos se llaman siempre **`mqtt_valor`** y tienen dos **etiquetas** (datos
+que acompañan a cada valor para poder filtrarlo, como las columnas de una
+planilla): `dispositivo` y `magnitud`, que son las partes 2 y 3 de tu topic.
+
+Cómo se lee una consulta: `mqtt_valor{dispositivo="sala"}` quiere decir "los
+valores **cuyo** dispositivo sea `sala`". Las llaves `{}` son el filtro.
+`avg_over_time(...[1h])` quiere decir "el **promedio** (*average*) de la última
+hora".
 
 | Quiero ver… | Consulta |
 |---|---|

@@ -4,8 +4,8 @@ Lo que las placas de los equipos publican en `mqtt-aula` se guarda 15 días y se
 ve en un **Grafana del aula** propio, con un folder por equipo que solo ese equipo
 ve y edita, y un dashboard general del operador.
 
-Manuales para alumnos: [11 — Conectar a Grafana](handbook/11-conectar-a-grafana.md)
-y [12 — Usar Grafana](handbook/12-usar-grafana.md).
+Manuales para alumnos: [12 — Conectar a Grafana](handbook/12-conectar-a-grafana.md)
+y [13 — Usar Grafana](handbook/13-usar-grafana.md).
 
 ## Arquitectura
 

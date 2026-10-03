@@ -11,8 +11,9 @@ la web**.
 publicación (`student_exposures`), terminación TLS en el borde.
 
 > Todos los ejemplos de `compose.yml` de esta guía están **verificados contra la
-> política del aula** (`labctl validate`). El ejemplo completo y ya probado vive en
-> [`ejemplos/nodered-mqtt/`](ejemplos/nodered-mqtt/).
+> política del aula** (`labctl validate`, el comando que revisa tu proyecto).
+> Ejemplos completos y probados: [`ejemplos/nodered-mqtt/`](ejemplos/nodered-mqtt/)
+> y [`ejemplos/nginx-ui/`](ejemplos/nginx-ui/README.md) (tu propia página web).
 
 > **El modelo en una frase:** trabajás dentro de la carpeta de tu equipo con
 > `labctl` (nunca tocás Docker ni `sudo`). Tus servicios escuchan **solo en loopback**
@@ -23,23 +24,68 @@ publicación (`student_exposures`), terminación TLS en el borde.
 
 ## 1. Conectarte
 
-**Qué necesitás (te lo da el operador):** tu usuario y contraseña, y estar en la red
-**Tailscale** del aula. El server es `homelab-01.tail4eda13.ts.net` (IP de respaldo
-`100.110.123.76`).
+Para trabajar en tu proyecto necesitás llegar al servidor del aula desde tu
+compu. Son dos pasos: **entrar a la red privada** y **abrir un túnel**.
 
-1. Encendé **Tailscale** en tu compu y verificá que diga *Connected*.
-2. Abrí el **túnel SSH** (dejá la ventana abierta mientras trabajás):
-   ```bash
-   ssh -L 1880:localhost:1880 -L 1883:localhost:1883 <usuario>@homelab-01.tail4eda13.ts.net
-   ```
-   Trae Node-RED (`1880`) y MQTT (`1883`) a tu máquina. Si el nombre no resuelve, usá la IP.
-3. En el navegador → `http://localhost:1880`. MQTT → `localhost:1883`.
+**Qué te da el profe:** tu **usuario** (tu nombre, ej. `jorge`), tu **contraseña
+del aula** y una **clave de Tailscale** (empieza con `tskey-auth-`).
 
-Para entrar solo a la terminal del server, el mismo comando **sin** los `-L`.
+### 1.1 Tailscale: la red privada del aula
 
-**Por qué así:** el SSH de alumnos solo se acepta desde la LAN o el tailnet (nunca
-desde internet), y los servicios escuchan en loopback. El túnel es la forma segura de
-alcanzarlos sin exponer nada. Ver [cap. 7 (Seguridad)](07-seguridad.md).
+**Tailscale** arma una red privada entre tu compu y el servidor, como si
+estuvieran enchufados al mismo router aunque estés en tu casa. Se hace **una
+sola vez**. Instalalo desde <https://tailscale.com/download> y después:
+
+**Windows** (en "Símbolo del sistema" / CMD, un comando por vez):
+
+```
+"C:\Program Files\Tailscale\tailscale.exe" logout
+"C:\Program Files\Tailscale\tailscale.exe" up --auth-key=TU-CLAVE
+```
+
+**Linux** (en la Terminal, un comando por vez):
+
+```
+sudo tailscale logout
+sudo tailscale up --auth-key=TU-CLAVE
+```
+
+El `logout` va primero por una razón: si alguna vez entraste a Tailscale con tu
+cuenta de Google, te creó **una red tuya aparte**, y desde ahí no ves el
+servidor. Para comprobar: `tailscale status` tiene que listar **`homelab-01`**.
+
+### 1.2 El túnel SSH: traer tus servicios a tu compu
+
+**SSH** (*Secure Shell*) es la forma segura de conectarte a otra computadora y
+escribirle comandos. Con la opción `-L` además abre un **túnel**: un pasillo
+privado que hace que un servicio del servidor aparezca en **tu** compu, en
+`localhost` (que quiere decir "esta misma computadora").
+
+Tus servicios escuchan **solo adentro del servidor** (en `127.0.0.1`, que es
+`localhost` del servidor). Por eso nadie de afuera los ve, y vos llegás por el
+túnel. Cada equipo tiene **sus propios números de puerto** (un puerto es como el
+número de departamento de un servicio dentro del servidor; no se pueden repetir):
+
+| Equipo | Node-RED en el servidor | Tu página (nginx) | Comando del túnel |
+|---|---|---|---|
+| equipo-01 | `1880` | — | `ssh -L 1880:localhost:1880 TU-USUARIO@100.110.123.76` |
+| equipo-03 | `1882` | `8083` | `ssh -L 1880:localhost:1882 -L 8080:localhost:8083 TU-USUARIO@100.110.123.76` |
+| equipo-04 | `1884` | `8084` | `ssh -L 1880:localhost:1884 -L 8080:localhost:8084 TU-USUARIO@100.110.123.76` |
+| equipo-02 / 05 | se asignan al armar su stack | | pedíselo al profe |
+
+Cómo se lee `-L 1880:localhost:1884`: "el **1880 de mi compu** lleva al **1884
+del servidor**". Así, en tu navegador siempre usás los mismos números:
+
+- Node-RED → `http://localhost:1880`
+- Tu página → `http://localhost:8080`
+
+Al conectarte: la primera vez escribí `yes`; después tu **contraseña del aula**
+(no se ve mientras la tipeás, es normal). **Dejá esa ventana abierta**: si la
+cerrás, se corta el túnel.
+
+**Por qué así:** el SSH de alumnos solo se acepta desde la red privada (nunca
+desde internet), y tus servicios no están publicados. El túnel es la forma de
+usarlos sin exponer nada. Ver [cap. 7 (Seguridad)](07-seguridad.md).
 
 ---
 
@@ -49,23 +95,31 @@ Todo tu proyecto vive en **una sola carpeta** (`/srv/classroom/<tu-equipo>/`), c
 cuota de disco propia:
 
 ```
-/srv/classroom/equipo-01/
+/srv/classroom/equipo-04/
 ├── compose.yml                 # LA definición de tu stack (lo editás vos)
-├── mosquitto/
-│   └── mosquitto.conf          # config del broker MQTT (lo editás vos)
 ├── data/                       # acá PERSISTEN los datos (cuentan contra tu cuota)
-│   ├── nodered/                # flows y settings de Node-RED
-│   └── mosquitto/              # persistencia del broker
-└── .shared-services.env        # credenciales de DB/Redis/MQTT (SOLO LECTURA)
+│   └── nodered/                # flows y configuración de Node-RED
+├── web/                        # tu página (si tu equipo tiene nginx)
+│   └── index.html
+├── nginx/
+│   └── default.conf            # config de nginx (sirve web/ y el puente a Node-RED)
+└── .shared-services.env        # credenciales de base de datos y MQTT (SOLO LECTURA)
 ```
 
-**Por qué acá:** la carpeta es `2770` con setgid → solo tu equipo entra, y vive sobre
-un disco con **tope de 20 GB**. Nada afuera de esta carpeta cuenta contra tu cuota, y
-la política rechaza montar rutas de afuera. **Guardá todo acá.**
+**Por qué acá:** la carpeta tiene permisos que dejan entrar **solo a tu
+equipo** (técnicamente, permisos `2770`. Cada número es un permiso: el `2` es
+*setgid*, que hace que todo archivo nuevo quede también del equipo; el primer `7`
+deja al dueño leer, escribir y entrar; el segundo `7`, lo mismo al grupo de tu
+equipo; y el `0` final dice que **nadie más** puede ni mirar). Además
+vive en un disco propio con **tope de 20 GB** (tu **cuota**). Nada afuera de esta
+carpeta cuenta contra tu cuota, y la política rechaza usar carpetas de afuera.
+**Guardá todo acá.**
 
 - **`compose.yml`** — qué contenedores levantás y cómo. Es el archivo central.
-- **`data/...`** — lo que quieras que sobreviva a un reinicio va en un *bind mount*
-  bajo `data/` (ej. `./data/nodered:/data`).
+- **`data/...`** — lo que quieras que sobreviva a un reinicio va acá. En el
+  `compose.yml` se "conecta" una carpeta tuya con una carpeta del contenedor; eso
+  se llama *bind mount* (ej. `./data/nodered:/data`: lo que Node-RED guarda en su
+  `/data` queda en tu `data/nodered`).
 - **`.shared-services.env`** — lo genera el operador; trae las credenciales de tu
   Postgres/Redis/MQTT. Lo **leés**, no lo editás:
   ```
@@ -137,35 +191,45 @@ config-node usá `${PGHOST}` `${PGUSER}` `${PGPASSWORD}` `${PGDATABASE}`. El hos
 > `/data`, la carpeta del host tiene que pertenecer a ese uid → avisá al operador
 > para el `chown` (ver [cap. 10, Caso 3](10-casos-practicos.md)).
 
-### 3.3 `mosquitto/mosquitto.conf` básico
+### 3.3 MQTT: usá el broker del aula (`mqtt-aula`)
+
+**MQTT** es el idioma con el que las placas se mandan mensajes, y el **broker**
+es el programa que los reparte (lo explica, desde cero, el
+[capítulo 11](11-arquitectura-iot.md)). El aula tiene **un broker para todos**:
+`mqtt-aula`. Es el que tenés que usar, por tres razones:
+
+1. **Tu ESP32 llega a él desde cualquier red** (tu casa, el colegio), por
+   internet y cifrado. Un broker dentro de tu proyecto solo se alcanza por túnel
+   SSH, y una placa no puede abrir un túnel.
+2. **Lo que publicás se guarda y aparece en Grafana** solo
+   ([capítulo 12](12-conectar-a-grafana.md)).
+3. **Es cerrado:** entrás con el usuario y la clave de tu equipo, y **solo podés
+   usar topics que empiecen con el nombre de tu equipo** (`equipo-04/...`). Un
+   mensaje con otro nombre se descarta sin aviso.
+
+| Desde | Host (dirección) | Puerto | ¿Cifrado (TLS)? | Usuario / clave |
+|---|---|---|---|---|
+| Tu Node-RED (en el servidor) | `mqtt-aula` | `1883` | no hace falta (viaja adentro del servidor) | `MQTT_USER` / `MQTT_PASSWORD` |
+| Tu ESP32 (cualquier red) | `homelab-01.tail4eda13.ts.net` | `10000` | **sí** | los mismos |
+
+Los datos están en tu `.shared-services.env`. Para verlos, entrá por SSH y corré
+(cambiá `04` por tu número):
 
 ```
-listener 1883
-allow_anonymous true          # OK en el aula: el broker solo se alcanza por túnel SSH
-
-persistence true
-persistence_location /mosquitto/data/
+grep MQTT_ /srv/classroom/equipo-04/.shared-services.env
 ```
 
-Tu equipo ya tiene credenciales MQTT en `.shared-services.env` por si querés activar
-autenticación (lo provisiona el operador; ver [`ejemplos/nodered-mqtt/mosquitto.conf`](ejemplos/nodered-mqtt/mosquitto.conf)).
+Ojo: el **usuario** va con **guion bajo** (`equipo_04`) y los **topics** con
+**guion** (`equipo-04/...`). Es el error más común.
 
-### 3.3.1 Broker del aula (`mqtt-aula`) — para conectar una ESP32
+En Node-RED, el nodo *mqtt-broker* va a `mqtt-aula`, puerto `1883`, con usuario y
+clave. `labctl up` conecta `mqtt-aula` a la red de tu proyecto, así que el nombre
+`mqtt-aula` funciona solo.
 
-Tu Mosquitto propio solo se alcanza por túnel SSH, y una ESP32 no puede abrir un
-túnel. Para hardware usá el **broker del aula**, que el operador publica por
-internet con TLS. Es **cerrado**: entrás con `MQTT_USER` / `MQTT_PASSWORD` de tu
-`.shared-services.env`, y **solo podés usar topics que empiecen con el nombre de
-tu equipo** (`equipo-01/led`, `equipo-01/sensor/…`). Un topic de otro equipo se
-descarta sin aviso.
-
-| Desde | Host | Puerto | TLS |
-|---|---|---|---|
-| Tu Node-RED (en el server) | `mqtt-aula` | `1883` | no |
-| La ESP32 (cualquier red) | `homelab-01.tail4eda13.ts.net` | `10000` | **sí** |
-
-En Node-RED, el nodo *mqtt-broker* va a `mqtt-aula:1883` con usuario y clave.
-`labctl up` conecta `mqtt-aula` a la red de tu proyecto.
+> **¿Y un Mosquitto propio dentro de mi proyecto?** Se puede (hay un ejemplo en
+> [`ejemplos/nodered-mqtt/`](ejemplos/nodered-mqtt/)), pero solo sirve para
+> pruebas entre tus propios servicios: tu placa no lo alcanza y no aparece en
+> Grafana.
 
 ### 3.4 Comandos (`labctl`)
 

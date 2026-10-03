@@ -3,7 +3,18 @@
 Registro honesto de lo que **falta** o se puede **mejorar** en esta documentación.
 Mantenerlo al día evita "documentación fantasma".
 
+## Hecho en la revisión de octubre 2026
+- Parte III (IoT aplicado): capítulos 11 a 14, y capítulo 15 (ciclo de vida y madurez).
+- Capítulo 10: seis casos reales de las placas y la red.
+- Glosario: vocabulario IoT, MQTT y ciclo de vida.
+- Guía del equipo: puertos por equipo, Tailscale, broker del aula.
+- Créditos y autoría.
+
 ## Capítulos por completar
+- **Pasada de lenguaje en los capítulos 2, 3 y 9:** explicar cada sigla desde cero
+  y partir de lo cercano, como en la Parte III.
+- **Documentos de operación en inglés** (`README`, `architecture`,
+  `deployment-guide`, `runbook`): traducirlos al español.
 - **Cap. 4 (Ansible/IaC):** desarrollar con ejemplos reales de roles del repo.
 - **Cap. 5 (Servicios):** completar la ficha de cada servicio.
 - **Cap. 6 (Observabilidad):** ejemplos de PromQL y lectura de los 3 dashboards.
@@ -25,7 +36,9 @@ Mantenerlo al día evita "documentación fantasma".
 
 ## 💡 Posibles mejoras arquitectónicas (marcadas en el libro)
 - Rotación de los secretos de Authelia/SSO (se generaron en sesión).
-- Alertas en Grafana/Prometheus (hoy hay dashboards, no alertas).
+- Alertas en Grafana/Prometheus (hoy hay dashboards, no alertas). Primera: "la
+  placa del equipo X no publica hace 15 minutos".
+- Tablero público para la muestra (salida filtrada, ver `docs/aula-iot.md`).
 - Cuota de disco por-contenedor además de por-equipo.
 - SMTP real para el reset de contraseñas de Authelia (hoy es file notifier).
 - Tests de exposición de puertos más exhaustivos.

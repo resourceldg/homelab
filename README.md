@@ -3,7 +3,12 @@
 [![CI](https://github.com/resourceldg/homelab/actions/workflows/ci.yml/badge.svg)](https://github.com/resourceldg/homelab/actions/workflows/ci.yml)
 
 Reproducible, modular infrastructure-as-code for an **Ubuntu Desktop LTS** box that
-doubles as a **development server** and **hosting platform for educational projects**.
+doubles as a **development server** and **hosting platform for educational projects**
+— including an **IoT classroom** where student teams connect ESP32 boards over MQTT
+and see their data in Grafana.
+
+**Author:** Lucas D. Gómez, software architect (<resourceldg@gmail.com>). Student
+projects are credited to their teams in the handbook (chapter 14).
 
 Built by a two-plane design:
 
@@ -24,8 +29,9 @@ Built by a two-plane design:
 | Auto-updates | `unattended-upgrades` (security only) |
 | Auditing | Lynis (weekly) + AIDE (daily FIM) |
 | Dynamic DNS | DuckDNS (systemd timer) |
-| Monitoring | Prometheus + Grafana (auto-provisioned dashboard) + node-exporter + cAdvisor |
-| Backups | Borg via borgmatic (encrypted, local repo, retention) |
+| Monitoring | Prometheus + Grafana (operators) + node-exporter + cAdvisor; on-demand Loki logs |
+| IoT classroom | shared MQTT broker `mqtt-aula` (per-team user + ACL) reached by ESP32s through Tailscale Funnel; Telegraf → VictoriaMetrics (15 d) → **Grafana del aula** with one folder per team |
+| Backups | Borg via borgmatic (encrypted, local repo, retention) — **designed, not running yet:** needs a drive at `/mnt/backup` |
 | Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule (Ubuntu 24.04) via GitHub Actions |
 
 A **multi-user Docker Compose teaching lab** runs on top of this server — 5
@@ -35,10 +41,15 @@ the guides ([student](docs/student-guide.md), [operator](docs/operator-guide.md)
 [labctl](docs/labctl.md), [policy](docs/docker-compose-policy.md),
 [resources](docs/resource-model.md), [shared services](docs/servicios-compartidos.md)).
 
+An **IoT classroom layer** lets every team connect ESP32 boards to a shared,
+authenticated MQTT broker (`mqtt-aula`, published through Tailscale Funnel) and
+see their data in a per-team Grafana. See [docs/aula-iot.md](docs/aula-iot.md) and
+handbook chapters 11–15.
+
 A **Pañol IoT service plane** (MQTT broker + audit database + Node-RED) hosts the
-access-control project whose code lives in the `panol-iot` repo: ESP32 nodes talk
-authenticated MQTT to the broker over the LAN, and the dashboard is published
-behind SSO. See [docs/panol-iot.md](docs/panol-iot.md).
+access-control project whose code lives in the `panol-iot` repo: ESP32 nodes report
+to its API (over the LAN, or from another network through Tailscale Funnel), and
+the dashboard is published behind SSO. See [docs/panol-iot.md](docs/panol-iot.md).
 
 📚 **Architecture Handbook (Spanish):** a beginner-friendly study book covering
 Linux, Docker, observability, DevSecOps and IaC using this repo as a real case
@@ -72,12 +83,18 @@ homelab/
 │   └── roles/                   # each role owns its defaults/main.yml
 │       ├── bootstrap/ users_ssh/ tailscale/ ddns/
 │       ├── firewall/ fail2ban/ apparmor/ hardening/ auto_updates/ audit/
-│       ├── docker/ monitoring/ backups/
+│       ├── docker/ monitoring/ backups/ authelia/ dns/
+│       ├── classroom/ shared_services/ labctl/ classroom_publish/   # teaching lab
+│       ├── aula_iot/            # IoT classroom: Telegraf + VictoriaMetrics + Grafana del aula
 │       └── panol/                # Pañol IoT service plane (MQTT + audit DB)
 ├── compose/
 │   ├── proxy/                   # Caddy (custom build w/ DuckDNS DNS-01)
 │   ├── dashboard/               # Homepage launchpad (links every service)
 │   ├── monitoring/              # Prometheus + Grafana + exporters
+│   ├── logs/                    # Loki + Alloy (on demand: make logs-on)
+│   ├── auth/                    # Authelia SSO
+│   ├── shared-data/             # classroom shared services + mqtt-aula broker
+│   ├── aula-iot/                # IoT classroom visualization layer
 │   ├── apps/                    # example educational project
 │   └── panol/                   # Pañol IoT: Mosquitto + Postgres + Node-RED
 ├── tests/                       # testinfra + verify playbook
@@ -122,8 +139,10 @@ make test          # testinfra smoke tests
 make idempotence   # proves a second run changes nothing
 ```
 
-Grafana is then at `https://grafana.<your-domain>`, your demo app at
-`https://demo.<your-domain>`.
+Grafana (operators) is then at `https://grafana.<your-domain>`, the classroom
+Grafana at `https://grafana-aula.<your-domain>`, your demo app at
+`https://demo.<your-domain>`. In this deployment those names resolve to the
+**tailnet** (split DNS), so they are reached over Tailscale.
 
 ## Safety notes
 

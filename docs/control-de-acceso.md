@@ -37,7 +37,9 @@ El acceso web está en **capas**, con un único login (Authelia) y **grupos**.
 
 Para que todo funcione de punta a punta:
 
-1. **Router → forward TCP 443** (y 80) a `192.168.100.48`. Así los alumnos/familia
+1. **Router → forward TCP 443** (y 80) a la IP LAN del server (`hostname -I`; la
+   red cambió varias veces, hoy `192.168.8.x`). **Hoy no está configurado:** todo
+   se usa por Tailscale. Así los alumnos/familia
    llegan desde Internet. (DuckDNS ya mantiene tu IP pública al día.)
 2. **Vault → secretos de Authelia.** Generá 3 secretos largos y las contraseñas:
    ```bash

@@ -1,6 +1,8 @@
 ---
 site_name: Manual de Arquitectura del Homelab
-site_description: Libro de estudio de Linux, Docker, DevSecOps e IaC usando el homelab como caso real
+site_description: Arquitectura de software aplicada al diseño IoT, desde cero, usando el servidor del aula como caso real
+site_author: Lucas D. Gómez
+copyright: "© 2026 Lucas D. Gómez — arquitecto de software"
 docs_dir: docs/handbook
 theme:
   name: material
@@ -31,17 +33,26 @@ markdown_extensions:
   - tables
 nav:
   - Inicio: index.md
-  - 1. Visión general: 01-vision-general.md
-  - 2. Fundamentos (compu, Linux, redes): 02-fundamentos.md
-  - 3. Docker y contenedores: 03-docker.md
-  - 4. Ansible e Infraestructura como Código: 04-ansible-iac.md
-  - 5. Los servicios uno por uno: 05-servicios.md
-  - 6. Observabilidad: 06-observabilidad.md
-  - 7. Seguridad (DevSecOps en el host): 07-seguridad.md
-  - 8. El pipeline (Git, CI, tests): 08-pipeline.md
-  - 9. La plataforma de aula: 09-plataforma-aula.md
-  - 10. Casos prácticos: 10-casos-practicos.md
-  - 11. Conectar tus sensores a Grafana: 11-conectar-a-grafana.md
-  - 12. Usar Grafana: 12-usar-grafana.md
+  - "Parte I — Bases":
+      - 1. Visión general: 01-vision-general.md
+      - 2. Fundamentos (compu, Linux, redes): 02-fundamentos.md
+      - 3. Docker y contenedores: 03-docker.md
+      - 4. Ansible e Infraestructura como Código: 04-ansible-iac.md
+  - "Parte II — La plataforma":
+      - 5. Los servicios uno por uno: 05-servicios.md
+      - 6. Observabilidad: 06-observabilidad.md
+      - 7. Seguridad (DevSecOps en el host): 07-seguridad.md
+      - 8. El pipeline (Git, CI, tests): 08-pipeline.md
+      - 9. La plataforma de aula: 09-plataforma-aula.md
+      - Guía práctica del equipo: guia-equipo.md
+  - "Parte III — IoT aplicado":
+      - 11. Arquitectura IoT del aula: 11-arquitectura-iot.md
+      - 12. Conectar tus sensores a Grafana: 12-conectar-a-grafana.md
+      - 13. Usar Grafana: 13-usar-grafana.md
+      - 14. Los proyectos de los equipos: 14-proyectos-de-los-equipos.md
+  - "Parte IV — Operar y evolucionar":
+      - 10. Casos prácticos: 10-casos-practicos.md
+      - 15. Ciclo de vida y madurez: 15-ciclo-de-vida-y-madurez.md
   - Glosario: glosario.md
+  - Créditos y autoría: creditos.md
   - Mejoras futuras: mejoras-futuras.md

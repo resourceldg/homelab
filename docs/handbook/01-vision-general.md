@@ -28,7 +28,7 @@ disco SSD). Todo el diseño está pensado para **rendir en hardware limitado**.
 
 ## Los tres "planos"
 
-Para no hacer un choclo, el sistema se organiza en **tres planos** (podés pensar
+Para no hacer un choclo, el sistema se organiza en **planos** (podés pensar
 "capas" o "áreas de responsabilidad"). Cada uno resuelve un problema distinto:
 
 ```mermaid
@@ -49,8 +49,14 @@ flowchart TB
     c1["equipo-01 ... equipo-05"]
     c2["labctl (la herramienta del alumno)"]
   end
+  subgraph IOT["Plano IoT (las placas)"]
+    i1["ESP32 de los equipos"]
+    i2["mqtt-aula (broker)"]
+    i3["Grafana del aula"]
+  end
   HOST --> SVC
   SVC --> CLASS
+  CLASS --> IOT
 ```
 
 - **Plano del host:** el sistema operativo y su seguridad. Cambia poco y se
@@ -60,6 +66,10 @@ flowchart TB
   prender/apagar rápido.
 - **Plano de aula:** los proyectos de los alumnos, cada equipo aislado, manejados
   con una herramienta propia (`labctl`).
+- **Plano IoT:** las **placas** de los equipos (ESP32) que miden o hacen cosas en
+  el mundo físico, el **broker** que reparte sus mensajes y el **Grafana del aula**
+  donde se ven. Es el corazón del trabajo de los equipos y tiene su propio
+  capítulo: [11 — Arquitectura IoT del aula](11-arquitectura-iot.md).
 
 > **Idea central:** separar lo que cambia lento (el host) de lo que cambia rápido
 > (los servicios). Si mezclás todo, cada cambio chico te obliga a tocar el
@@ -115,7 +125,9 @@ Todo esto se explica en los capítulos [7 (Seguridad)](07-seguridad.md) y
 ## 🧠 Ideas clave
 
 - El laboratorio es **una sola computadora** con tres roles.
-- Se organiza en **tres planos**: host, servicios y aula.
+- Como todo sistema, **evoluciona**: en qué etapa está cada parte, en el
+  [capítulo 15](15-ciclo-de-vida-y-madurez.md).
+- Se organiza en **planos**: host, servicios, aula e IoT.
 - **Caddy** es la única puerta web; **Ansible** administra todo como código.
 - Se separa lo que cambia lento de lo que cambia rápido.
 
@@ -128,7 +140,7 @@ Todo esto se explica en los capítulos [7 (Seguridad)](07-seguridad.md) y
 
 ## ❓ Preguntas de repaso
 
-1. ¿Cuáles son los tres planos y qué problema resuelve cada uno?
+1. ¿Cuáles son los planos y qué problema resuelve cada uno?
 2. ¿Por qué se separa el host de los servicios?
 3. ¿Qué hace Caddy cuando llega una petición web?
 4. ¿Qué quiere decir que Ansible sea "idempotente"?

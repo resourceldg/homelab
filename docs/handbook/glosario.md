@@ -3,6 +3,9 @@
 Cada entrada tiene una **definición simple**, una **técnica** y **dónde aparece**
 en este proyecto. Ordenado alfabéticamente.
 
+> La definición **simple** está pensada para leerla primero, sin saber nada de
+> sistemas. La **técnica** es la que vas a encontrar en internet o en un libro.
+
 ### ACL (Access Control List)
 - **Simple:** una lista de reglas de "quién puede hacer qué".
 - **Técnica:** conjunto de reglas de autorización asociadas a un recurso.
@@ -16,6 +19,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Dónde:** Caddy lo usa (con el desafío DNS-01 de DuckDNS) para emitir/renovar
   los certificados solo.
 
+### Actuador
+- **Simple:** la parte que **hace** algo en el mundo físico cuando recibe una orden (los "músculos").
+- **Técnica:** dispositivo que convierte una señal eléctrica en una acción: luz, movimiento, corte de corriente.
+- **Dónde:** el LED de Mijael, el relé del enchufe de Jorge. Ver [cap. 11](11-arquitectura-iot.md).
+
 ### AIDE
 - **Simple:** un "detector de cambios" en archivos del sistema.
 - **Técnica:** *Advanced Intrusion Detection Environment*; guarda huellas de los
@@ -26,6 +34,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** una herramienta para configurar servidores escribiendo archivos.
 - **Técnica:** motor de automatización/IaC sin agente, declarativo e idempotente.
 - **Dónde:** todo el plano del host. Ver [cap. 4](04-ansible-iac.md).
+
+### API (Application Programming Interface)
+- **Simple:** la "puerta acordada" por la que un programa le pide cosas a otro.
+- **Técnica:** interfaz de programación: conjunto de operaciones, formatos y reglas que un componente expone a otros.
+- **Dónde:** `POST /api/led` en el Node-RED de los equipos; el contrato de topics también funciona como API.
 
 ### AppArmor
 - **Simple:** un "chaleco" que limita qué puede hacer cada programa.
@@ -49,6 +62,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** mapeo directo de una ruta del host a una ruta del contenedor.
 - **Dónde:** los alumnos guardan datos así (obligatorio por la política).
 
+### Broker (MQTT)
+- **Simple:** el "cartero" que recibe los mensajes y se los reparte a quien los quiere (como el servidor de WhatsApp).
+- **Técnica:** servidor intermediario del modelo publicar/suscribir: recibe publicaciones y las entrega a los suscriptores de cada topic.
+- **Dónde:** `mqtt-aula` (Mosquitto). Ver [cap. 11](11-arquitectura-iot.md#capa-3-mensajeria-el-que-reparte-los-mensajes).
+
 ### Caddy
 - **Simple:** el portero web: recibe todo y reparte, con HTTPS automático.
 - **Técnica:** servidor web / proxy inverso con gestión automática de TLS.
@@ -69,6 +87,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** pipeline automatizado (lint, tests) en cada push/PR.
 - **Dónde:** GitHub Actions (`.github/workflows/ci.yml`). Ver [cap. 8](08-pipeline.md).
 
+### Ciclo de vida
+- **Simple:** el recorrido de un sistema: se necesita, se diseña, se construye, se usa, se mira y se mejora, una y otra vez.
+- **Técnica:** SDLC (*Software Development Life Cycle*): etapas iterativas de desarrollo y operación de un sistema.
+- **Dónde:** [cap. 15](15-ciclo-de-vida-y-madurez.md).
+
 ### Compose (Docker Compose)
 - **Simple:** describir contenedores en un archivo y prenderlos juntos.
 - **Técnica:** herramienta para definir apps multi-contenedor en YAML.
@@ -78,6 +101,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** una imagen en ejecución, aislada.
 - **Técnica:** proceso(s) aislados con namespaces + cgroups.
 - **Dónde:** todos los servicios y proyectos de alumnos.
+
+### Contrato (de mensajes)
+- **Simple:** el acuerdo escrito de "cómo nos vamos a hablar": qué nombre tiene cada mensaje y qué formato lleva.
+- **Técnica:** especificación de la interfaz entre productores y consumidores (estructura de topics, formato y semántica del payload).
+- **Dónde:** `equipo-NN/dispositivo/magnitud`. Ver [cap. 12](12-conectar-a-grafana.md#las-3-reglas).
 
 ### Daemon
 - **Simple:** un servicio que corre de fondo, permanente.
@@ -94,6 +122,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** DNS dinámico; DuckDNS es un proveedor gratuito.
 - **Dónde:** rol `ddns`, con un timer que actualiza la IP.
 
+### Deuda técnica
+- **Simple:** lo que se hizo rápido "para salir del paso" y algún día hay que rehacer bien.
+- **Técnica:** costo futuro acumulado por elegir una solución rápida en lugar de la adecuada; genera "intereses" en forma de trabajo y riesgo.
+- **Dónde:** los flows de Node-RED armados a mano. Ver [cap. 15](15-ciclo-de-vida-y-madurez.md).
+
 ### DevSecOps
 - **Simple:** desarrollar, asegurar y operar, todo integrado y automatizado.
 - **Técnica:** cultura/práctica que integra seguridad en el ciclo Dev+Ops.
@@ -109,6 +142,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** plataforma de contenedores (engine + CLI + formatos).
 - **Dónde:** el corazón del plano de servicios y de aula. Ver [cap. 3](03-docker.md).
 
+### ESP32
+- **Simple:** una placa chiquita y barata, con WiFi, que se programa para leer sensores y manejar actuadores.
+- **Técnica:** microcontrolador de Espressif con WiFi/Bluetooth, doble núcleo, programable en C++ (Arduino) o MicroPython.
+- **Dónde:** las placas de todos los equipos.
+
 ### Exporter
 - **Simple:** un programita que "traduce" métricas a un formato que Prometheus
   entiende.
@@ -119,6 +157,21 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** cómo se organizan los archivos en el disco.
 - **Técnica:** estructura jerárquica desde `/`.
 - **Dónde:** `/opt/homelab/stacks`, `/srv/classroom`, loopbacks de cuota.
+
+### Firmware
+- **Simple:** el programa que vive **adentro** de un aparato (la placa).
+- **Técnica:** software grabado en la memoria no volátil de un dispositivo embebido.
+- **Dónde:** el `main.py` de MicroPython o el `.ino` de Arduino.
+
+### Funnel (Tailscale Funnel)
+- **Simple:** un "portero" en internet que recibe a las placas y las hace pasar al servidor sin abrir puertas del router.
+- **Técnica:** servicio de Tailscale que publica un puerto local en internet (443, 8443 o 10000) mediante una conexión saliente, con TLS.
+- **Dónde:** `homelab-01.tail4eda13.ts.net:10000` → `mqtt-aula`; `:8443` → API del pañol.
+
+### GPIO (General Purpose Input/Output)
+- **Simple:** las patitas de la placa: cada una puede **leer** si hay corriente o **dar** corriente.
+- **Técnica:** pines digitales de entrada/salida de propósito general de un microcontrolador.
+- **Dónde:** `Pin(2, Pin.OUT)` (LED), `Pin(27, Pin.IN, Pin.PULL_UP)` (reed).
 
 ### Grafana
 - **Simple:** la app que muestra los gráficos de las métricas.
@@ -150,6 +203,16 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** estructura del filesystem con metadatos y punteros a los datos.
 - **Dónde:** el bug del Caddyfile (bind mount al inode viejo). Ver [cap. 10](10-casos-practicos.md).
 
+### IoT (Internet of Things)
+- **Simple:** Internet de las Cosas: objetos físicos conectados a una red que miden o hacen algo.
+- **Técnica:** red de dispositivos físicos con sensores/actuadores y conectividad que intercambian datos con otros sistemas.
+- **Dónde:** todos los proyectos de placas del aula. Ver [cap. 11](11-arquitectura-iot.md).
+
+### JSON
+- **Simple:** una forma de escribir datos ordenados con nombre y valor, que entienden casi todos los programas: `{"temp": 22.1}`.
+- **Técnica:** *JavaScript Object Notation*: formato de texto para datos estructurados (objetos, listas, números, textos).
+- **Dónde:** mensajes con varios valores a la vez (cap. 12, regla 2).
+
 ### labctl / labctld
 - **Simple:** la única herramienta con la que los alumnos manejan sus contenedores.
 - **Técnica:** cliente + daemon broker (Python) que valida y ejecuta compose.
@@ -159,6 +222,21 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** tu red local (casa, aula).
 - **Técnica:** *Local Area Network*, con IPs privadas.
 - **Dónde:** `lan_cidr: 192.168.100.0/24`.
+
+### Last Will (último deseo)
+- **Simple:** lo que el broker publica **por vos** si tu placa se desconecta de golpe: "avisen que me quedé sin batería".
+- **Técnica:** mensaje que el cliente MQTT registra al conectarse y el broker publica si la conexión se pierde sin desconexión limpia.
+- **Dónde:** `equipo-NN/<placa>/conexion` = `offline`. Ver [cap. 12](12-conectar-a-grafana.md).
+
+### Log (registro)
+- **Simple:** el cuaderno donde un programa anota lo que va pasando.
+- **Técnica:** flujo de eventos con marca de tiempo emitido por un proceso, usado para diagnóstico y auditoría.
+- **Dónde:** `docker logs mqtt-aula` (quién se conectó y si lo rechazó). Ver [cap. 10](10-casos-practicos.md).
+
+### Madurez
+- **Simple:** qué tan confiable y cuidada está una parte del sistema, del 0 (idea) al 5 (mejora sola).
+- **Técnica:** grado de estabilidad, reproducibilidad, verificación y operación de un componente.
+- **Dónde:** [cap. 15](15-ciclo-de-vida-y-madurez.md).
 
 ### Mermaid
 - **Simple:** una forma de escribir diagramas con texto.
@@ -170,30 +248,50 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** serie temporal con nombre y etiquetas.
 - **Dónde:** Prometheus las guarda; Grafana las muestra.
 
+### MicroPython
+- **Simple:** una versión chica de Python que corre adentro de la placa.
+- **Técnica:** implementación de Python 3 para microcontroladores.
+- **Dónde:** las placas de Mijael y Jessi (versión 1.29).
+
+### MQTT
+- **Simple:** un idioma liviano para que aparatos chicos se manden mensajes cortos, tipo grupo de WhatsApp.
+- **Técnica:** *Message Queuing Telemetry Transport*: protocolo publicar/suscribir sobre TCP, pensado para dispositivos con pocos recursos.
+- **Dónde:** todo el aula habla MQTT con `mqtt-aula`. Ver [cap. 11](11-arquitectura-iot.md).
+
 ### NAT
 - **Simple:** el router comparte una IP pública entre muchos dispositivos.
 - **Técnica:** *Network Address Translation*.
 - **Dónde:** por eso hace falta port-forward para el acceso público.
+
+### nginx
+- **Simple:** un programa que le entrega páginas web al navegador.
+- **Técnica:** servidor web y proxy inverso de alto rendimiento.
+- **Dónde:** el servicio `web` de equipo-03 y equipo-04 (sus páginas propias).
 
 ### node-exporter
 - **Simple:** mide el estado del server (CPU, RAM, disco).
 - **Técnica:** exporter de métricas del host para Prometheus.
 - **Dónde:** stack `monitoring`.
 
+### Node-RED
+- **Simple:** una herramienta para armar lógica conectando cajitas en vez de escribir código.
+- **Técnica:** entorno de programación por flujos (*flow-based*) sobre Node.js.
+- **Dónde:** el Node-RED de cada equipo (interruptores, `/api/led`).
+
 ### OOM (Out Of Memory)
 - **Simple:** cuando se acaba la memoria y el kernel mata procesos.
 - **Técnica:** *Out Of Memory killer* del kernel.
 - **Dónde:** lo previenen los límites de RAM por equipo.
 
+### Payload (carga)
+- **Simple:** el **contenido** de un mensaje: `23.5`, `ON`, `abierto`.
+- **Técnica:** datos útiles transportados por un mensaje MQTT, sin los encabezados del protocolo.
+- **Dónde:** cap. 12, regla 2.
+
 ### Playbook
 - **Simple:** la "receta" de Ansible: qué configurar y en qué orden.
 - **Técnica:** archivo YAML que orquesta roles/tareas sobre un inventario.
 - **Dónde:** `ansible/site.yml`.
-
-### Puerto
-- **Simple:** el "interno" de un servicio dentro de una IP.
-- **Técnica:** número (0-65535) que identifica un endpoint TCP/UDP.
-- **Dónde:** 443 (Caddy), 22 (SSH), 5432 (Postgres), 9090 (Prometheus)…
 
 ### PostgreSQL
 - **Simple:** una base de datos.
@@ -215,6 +313,31 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** proxy del lado del servidor (single entry point).
 - **Dónde:** Caddy.
 
+### Publicar / suscribir
+- **Simple:** mandar un mensaje a un "grupo con nombre" / anotarse para recibir lo de ese grupo.
+- **Técnica:** patrón *publish/subscribe*: productores y consumidores desacoplados a través de un broker.
+- **Dónde:** toda la comunicación de las placas. Ver [cap. 11](11-arquitectura-iot.md).
+
+### Puerto
+- **Simple:** el "interno" de un servicio dentro de una IP.
+- **Técnica:** número (0-65535) que identifica un endpoint TCP/UDP.
+- **Dónde:** 443 (Caddy), 22 (SSH), 5432 (Postgres), 9090 (Prometheus)…
+
+### QoS (Quality of Service)
+- **Simple:** cuánto esfuerzo pone MQTT en que un mensaje llegue (como el doble tilde).
+- **Técnica:** nivel de garantía de entrega MQTT: 0 (como mucho una vez), 1 (al menos una vez), 2 (exactamente una vez).
+- **Dónde:** Telegraf usa QoS 0; las órdenes de Node-RED, QoS 1.
+
+### Relé
+- **Simple:** un interruptor que se acciona con una señal eléctrica chiquita y puede prender o cortar un aparato grande.
+- **Técnica:** conmutador electromecánico o de estado sólido controlado por una señal de baja potencia.
+- **Dónde:** el enchufe de Jorge (simulado con un LED en GPIO 5).
+
+### Retenido (mensaje)
+- **Simple:** un mensaje "fijado": el broker guarda el último y se lo da a quien llega después.
+- **Técnica:** *retained message*: el broker conserva el último mensaje con la marca *retain* de cada topic y lo entrega a nuevos suscriptores.
+- **Dónde:** `equipo-04/enchufe/estado`: al reconectarse, el dashboard ve el último estado.
+
 ### Role (Ansible)
 - **Simple:** una carpeta con todo lo necesario para configurar una cosa.
 - **Técnica:** unidad reutilizable de tareas/plantillas/variables.
@@ -225,10 +348,25 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** superusuario, UID 0.
 - **Dónde:** se evita; los servicios usan cuentas sin privilegios.
 
+### Sensor
+- **Simple:** la parte que **mide** algo del mundo físico (los "sentidos").
+- **Técnica:** transductor que convierte una magnitud física en una señal eléctrica legible.
+- **Dónde:** el reed switch de Jessi. Ver [cap. 11](11-arquitectura-iot.md).
+
+### Serie temporal
+- **Simple:** una lista de valores con su hora, como una planilla "hora | temperatura".
+- **Técnica:** secuencia de muestras (timestamp, valor) identificada por un nombre y etiquetas.
+- **Dónde:** `mqtt_valor{equipo, dispositivo, magnitud}` en VictoriaMetrics.
+
 ### SSH
 - **Simple:** entrar a la terminal de otra máquina de forma segura.
 - **Técnica:** *Secure Shell*; acceso remoto cifrado, normalmente con claves.
 - **Dónde:** administración del server (rol `users_ssh`).
+
+### Stack
+- **Simple:** el conjunto de tecnologías con que está hecho un sistema, una arriba de otra.
+- **Técnica:** pila tecnológica: lenguajes, servicios, bases de datos y plataformas que componen una solución.
+- **Dónde:** [cap. 15](15-ciclo-de-vida-y-madurez.md#los-stacks-con-que-esta-hecho).
 
 ### systemd
 - **Simple:** el que prende y cuida los servicios del sistema.
@@ -245,6 +383,16 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** protocolo de transporte con control de entrega/orden.
 - **Dónde:** web, SSH, bases de datos.
 
+### Telegraf
+- **Simple:** el "traductor y escribano": lee los mensajes, los pasa a números y los anota con la hora.
+- **Técnica:** agente de recolección de métricas (InfluxData) con entradas, procesadores y salidas configurables.
+- **Dónde:** `aula-telegraf`: de `mqtt-aula` a VictoriaMetrics.
+
+### Topic
+- **Simple:** el "nombre del grupo" al que se manda un mensaje MQTT. Se escribe como una ruta: `equipo-04/enchufe/estado`.
+- **Técnica:** cadena jerárquica separada por `/` que identifica el canal de un mensaje MQTT; admite comodines `+` y `#` al suscribirse.
+- **Dónde:** el contrato del aula: `equipo-NN/dispositivo/magnitud`.
+
 ### UFW
 - **Simple:** el firewall (decide qué puertos se abren).
 - **Técnica:** *Uncomplicated Firewall*, front-end de iptables.
@@ -254,6 +402,16 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** una caja fuerte para las contraseñas dentro del repo.
 - **Técnica:** archivo cifrado que Ansible descifra al aplicar.
 - **Dónde:** `inventories/*/group_vars/all/vault.yml`.
+
+### VictoriaMetrics
+- **Simple:** la base de datos que guarda el historial de los sensores (15 días).
+- **Técnica:** base de datos de series temporales compatible con Prometheus.
+- **Dónde:** `aula-victoriametrics`, consultada por el Grafana del aula.
+
+### WebSocket
+- **Simple:** una conexión que queda **abierta** para que los datos lleguen solos, como una llamada en vez de cartas.
+- **Técnica:** protocolo de comunicación bidireccional y persistente sobre una conexión HTTP.
+- **Dónde:** `/ws/led`: la página de Mijael ve el LED en vivo.
 
 ### YAML
 - **Simple:** un formato de texto para configuraciones, sensible a la sangría.

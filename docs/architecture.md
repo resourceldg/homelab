@@ -42,6 +42,10 @@ it, each with its own architecture doc so this one stays about the core:
 - **Teaching lab** — multi-user Docker Compose sandbox for student teams
   (`labctl`, per-team networks, shared Postgres/Redis/Mailpit). See
   [classroom-architecture.md](classroom-architecture.md).
+- **IoT classroom** — shared MQTT broker (`mqtt-aula`) for the teams' ESP32s, and
+  a visualization layer (Telegraf → VictoriaMetrics → Grafana del aula, one folder
+  per team). See [aula-iot.md](aula-iot.md); the beginner explanation (layers,
+  decisions, lifecycle) is in handbook chapters 11 and 15.
 - **Pañol IoT** — access-control service plane (Mosquitto + audit Postgres +
   Node-RED) for the ESP32 nodes, deployed by the `panol` role and connected to
   EMATP for tickets. See [panol-iot.md](panol-iot.md).
@@ -54,26 +58,37 @@ another machine.
 
 ```mermaid
 flowchart LR
-    Internet(("Internet")) -->|"80/443 only (port-forward)"| Router
-    Router -->|"deny SSH"| X[[UFW default deny]]
-    Router --> Caddy
-    Laptop["Operator laptop"] -. Tailscale (WireGuard) .-> TS[tailscale0]
-    TS -->|SSH allowed| SSHD[sshd]
-    LAN["Home LAN"] -->|SSH allowed| SSHD
-    Caddy -->|reverse proxy| Grafana & Apps
+    Internet(("Internet"))
+    Router["Home router<br/>(no port-forward today)"]
+    Internet -.->|"80/443: only if forwarded"| Router
+    Laptop["Operator / student laptop"] -. "Tailscale (WireGuard)" .-> TS[tailscale0]
+    ESP["ESP32 boards<br/>(any network)"] -->|"MQTT over TLS :10000"| Funnel["Tailscale Funnel"]
+    PanolNode["Pañol node"] -->|"HTTPS :8443"| Funnel
     subgraph Server
-        X --- SSHD
-        Caddy
-        Grafana
-        Apps
+        TS -->|"SSH (students: password; admins: keys)"| SSHD[sshd]
+        TS -->|"443"| Caddy
+        Funnel --> Broker["mqtt-aula"]
+        Funnel --> PanolAPI["panol-api"]
+        Caddy -->|"Authelia SSO"| Grafana & GrafanaAula["Grafana del aula"] & Apps
     end
 ```
 
 - **SSH is never exposed to the internet.** UFW allows port 22 only from the LAN
   CIDR and the Tailscale CGNAT range (`100.64.0.0/10`); remote admin goes through
   Tailscale's WireGuard tunnel. This removes public brute-force surface entirely.
-- **Only Caddy is public** (80/443). Backends bind to `127.0.0.1` or the internal
-  `edge`/`monitoring` Docker networks — never a public host port.
+- **Web services are reached over the tailnet.** The DuckDNS names resolve to the
+  server's tailnet IP through split DNS (`dns` role). The current router does not
+  forward 80/443, so nothing web-facing is public unless that changes.
+- **Devices use Tailscale Funnel** (outbound tunnel, no port-forward): `:10000`
+  for the classroom MQTT broker (TLS + per-team credentials + ACL) and `:8443`
+  for the pañol API (token). Funnel only allows ports 443/8443/10000; 443 stays
+  with Caddy on the tailnet.
+- Backends bind to `127.0.0.1` or internal Docker networks — never a public host
+  port.
+
+> ⚠️ **Known drift (Oct 2026):** the server moved LANs (192.168.100.x → 192.168.8.x);
+> `lan_cidr` and the pañol broker's LAN bind still point to the old network.
+> Tracked in handbook chapter 15 (roadmap).
 
 ## 3. The Docker × UFW trap (and the fix)
 
@@ -128,6 +143,9 @@ Each layer is independent: compromise of one does not defeat the others.
 
 ## 6. Backups
 
+> ⚠️ **Status (Oct 2026): designed but not running** — no drive is mounted at
+> `/mnt/backup`, so the role's guard skips it. Until then there are **no backups**.
+
 Borg via **borgmatic** to a local encrypted, deduplicated repository (external
 drive / NAS mount at `/mnt/backup`). The borgmatic config uses the flat schema
 (borgmatic ≥ 1.8, Ubuntu 24.04+). Retention 7 daily / 4 weekly / 6 monthly,
@@ -145,8 +163,10 @@ metrics); Grafana visualises them with a pre-provisioned Prometheus datasource
 **and a pre-provisioned "Homelab Overview" dashboard** (uptime, running
 containers, memory/disk gauges, CPU, network I/O, per-container CPU & memory) that
 loads automatically on first boot — no manual import. Grafana is the only
-monitoring component reachable externally, and only through Caddy over HTTPS.
-Prometheus binds to loopback.
+monitoring component reachable through Caddy (HTTPS + SSO, operators only).
+Prometheus binds to loopback. Students get a separate **Grafana del aula** for
+their MQTT data (see [aula-iot.md](aula-iot.md)): a second instance, because
+Grafana OSS has no per-datasource permissions and this one reads the pañol audit DB.
 
 Dashboards live in `compose/monitoring/grafana/provisioning/dashboards/json/`;
 drop any additional `*.json` there and it is picked up within 30s.

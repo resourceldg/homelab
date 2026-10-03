@@ -7,8 +7,12 @@ Compose reales (el objetivo de evaluación es un stack IoT completo —
 administrado por el operador**, sin obtener nunca acceso a Docker, sudo ni al
 socket, y sin poder desestabilizar el servidor ni afectarse entre equipos.
 
-> Estado: **propuesta / diseño de referencia.** Se implementa por fases (ver
-> [Hoja de ruta](#hoja-de-ruta)). Las decisiones confirmadas van marcadas con ✅.
+> Estado: **implementado y en uso** (desde julio de 2026). Las seis fases de la
+> [Hoja de ruta](#hoja-de-ruta) están hechas; desde septiembre se sumaron el
+> broker del aula (`mqtt-aula`) y la capa de visualización (`aula-iot`, ver
+> [aula-iot.md](aula-iot.md)). Las decisiones confirmadas van marcadas con ✅.
+> La explicación para alumnos, desde cero, está en los capítulos 9 y 11 del
+> [manual](handbook/index.md).
 
 ---
 
@@ -34,8 +38,10 @@ flowchart TB
       pg["PostgreSQL compartido"]
       redis["Redis compartido"]
       mail["Mailpit"]
+      mqtt["mqtt-aula (broker MQTT)"]
       prom["Prometheus"]
-      graf["Grafana"]
+      graf["Grafana (operación)"]
+      grafa["Grafana del aula"]
     end
     subgraph MINE["Proyectos del operador"]
       pa["proyecto-a"]
@@ -61,7 +67,7 @@ Equipos (confirmado) ✅:
 
 | Equipo | Integrantes | Grupo |
 |---|---|---|
-| equipo-01 | jessi | `grp-equipo-01` |
+| equipo-01 | jessi, dardo | `grp-equipo-01` |
 | equipo-02 | alan, gabi | `grp-equipo-02` |
 | equipo-03 | santi, mijael, gino | `grp-equipo-03` |
 | equipo-04 | mariano, jorge | `grp-equipo-04` |
@@ -70,7 +76,7 @@ Equipos (confirmado) ✅:
 Se definen de forma declarativa en group_vars (`classroom_teams`), así que dar de
 alta/baja es cambiar una línea y re-aplicar con Ansible.
 
-- Cada alumno = un usuario Linux normal (uid ≥ 3000), con acceso a shell, **sin
+- Cada alumno = un usuario Linux normal (uid normal asignado por el sistema; ej. `mijael` = 1006), con acceso a shell, **sin
   sudo, fuera del grupo `docker`, sin acceso al socket de Docker**. ✅
 - Cada equipo = un grupo Linux `grp-equipo-NN`; sus integrantes pertenecen a él.
 - Directorio del proyecto `/srv/classroom/equipo-NN`:
@@ -115,7 +121,7 @@ sequenceDiagram
   S->>C: labctl up (en el dir del equipo)
   C->>C: resuelve usuario y equipo, confirma el dir
   C->>D: pedido por /run/labctld.sock (0660, grupo)
-  D->>D: revalida el uid del que llama; enjaula el path
+  D->>D: revalida el uid del que llama y enjaula el path
   D->>D: valida el compose contra la politica
   D->>D: inyecta el cgroup_parent del slice del equipo
   D->>E: docker compose -p equipo-03 up -d
@@ -237,7 +243,9 @@ loopback.
 
 ## Hoja de ruta
 
-Commits atómicos en `feat/classroom-platform`, un PR revisable:
+Commits atómicos en `feat/classroom-platform`, un PR revisable. **Todas las fases
+están hechas** (julio 2026); lo que vino después está en
+[aula-iot.md](aula-iot.md) y en el capítulo 15 del manual (madurez y hoja de ruta):
 
 1. **Base** — rol `classroom`: usuarios, grupos, `/srv/classroom/*`
    (2770+setgid), cuotas loopback por equipo, slices systemd, registro
