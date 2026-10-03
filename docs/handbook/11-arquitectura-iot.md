@@ -242,25 +242,13 @@ Las capas explican **qué** hay. Ahora seguimos **un dato concreto** por todas
 ellas, con los nombres reales del sistema. Supongamos que el equipo-03 tiene un
 sensor de temperatura en la sala y mide **24,7 °C**.
 
-### El mapa real (lo que existe hoy)
+### El ciclo completo, en una imagen
 
-```mermaid
-flowchart LR
-  subgraph PLACA["En la placa"]
-    s["sensor"] --> f["firmware<br/>(MicroPython / Arduino)"]
-  end
-  f -->|"WiFi → internet<br/>MQTT con TLS"| fun["Funnel: el portero en internet<br/>homelab-01.tail4eda13.ts.net:10000"]
-  subgraph SERVIDOR["En el servidor (homelab-01)"]
-    b["mqtt-aula<br/>(broker)"]
-    b --> t["Telegraf<br/>(traduce)"]
-    t --> v["VictoriaMetrics<br/>(guarda 15 días)"]
-    v --> g["Grafana del aula<br/>(muestra)"]
-    b <--> nr["Node-RED de tu equipo<br/>(opcional: reglas, botones)"]
-  end
-  fun -->|"túnel de Tailscale"| b
-  g -->|"HTTPS por el tailnet"| vos["Tu navegador"]
-  nr -->|"túnel SSH"| vos
-```
+Ida (el dato, del sensor a tu pantalla) y vuelta (la orden, de tu botón al
+actuador), con **el protocolo de cada tramo** y las herramientas con las que
+trabajás:
+
+![El ciclo completo: ida del dato y vuelta de la orden, con los protocolos de cada tramo](img/ciclo-completo.svg)
 
 ### Paso a paso
 

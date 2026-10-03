@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 760" width="1300" height="760" role="img" aria-label="La pila de protocolos: qué trabaja en cada capa">
+<title>La pila de protocolos: qué trabaja en cada capa</title>
+<defs></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="650" y="40" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="25" font-weight="bold" font-style="normal" fill="#212121" text-anchor="middle">La pila de protocolos: cada capa con un solo trabajo</text>
+<text x="650" y="66" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">Como una carta: escribís el mensaje, lo metés en un sobre cerrado, le ponés la dirección y el correo lo lleva.</text>
+<rect x="60" y="100" width="1180" height="108" rx="12" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="90" y="138" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="19" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="start">APLICACIÓN</text>
+<text x="90" y="164" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="normal" font-style="italic" fill="#424242" text-anchor="start">qué dice el mensaje</text>
+<text x="420" y="146" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="normal" font-style="normal" fill="#212121" text-anchor="start">MQTT (placa ↔ broker) · HTTP/HTTPS (navegador) · SSH (terminal)</text>
+<text x="420" y="176" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">En la carta: la carta</text>
+<rect x="60" y="222" width="1180" height="108" rx="12" fill="#fffde7" stroke="#f9a825" stroke-width="2"/>
+<text x="90" y="260" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="19" font-weight="bold" font-style="normal" fill="#f9a825" text-anchor="start">SEGURIDAD</text>
+<text x="90" y="286" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="normal" font-style="italic" fill="#424242" text-anchor="start">que nadie lo lea en el camino</text>
+<text x="420" y="268" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="normal" font-style="normal" fill="#212121" text-anchor="start">TLS (sobre cerrado) · WireGuard (túnel de Tailscale)</text>
+<text x="420" y="298" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">En la carta: el sobre cerrado</text>
+<rect x="60" y="344" width="1180" height="108" rx="12" fill="#ede7f6" stroke="#5e35b1" stroke-width="2"/>
+<text x="90" y="382" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="19" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="start">TRANSPORTE</text>
+<text x="90" y="408" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="normal" font-style="italic" fill="#424242" text-anchor="start">que llegue completo y en orden</text>
+<text x="420" y="390" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="normal" font-style="normal" fill="#212121" text-anchor="start">TCP (MQTT, HTTPS, SSH) · UDP (WireGuard)</text>
+<text x="420" y="420" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">En la carta: el remito con número de piezas</text>
+<rect x="60" y="466" width="1180" height="108" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="90" y="504" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="19" font-weight="bold" font-style="normal" fill="#1565c0" text-anchor="start">RED</text>
+<text x="90" y="530" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="normal" font-style="italic" fill="#424242" text-anchor="start">a qué máquina va</text>
+<text x="420" y="512" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="normal" font-style="normal" fill="#212121" text-anchor="start">IP: 192.168.x (casa) · 100.110.123.76 (Tailscale) · IP pública</text>
+<text x="420" y="542" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">En la carta: la dirección del sobre</text>
+<rect x="60" y="588" width="1180" height="108" rx="12" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="90" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="19" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="start">ENLACE / FÍSICO</text>
+<text x="90" y="652" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="normal" font-style="italic" fill="#424242" text-anchor="start">cómo viaja por el aire o el cable</text>
+<text x="420" y="634" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="normal" font-style="normal" fill="#212121" text-anchor="start">WiFi 802.11 a 2.4 GHz (placa, servidor) · Ethernet (cable)</text>
+<text x="420" y="664" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">En la carta: el camión del correo</text>
+<text x="650" y="735" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14" font-weight="bold" font-style="normal" fill="#424242" text-anchor="middle">Cuando tu ESP32 publica "24.7", baja por todas estas capas en la placa y sube por todas en el servidor.</text>
+</svg>

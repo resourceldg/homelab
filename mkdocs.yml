@@ -4,6 +4,9 @@ site_description: Arquitectura de software aplicada al diseño IoT, desde cero, 
 site_author: Lucas D. Gómez
 copyright: "© 2026 Lucas D. Gómez — arquitecto de software"
 docs_dir: docs/handbook
+# El generador de imágenes vive junto a las imágenes, pero no se publica.
+exclude_docs: |
+  img/*.py
 theme:
   name: material
   language: es

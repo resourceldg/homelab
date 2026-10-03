@@ -40,6 +40,12 @@ usando Node-RED o tu página.
 
 ---
 
+### Las herramientas que vas a usar
+
+![Tus herramientas: en la placa, en tu compu y en el servidor](img/herramientas.svg)
+
+---
+
 ## Las 3 reglas
 
 ### Regla 1 — El topic tiene 3 partes (o más)

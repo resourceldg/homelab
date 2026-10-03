@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 640" width="1400" height="640" role="img" aria-label="Las herramientas que usás y dónde trabaja cada una">
+<title>Las herramientas que usás y dónde trabaja cada una</title>
+<defs><marker id="punta-424242" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#424242"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="700" y="40" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="25" font-weight="bold" font-style="normal" fill="#212121" text-anchor="middle">Tus herramientas: qué es cada una y dónde trabaja</text>
+<rect x="40" y="80" width="420" height="520" rx="16" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="250" y="114" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="18" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">EN LA PLACA</text>
+<rect x="60" y="140" width="380" height="62" rx="9" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<text x="80" y="166" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">ESP32</text>
+<text x="80" y="187" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">la computadora chiquita con WiFi</text>
+<rect x="60" y="213" width="380" height="62" rx="9" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<text x="80" y="239" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">MicroPython 1.29</text>
+<text x="80" y="260" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">Python para placas</text>
+<rect x="60" y="286" width="380" height="62" rx="9" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<text x="80" y="312" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Arduino (C++)</text>
+<text x="80" y="333" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">la otra forma de programarla</text>
+<rect x="60" y="359" width="380" height="62" rx="9" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<text x="80" y="385" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">umqtt.simple / PubSubClient</text>
+<text x="80" y="406" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">las librerías que hablan MQTT</text>
+<rect x="490" y="80" width="420" height="520" rx="16" fill="#fce4ec" stroke="#ad1457" stroke-width="2"/>
+<text x="700" y="114" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="18" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">EN TU COMPU</text>
+<rect x="510" y="140" width="380" height="62" rx="9" fill="#ffffff" stroke="#ad1457" stroke-width="1.2"/>
+<text x="530" y="166" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Thonny</text>
+<text x="530" y="187" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">escribir main.py y ver la consola</text>
+<rect x="510" y="213" width="380" height="62" rx="9" fill="#ffffff" stroke="#ad1457" stroke-width="1.2"/>
+<text x="530" y="239" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">IDE de Arduino</text>
+<text x="530" y="260" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">escribir y cargar el .ino</text>
+<rect x="510" y="286" width="380" height="62" rx="9" fill="#ffffff" stroke="#ad1457" stroke-width="1.2"/>
+<text x="530" y="312" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Tailscale</text>
+<text x="530" y="333" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">entrar a la red privada del aula</text>
+<rect x="510" y="359" width="380" height="62" rx="9" fill="#ffffff" stroke="#ad1457" stroke-width="1.2"/>
+<text x="530" y="385" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Terminal + SSH</text>
+<text x="530" y="406" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">entrar al servidor y abrir túneles</text>
+<rect x="510" y="432" width="380" height="62" rx="9" fill="#ffffff" stroke="#ad1457" stroke-width="1.2"/>
+<text x="530" y="458" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">MQTT Explorer</text>
+<text x="530" y="479" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">escuchar tus mensajes en el broker</text>
+<rect x="510" y="505" width="380" height="62" rx="9" fill="#ffffff" stroke="#ad1457" stroke-width="1.2"/>
+<text x="530" y="531" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Navegador</text>
+<text x="530" y="552" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">Node-RED, tu página, Grafana</text>
+<rect x="940" y="80" width="420" height="520" rx="16" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1150" y="114" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="18" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">EN EL SERVIDOR</text>
+<rect x="960" y="140" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
+<text x="980" y="166" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Docker + labctl</text>
+<text x="980" y="187" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">cada servicio en su contenedor</text>
+<rect x="960" y="213" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
+<text x="980" y="239" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">mqtt-aula (Mosquitto)</text>
+<text x="980" y="260" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">el broker de todas las placas</text>
+<rect x="960" y="286" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
+<text x="980" y="312" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Node-RED</text>
+<text x="980" y="333" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">tus reglas y tus botones</text>
+<rect x="960" y="359" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
+<text x="980" y="385" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Telegraf + VictoriaMetrics</text>
+<text x="980" y="406" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">traducen y guardan 15 días</text>
+<rect x="960" y="432" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
+<text x="980" y="458" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Grafana del aula</text>
+<text x="980" y="479" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">tus tableros con historia</text>
+<rect x="960" y="505" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
+<text x="980" y="531" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Caddy + Authelia</text>
+<text x="980" y="552" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">la puerta web con login</text>
+<line x1="488" y1="300" x2="462" y2="300" stroke="#424242" stroke-width="2.5" marker-end="url(#punta-424242)"/>
+<text x="474" y="330" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11" font-weight="bold" font-style="normal" fill="#424242" text-anchor="middle">USB</text>
+<line x1="910" y1="300" x2="938" y2="300" stroke="#424242" stroke-width="2.5" marker-end="url(#punta-424242)"/>
+<text x="924" y="330" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11" font-weight="bold" font-style="normal" fill="#424242" text-anchor="middle">red</text>
+</svg>

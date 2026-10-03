@@ -50,27 +50,7 @@ Conectá. Cada mensaje de tu equipo aparece en el árbol, con su valor y la hora
 
 ## Mi ESP32 mide, pero no veo los datos
 
-```mermaid
-flowchart TB
-  A{"1 · ¿El sensor mide?<br/>(valor en Thonny / Monitor Serie)"} -->|no| A1["Cableado, pines, librería del sensor"]
-  A -->|sí| B{"2 · ¿Dice WiFi OK?"}
-  B -->|no| B1["Nombre/clave del WiFi · red de 2.4 GHz"]
-  B -->|sí| C{"3 · ¿Dice MQTT OK?"}
-  C -->|"no: error"| C1["Leé el código de error (tabla del paso 3)"]
-  C -->|sí| D{"4 · ¿Publica sin error?"}
-  D -->|no| D1["Ver el print del publish · ¿se cortó la conexión?"]
-  D -->|sí| E{"5 · ¿El topic respeta el contrato?<br/>equipo-NN/dispositivo/magnitud"}
-  E -->|no| E1["Corregir el topic"]
-  E -->|sí| F{"6 · ¿Lo ves en MQTT Explorer?"}
-  F -->|no| F1["El broker lo descartó: topic de otro prefijo o usuario equivocado"]
-  F -->|sí| G{"7 · ¿Node-RED lo recibe?"}
-  G -->|no| G1["Nodo mqtt-broker desconectado o topic mal escrito"]
-  G -->|"sí (o no usás Node-RED)"| H{"8 · ¿Aparece en 'Estado actual' de Grafana?"}
-  H -->|no| H1["El mensaje no es número ni palabra de estado"]
-  H -->|sí| I{"9 · ¿Tu panel lo muestra?"}
-  I -->|no| I1["Datasource, etiquetas o rango de tiempo del panel"]
-  I -->|sí| OK["✅ Todo el recorrido funciona"]
-```
+![Árbol de diagnóstico: nueve preguntas, de la placa a Grafana; al primer NO, ese es tu problema](img/arbol-diagnostico.svg)
 
 ### Paso 1 — ¿El sensor mide?
 

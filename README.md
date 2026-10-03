@@ -13,7 +13,9 @@ proyectos de los alumnos están atribuidos a sus equipos en el manual (capítulo
 📚 **Manual de arquitectura (para empezar desde cero):** arquitectura de software
 aplicada al diseño IoT, explicada para principiantes con este servidor como caso
 real → [docs/handbook/](docs/handbook/index.md). Para verlo como libro:
-`pip install mkdocs-material && mkdocs serve`.
+`pip install mkdocs-material && mkdocs serve`. **En PDF** (ordenado desde
+Fundamentos, con imágenes): [docs/manual-arquitectura-homelab.pdf](docs/manual-arquitectura-homelab.pdf),
+se regenera con `python3 scripts/manual-pdf.py`.
 
 ## La idea en dos planos
 

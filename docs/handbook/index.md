@@ -7,6 +7,10 @@
 > sabés nada, y cada sigla se explica la primera vez que aparece.
 >
 > **Autor:** Lucas D. Gómez, arquitecto de software · [Créditos y autoría](creditos.md)
+>
+> 📄 **Versión para imprimir o leer sin conexión:** el manual completo en PDF,
+> ordenado desde Fundamentos y con todas las imágenes:
+> [manual-arquitectura-homelab.pdf](https://github.com/resourceldg/homelab/raw/main/docs/manual-arquitectura-homelab.pdf).
 
 ## ¿Qué necesitás hoy?
 
@@ -64,6 +68,10 @@ No hace falta leer todo en orden. Elegí tu camino:
 > lo consulta para dibujar mi dashboard. **Node-RED**, al costado, recibe los
 > eventos, aplica mis reglas y manda órdenes a mis actuadores. Yo llego a todo eso
 > por **Tailscale**, con un **túnel** para lo que no tiene login."
+
+![El ciclo completo del sistema, ida y vuelta](img/ciclo-completo.svg)
+
+En versión corta:
 
 ```mermaid
 flowchart LR

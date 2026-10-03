@@ -180,6 +180,10 @@ mindmap
       Ansible
 ```
 
+Y vistas desde el lado de quien las usa:
+
+![Tus herramientas: en la placa, en tu compu y en el servidor](img/herramientas.svg)
+
 | Capa (cap. 11) | Pieza | Versión | Para qué, en una frase |
 |---|---|---|---|
 | Dispositivo | ESP32 | — | la placa con WiFi |

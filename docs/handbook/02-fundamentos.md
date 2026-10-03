@@ -8,7 +8,7 @@ no te cierre.
 
 🆕 **Conceptos nuevos:** CPU, RAM, disco, sistema operativo, proceso, servicio,
 daemon, kernel, systemd, boot, usuario, grupo, permisos, filesystem, inode, IP,
-puerto, TCP, DNS, HTTPS.
+puerto, TCP, DNS, HTTPS, protocolo, pila de protocolos, VPN, Tailscale, túnel.
 
 ---
 
@@ -190,6 +190,57 @@ propia máquina** (`127.0.0.1` = "yo mismo", loopback).
 de manera **confiable** (verifica que todo llegue y en orden). La web, SSH y las
 bases de datos usan TCP. (Hay otro, UDP, más rápido pero sin garantías.)
 
+### ¿Qué es un protocolo? La pila de protocolos
+
+Un **protocolo** es un **acuerdo** de cómo hablar: en qué orden, con qué formato y
+qué se responde. Igual que al mandar una carta hay reglas (sobre, estampilla,
+dirección), las computadoras siguen reglas para mandarse datos.
+
+No hay un solo protocolo que haga todo: hay **varios, apilados**, y cada uno
+resuelve **un** problema. A eso se le dice **pila de protocolos**:
+
+![La pila de protocolos: aplicación, seguridad, transporte, red y enlace, con los protocolos que usamos en cada capa](img/pila-protocolos.svg)
+
+Leída de arriba hacia abajo, cuando tu ESP32 publica una temperatura:
+
+1. **Aplicación:** MQTT arma el mensaje (`equipo-03/sala/temperatura = 24.7`).
+2. **Seguridad:** TLS lo mete en un **sobre cerrado** para que nadie lo lea.
+3. **Transporte:** TCP lo parte en pedazos numerados y se asegura de que lleguen
+   todos y en orden.
+4. **Red:** IP le pone la **dirección** de destino.
+5. **Enlace/físico:** el WiFi lo manda por el aire, en la banda de 2.4 GHz.
+
+En el servidor el camino es al revés: sube capa por capa hasta que el broker lee
+el mensaje. **Cada capa no sabe nada de las otras**: por eso se puede cambiar el
+WiFi por un cable sin tocar tu código MQTT. El recorrido completo, con todos los
+protocolos de cada tramo, está en el [capítulo 11](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c).
+
+### ¿Qué es una VPN? ¿Y Tailscale?
+
+Una **VPN** (*Virtual Private Network*, red privada virtual) es una **red privada
+que viaja por adentro de internet**, cifrada. Es como si varias computadoras que
+están en casas distintas estuvieran enchufadas al **mismo router**: se ven entre
+ellas, y nadie de afuera las ve.
+
+**Tailscale** es el programa que arma esa VPN en el aula. Lo instalás en tu
+compu, te unís con una clave, y tu compu queda en la misma red privada que el
+servidor (a esa red se le dice **tailnet**). El servidor tiene ahí una dirección
+propia: `100.110.123.76` (las direcciones de Tailscale empiezan con `100.`).
+
+¿Por qué hace falta? Porque el servidor está en una casa, detrás de un router que
+**no deja entrar a nadie de afuera**. Tailscale arma un **túnel** (un pasillo
+cifrado) que cruza ese router de forma segura. Por adentro usa **WireGuard**, un
+sistema de túneles cifrados muy liviano.
+
+Las placas ESP32 son demasiado chicas para correr Tailscale: entran por otro
+camino, **Funnel**, un "portero" de Tailscale en internet que solo les abre la
+puerta del broker.
+
+![Los dos caminos al servidor: personas por Tailscale, placas por Funnel](img/dos-caminos.svg)
+
+> **Para entenderlo a fondo** (qué ve cada máquina, qué es un túnel SSH, por qué
+> te piden tantas contraseñas) → [Red y accesos](red-y-accesos.md).
+
 ### ¿Qué es DNS? ¿Y un dominio?
 Un **dominio** es un nombre fácil de recordar (`grafana.lucasland.duckdns.org`).
 El **DNS** (Domain Name System) es la "guía telefónica" que traduce ese nombre a
@@ -237,6 +288,10 @@ flowchart LR
 - Una **IP** identifica una máquina; un **puerto**, un servicio dentro de ella;
   el **DNS** traduce nombres a IPs; **HTTPS** es la web cifrada.
 - Un **proxy inverso** (Caddy) es la puerta única de entrada web.
+- Los datos viajan por una **pila de protocolos** (MQTT → TLS → TCP → IP → WiFi);
+  cada capa resuelve un solo problema.
+- **Tailscale** es una **VPN**: pone tu compu y el servidor en la misma red privada,
+  cruzando el router con un túnel cifrado.
 
 ## ⚠️ Errores comunes
 
@@ -252,6 +307,8 @@ flowchart LR
 2. ¿Qué hace el bit **setgid** en una carpeta y por qué importa acá?
 3. ¿Qué traduce el DNS? ¿Y qué mantiene actualizado DuckDNS?
 4. ¿Por qué `127.0.0.1:8080` no es accesible desde otra computadora?
+5. Ordená de arriba hacia abajo: TCP, MQTT, WiFi, IP, TLS. ¿Qué hace cada uno?
+6. ¿Por qué tu compu entra por Tailscale y tu ESP32 no?
 
 ## 🛠️ Ejercicios
 

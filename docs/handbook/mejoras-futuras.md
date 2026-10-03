@@ -29,7 +29,15 @@ Mantenerlo al día evita "documentación fantasma".
 - Bloques de "Ahora deberías entender / Seguí por acá" en los capítulos clave.
 - Glosario con definiciones "en el aula" (118 términos).
 
+## Hecho: imágenes y PDF (octubre 2026)
+- Imágenes propias, generadas con código (`img/generar_imagenes.py`): el ciclo
+  completo ida y vuelta con sus protocolos, la pila de protocolos, los dos caminos
+  (Tailscale y Funnel), las herramientas y el árbol de diagnóstico.
+- Fundamentos (cap. 2): protocolos y pila de protocolos; VPN y Tailscale.
+- Manual en PDF ordenado desde Fundamentos (`scripts/manual-pdf.py`).
+
 ## Pendiente
+- **Índice del PDF con número de página** (hoy tiene enlaces, sin números).
 - **Cuando se active el Grafana del aula:** sacar los avisos "en puesta en
   marcha" (caps. 9, 12, 13, guía, diagnóstico paso 8, node-red-o-grafana).
 - **Salida pública para la muestra** (que un visitante sin Tailscale vea un

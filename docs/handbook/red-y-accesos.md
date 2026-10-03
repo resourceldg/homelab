@@ -237,6 +237,10 @@ Separarlas hace que perder una llave no abra todas las puertas (ver
 
 ## 6. Los dos caminos, completos
 
+![Los dos caminos al servidor: personas por Tailscale, placas por Funnel](img/dos-caminos.svg)
+
+El mismo dibujo, paso a paso:
+
 ```mermaid
 flowchart LR
   subgraph PERSONA["Camino de una persona"]

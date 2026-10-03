@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1020" width="2000" height="1020" role="img" aria-label="El ciclo completo: del sensor a Grafana y de tu botón al actuador">
+<title>El ciclo completo: del sensor a Grafana y de tu botón al actuador</title>
+<defs><marker id="punta-1565c0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1565c0"/></marker><marker id="punta-ad1457" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ad1457"/></marker><marker id="punta-e65100" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e65100"/></marker><marker id="punta-5e35b1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5e35b1"/></marker><marker id="punta-2e7d32" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2e7d32"/></marker><marker id="punta-424242" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#424242"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="1000" y="40" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="27" font-weight="bold" font-style="normal" fill="#212121" text-anchor="middle">El ciclo completo: ida (el dato) y vuelta (la orden)</text>
+<text x="1000" y="66" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">Cada flecha dice QUÉ protocolo viaja por ese tramo. Los números y letras marcan el orden del recorrido.</text>
+<rect x="20" y="90" width="290" height="720" rx="14" fill="#e8f5e9" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="165.0" y="118" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15.5" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">TU PLACA</text>
+<text x="165.0" y="137" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">ESP32 + sensor / actuador</text>
+<rect x="390" y="90" width="240" height="720" rx="14" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="510.0" y="118" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15.5" font-weight="bold" font-style="normal" fill="#1565c0" text-anchor="middle">WIFI Y ROUTER</text>
+<text x="510.0" y="137" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">red de la casa o el colegio</text>
+<rect x="710" y="90" width="270" height="720" rx="14" fill="#ede7f6" stroke="#5e35b1" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="845.0" y="118" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15.5" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">INTERNET + TAILSCALE</text>
+<text x="845.0" y="137" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">Funnel: el portero</text>
+<rect x="1060" y="90" width="600" height="720" rx="14" fill="#fff3e0" stroke="#e65100" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="1360.0" y="118" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15.5" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">SERVIDOR homelab-01</text>
+<text x="1360.0" y="137" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">contenedores Docker</text>
+<rect x="1740" y="90" width="240" height="720" rx="14" fill="#fce4ec" stroke="#ad1457" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text x="1860.0" y="118" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15.5" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">VOS</text>
+<text x="1860.0" y="137" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">tu compu y tu navegador</text>
+<rect x="32" y="161" width="479.76" height="29" rx="6" fill="#ffffff"/>
+<text x="40" y="182" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="17" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="start">IDA → el dato viaja del sensor a tu pantalla</text>
+<rect x="40" y="200" width="250" height="66" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="165.0" y="224" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">Sensor</text>
+<text x="165.0" y="244" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">mide 24,7 °C</text>
+<line x1="165" y1="266" x2="165" y2="298" stroke="#424242" stroke-width="2.5" marker-end="url(#punta-424242)"/>
+<text x="175" y="287" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11" font-weight="normal" font-style="normal" fill="#424242" text-anchor="start">señal eléctrica (GPIO)</text>
+<rect x="40" y="300" width="250" height="130" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="165.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">Firmware ESP32</text>
+<text x="165.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">MicroPython o Arduino</text>
+<text x="165.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">lee y arma el mensaje:</text>
+<text x="165.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">equipo-03/sala/</text>
+<text x="165.0" y="392" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">temperatura = "24.7"</text>
+<circle cx="40" cy="300" r="13" fill="#2e7d32"/>
+<text x="40" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">1</text>
+<rect x="410" y="300" width="200" height="130" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="510.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#1565c0" text-anchor="middle">WiFi + router</text>
+<text x="510.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">WiFi 802.11 · 2.4 GHz</text>
+<text x="510.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">IP privada 192.168.x</text>
+<text x="510.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">el router hace NAT</text>
+<text x="510.0" y="392" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">y sale a internet</text>
+<circle cx="410" cy="300" r="13" fill="#1565c0"/>
+<text x="410" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">2</text>
+<line x1="290" y1="365" x2="408" y2="365" stroke="#2e7d32" stroke-width="2.5" marker-end="url(#punta-2e7d32)"/>
+<rect x="326.5" y="335.5" width="47.0" height="24.5" rx="6" fill="#ffffff"/>
+<text x="350" y="352" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">MQTT</text>
+<rect x="288.525" y="380.5" width="122.95" height="23.5" rx="6" fill="#ffffff"/>
+<text x="350" y="396" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#2e7d32" text-anchor="middle">dentro de TLS 🔒</text>
+<rect x="730" y="300" width="230" height="130" rx="10" fill="#ede7f6" stroke="#5e35b1" stroke-width="2"/>
+<text x="845.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">Tailscale Funnel</text>
+<text x="845.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">…tail4eda13.ts.net:10000</text>
+<text x="845.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">recibe la conexión,</text>
+<text x="845.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">abre el sobre TLS y</text>
+<text x="845.0" y="392" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">la pasa por el túnel</text>
+<circle cx="730" cy="300" r="13" fill="#5e35b1"/>
+<text x="730" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">3</text>
+<line x1="610" y1="365" x2="728" y2="365" stroke="#5e35b1" stroke-width="2.5" marker-end="url(#punta-5e35b1)"/>
+<rect x="638.75" y="335.5" width="62.5" height="24.5" rx="6" fill="#ffffff"/>
+<text x="670" y="352" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">TCP/IP</text>
+<rect x="619.22" y="380.5" width="101.56" height="23.5" rx="6" fill="#ffffff"/>
+<text x="670" y="396" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#5e35b1" text-anchor="middle">por internet</text>
+<rect x="1080" y="300" width="150" height="130" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1155.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">mqtt-aula</text>
+<text x="1155.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">broker MQTT</text>
+<text x="1155.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">Mosquitto 2.0</text>
+<text x="1155.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">valida usuario</text>
+<text x="1155.0" y="392" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">y topic (ACL)</text>
+<circle cx="1080" cy="300" r="13" fill="#e65100"/>
+<text x="1080" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">4</text>
+<line x1="960" y1="365" x2="1078" y2="365" stroke="#5e35b1" stroke-width="2.5" marker-end="url(#punta-5e35b1)"/>
+<rect x="977.125" y="335.5" width="85.75" height="24.5" rx="6" fill="#ffffff"/>
+<text x="1020" y="352" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">WireGuard</text>
+<rect x="965.655" y="380.5" width="108.69" height="23.5" rx="6" fill="#ffffff"/>
+<text x="1020" y="396" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#5e35b1" text-anchor="middle">túnel cifrado</text>
+<rect x="1270" y="190" width="170" height="90" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1355.0" y="214" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">Telegraf</text>
+<text x="1355.0" y="234" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">texto "24.7"</text>
+<text x="1355.0" y="250" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">→ número 24.7</text>
+<circle cx="1270" cy="190" r="13" fill="#e65100"/>
+<text x="1270" y="195" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">5</text>
+<rect x="1270" y="340" width="170" height="90" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1355.0" y="364" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">VictoriaMetrics</text>
+<text x="1355.0" y="384" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">guarda 15 días</text>
+<text x="1355.0" y="400" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">(serie temporal)</text>
+<rect x="1480" y="300" width="160" height="130" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1560.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">Grafana</text>
+<text x="1560.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">consulta y dibuja</text>
+<text x="1560.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">el panel</text>
+<text x="1560.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">(PromQL)</text>
+<circle cx="1480" cy="300" r="13" fill="#e65100"/>
+<text x="1480" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">6</text>
+<line x1="1230" y1="330" x2="1268" y2="260" stroke="#e65100" stroke-width="2.5" marker-end="url(#punta-e65100)"/>
+<text x="1222" y="290" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="end">MQTT</text>
+<line x1="1355" y1="280" x2="1355" y2="338" stroke="#e65100" stroke-width="2.5" marker-end="url(#punta-e65100)"/>
+<text x="1365" y="314" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="start">escribe</text>
+<line x1="1478" y1="385" x2="1442" y2="385" stroke="#e65100" stroke-width="2.5" marker-end="url(#punta-e65100)"/>
+<text x="1460" y="452" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">consulta (HTTP)</text>
+<rect x="1760" y="300" width="200" height="130" rx="10" fill="#fce4ec" stroke="#ad1457" stroke-width="2"/>
+<text x="1860.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">Tu navegador</text>
+<text x="1860.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">grafana-aula…</text>
+<text x="1860.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">login del aula</text>
+<text x="1860.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">ves el 24,7 en el</text>
+<text x="1860.0" y="392" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">gráfico (≈15 s)</text>
+<circle cx="1760" cy="300" r="13" fill="#ad1457"/>
+<text x="1760" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">7</text>
+<line x1="1640" y1="365" x2="1758" y2="365" stroke="#ad1457" stroke-width="2.5" marker-end="url(#punta-ad1457)"/>
+<rect x="1672.625" y="335.5" width="54.75" height="24.5" rx="6" fill="#ffffff"/>
+<text x="1700" y="352" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">HTTPS</text>
+<rect x="1638.525" y="380.5" width="122.95" height="23.5" rx="6" fill="#ffffff"/>
+<text x="1700" y="396" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#ad1457" text-anchor="middle">Caddy + tailnet</text>
+<line x1="30" y1="485" x2="1970" y2="485" stroke="#bdbdbd" stroke-width="1.5" stroke-dasharray="4 6"/>
+<rect x="32" y="504" width="511.38" height="29" rx="6" fill="#ffffff"/>
+<text x="40" y="525" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="17" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="start">VUELTA ← la orden viaja de tu botón al actuador</text>
+<rect x="1760" y="550" width="200" height="130" rx="10" fill="#fce4ec" stroke="#ad1457" stroke-width="2"/>
+<text x="1860.0" y="574" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">Tu compu</text>
+<text x="1860.0" y="594" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">clic en un botón del</text>
+<text x="1860.0" y="610" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">dashboard de Node-RED</text>
+<text x="1860.0" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">(localhost:1880,</text>
+<text x="1860.0" y="642" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">por el túnel SSH)</text>
+<circle cx="1760" cy="550" r="13" fill="#ad1457"/>
+<text x="1760" y="555" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">A</text>
+<rect x="1430" y="550" width="210" height="130" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1535.0" y="574" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">Node-RED</text>
+<text x="1535.0" y="594" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">de tu equipo:</text>
+<text x="1535.0" y="610" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">recibe el clic y</text>
+<text x="1535.0" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">publica la orden</text>
+<text x="1535.0" y="642" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">…/enchufe/cmd = ON</text>
+<circle cx="1430" cy="550" r="13" fill="#e65100"/>
+<text x="1430" y="555" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">B</text>
+<line x1="1758" y1="615" x2="1642" y2="615" stroke="#ad1457" stroke-width="2.5" marker-end="url(#punta-ad1457)"/>
+<rect x="1649.375" y="585.5" width="101.25" height="24.5" rx="6" fill="#ffffff"/>
+<text x="1700" y="602" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">SSH (túnel)</text>
+<rect x="1634.96" y="630.5" width="130.07999999999998" height="23.5" rx="6" fill="#ffffff"/>
+<text x="1700" y="646" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#ad1457" text-anchor="middle">HTTP · WebSocket</text>
+<rect x="1080" y="550" width="150" height="130" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="1155.0" y="574" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">mqtt-aula</text>
+<text x="1155.0" y="594" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">reparte la orden</text>
+<text x="1155.0" y="610" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">a quien está</text>
+<text x="1155.0" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">suscripto a</text>
+<text x="1155.0" y="642" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">…/enchufe/cmd</text>
+<circle cx="1080" cy="550" r="13" fill="#e65100"/>
+<text x="1080" y="555" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">C</text>
+<line x1="1428" y1="615" x2="1232" y2="615" stroke="#e65100" stroke-width="2.5" marker-end="url(#punta-e65100)"/>
+<rect x="1306.5" y="585.5" width="47.0" height="24.5" rx="6" fill="#ffffff"/>
+<text x="1330" y="602" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">MQTT</text>
+<rect x="730" y="550" width="230" height="130" rx="10" fill="#ede7f6" stroke="#5e35b1" stroke-width="2"/>
+<text x="845.0" y="574" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">Funnel + túnel</text>
+<text x="845.0" y="594" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">la placa mantiene</text>
+<text x="845.0" y="610" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">SU conexión abierta:</text>
+<text x="845.0" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">la orden baja por</text>
+<text x="845.0" y="642" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">ese mismo camino</text>
+<line x1="1078" y1="615" x2="962" y2="615" stroke="#5e35b1" stroke-width="2.5" marker-end="url(#punta-5e35b1)"/>
+<rect x="977.125" y="585.5" width="85.75" height="24.5" rx="6" fill="#ffffff"/>
+<text x="1020" y="602" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">WireGuard</text>
+<rect x="410" y="550" width="200" height="130" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="510.0" y="574" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#1565c0" text-anchor="middle">Router + WiFi</text>
+<text x="510.0" y="594" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">la entrega por la</text>
+<text x="510.0" y="610" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">conexión que abrió</text>
+<text x="510.0" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">la placa (a la placa</text>
+<text x="510.0" y="642" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">nadie la "visita")</text>
+<line x1="728" y1="615" x2="612" y2="615" stroke="#5e35b1" stroke-width="2.5" marker-end="url(#punta-5e35b1)"/>
+<rect x="627.125" y="585.5" width="85.75" height="24.5" rx="6" fill="#ffffff"/>
+<text x="670" y="602" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#5e35b1" text-anchor="middle">TLS + TCP</text>
+<rect x="40" y="550" width="250" height="130" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="165.0" y="574" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">ESP32: callback</text>
+<text x="165.0" y="594" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">llega "ON" →</text>
+<text x="165.0" y="610" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">prende el relé (GPIO)</text>
+<text x="165.0" y="626" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">y publica el estado:</text>
+<text x="165.0" y="642" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">…/enchufe/estado = ON</text>
+<circle cx="40" cy="550" r="13" fill="#2e7d32"/>
+<text x="40" y="555" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">D</text>
+<line x1="408" y1="615" x2="292" y2="615" stroke="#1565c0" stroke-width="2.5" marker-end="url(#punta-1565c0)"/>
+<rect x="326.5" y="585.5" width="47.0" height="24.5" rx="6" fill="#ffffff"/>
+<text x="350" y="602" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#1565c0" text-anchor="middle">WiFi</text>
+<rect x="40" y="715" width="250" height="70" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="165.0" y="739" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">Actuador</text>
+<text x="165.0" y="759" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">el aparato se prende</text>
+<line x1="165" y1="680" x2="165" y2="713" stroke="#424242" stroke-width="2.5" marker-end="url(#punta-424242)"/>
+<path d="M 290 750 C 800 800, 1300 800, 1530 684" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#punta-2e7d32)"/>
+<circle cx="860" cy="785" r="13" fill="#2e7d32"/>
+<text x="860" y="790" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" font-style="normal" fill="#ffffff" text-anchor="middle">E</text>
+<rect x="872" y="773.5" width="853.0" height="24.5" rx="6" fill="#ffffff"/>
+<text x="880" y="790" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="start">la confirmación (…/estado = ON) sube por la IDA: Node-RED muestra "PRENDIDO" recién cuando la placa confirma</text>
+<rect x="20" y="840" width="1960" height="160" rx="12" fill="#f5f5f5" stroke="#616161" stroke-width="1.5"/>
+<text x="40" y="870" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15.5" font-weight="bold" font-style="normal" fill="#424242" text-anchor="start">ANTES DE TODO: cómo llega tu código a la placa (y con qué trabajás vos)</text>
+<rect x="40" y="890" width="260" height="90" rx="10" fill="#fce4ec" stroke="#ad1457" stroke-width="2"/>
+<text x="170.0" y="914" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">Thonny</text>
+<text x="170.0" y="934" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">escribís main.py</text>
+<text x="170.0" y="950" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">en MicroPython</text>
+<rect x="320" y="890" width="260" height="90" rx="10" fill="#fce4ec" stroke="#ad1457" stroke-width="2"/>
+<text x="450.0" y="914" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14" font-weight="bold" font-style="normal" fill="#ad1457" text-anchor="middle">IDE de Arduino</text>
+<text x="450.0" y="934" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">escribís el .ino (C++)</text>
+<text x="450.0" y="950" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">con PubSubClient</text>
+<line x1="580" y1="935" x2="690" y2="935" stroke="#424242" stroke-width="2.5" marker-end="url(#punta-424242)"/>
+<rect x="593.52" y="909" width="82.96" height="24" rx="6" fill="#ffffff"/>
+<text x="635" y="925" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="bold" font-style="normal" fill="#424242" text-anchor="middle">cable USB</text>
+<text x="635" y="960" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11" font-weight="normal" font-style="normal" fill="#616161" text-anchor="middle">(puerto serie)</text>
+<rect x="695" y="890" width="260" height="90" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="825.0" y="914" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="middle">Firmware en la ESP32</text>
+<text x="825.0" y="934" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">queda grabado y</text>
+<text x="825.0" y="950" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">arranca solo al prender</text>
+<text x="1000" y="915" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="bold" font-style="normal" fill="#424242" text-anchor="start">Otras herramientas tuyas, y para qué:</text>
+<text x="1000" y="938" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#424242" text-anchor="start">• Tailscale: entrar a la red privada del aula   • Terminal + SSH: entrar al servidor y abrir el túnel</text>
+<text x="1000" y="960" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#424242" text-anchor="start">• MQTT Explorer: escuchar tus mensajes en el broker   • Navegador: Node-RED, tu página y Grafana</text>
+<text x="1000" y="982" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#424242" text-anchor="start">• Consola de Thonny / Monitor Serie: ver qué hace la placa (WiFi OK, MQTT OK, errores)</text>
+</svg>
