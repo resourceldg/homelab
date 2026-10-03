@@ -1,0 +1,582 @@
+{
+ "dashboard": {
+  "uid": "__EQUIPO__-mqtt",
+  "title": "__EQUIPO__ — sensores y actuadores",
+  "description": "Dashboard inicial del equipo. Editable por el equipo.",
+  "tags": [
+   "mqtt",
+   "__EQUIPO__"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "10s",
+  "time": {
+   "from": "now-3h",
+   "to": "now"
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "graphTooltip": 1,
+  "panels": [
+   {
+    "id": 1,
+    "type": "text",
+    "title": "",
+    "gridPos": {
+     "x": 0,
+     "y": 0,
+     "w": 24,
+     "h": 3
+    },
+    "options": {
+     "mode": "markdown",
+     "content": "### Dashboard de __EQUIPO__\nAcá aparece **solo lo que publican sus placas** en topics `__EQUIPO__/<dispositivo>/<magnitud>`. Este dashboard es de ustedes: **pueden editarlo, agregar paneles y guardar**. Cómo conectar un sensor o actuador: *capítulo 12 del manual — Conectar tus sensores a Grafana*. Cómo usar Grafana: *capítulo 13 — Usar Grafana*."
+    }
+   },
+   {
+    "id": 2,
+    "type": "stat",
+    "title": "Dispositivos reportando (5 min)",
+    "description": "",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "gridPos": {
+     "x": 0,
+     "y": 3,
+     "w": 8,
+     "h": 4
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "count(count by (dispositivo) (last_over_time(mqtt_valor[5m]))) or vector(0)",
+      "instant": true
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "unit": "short",
+      "decimals": 0,
+      "color": {
+       "mode": "thresholds"
+      },
+      "thresholds": {
+       "mode": "absolute",
+       "steps": [
+        {
+         "color": "red",
+         "value": null
+        },
+        {
+         "color": "green",
+         "value": 1
+        }
+       ]
+      }
+     },
+     "overrides": []
+    },
+    "options": {
+     "reduceOptions": {
+      "calcs": [
+       "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+     },
+     "colorMode": "background",
+     "graphMode": "none",
+     "textMode": "value",
+     "justifyMode": "center"
+    }
+   },
+   {
+    "id": 3,
+    "type": "stat",
+    "title": "Magnitudes distintas",
+    "description": "",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "gridPos": {
+     "x": 8,
+     "y": 3,
+     "w": 8,
+     "h": 4
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "count(last_over_time(mqtt_valor[15d])) or vector(0)",
+      "instant": true
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "unit": "short",
+      "decimals": 0,
+      "color": {
+       "mode": "thresholds"
+      },
+      "thresholds": {
+       "mode": "absolute",
+       "steps": [
+        {
+         "color": "blue",
+         "value": null
+        }
+       ]
+      }
+     },
+     "overrides": []
+    },
+    "options": {
+     "reduceOptions": {
+      "calcs": [
+       "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+     },
+     "colorMode": "background",
+     "graphMode": "none",
+     "textMode": "value",
+     "justifyMode": "center"
+    }
+   },
+   {
+    "id": 4,
+    "type": "stat",
+    "title": "Último mensaje hace",
+    "description": "",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "gridPos": {
+     "x": 16,
+     "y": 3,
+     "w": 8,
+     "h": 4
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "time() - max(tlast_over_time(mqtt_valor[15d]))",
+      "instant": true
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "unit": "s",
+      "decimals": 0,
+      "color": {
+       "mode": "thresholds"
+      },
+      "thresholds": {
+       "mode": "absolute",
+       "steps": [
+        {
+         "color": "green",
+         "value": null
+        },
+        {
+         "color": "yellow",
+         "value": 120
+        },
+        {
+         "color": "red",
+         "value": 900
+        }
+       ]
+      }
+     },
+     "overrides": []
+    },
+    "options": {
+     "reduceOptions": {
+      "calcs": [
+       "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+     },
+     "colorMode": "background",
+     "graphMode": "none",
+     "textMode": "value",
+     "justifyMode": "center"
+    }
+   },
+   {
+    "id": 5,
+    "type": "table",
+    "title": "Estado actual",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "description": "Último valor que llegó de cada dispositivo y magnitud, y hace cuánto llegó. Si 'Hace' crece y no baja, el dispositivo dejó de publicar.",
+    "gridPos": {
+     "x": 0,
+     "y": 7,
+     "w": 24,
+     "h": 8
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "last_over_time(mqtt_valor[15d])",
+      "instant": true,
+      "format": "table"
+     },
+     {
+      "refId": "B",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "time() - tlast_over_time(mqtt_valor[15d])",
+      "instant": true,
+      "format": "table"
+     }
+    ],
+    "transformations": [
+     {
+      "id": "merge",
+      "options": {}
+     },
+     {
+      "id": "organize",
+      "options": {
+       "excludeByName": {
+        "Time": true,
+        "__name__": true,
+        "db": true
+       },
+       "indexByName": {
+        "dispositivo": 1,
+        "magnitud": 2,
+        "Value #A": 3,
+        "Value #B": 4
+       },
+       "renameByName": {
+        "equipo": "Equipo",
+        "dispositivo": "Dispositivo",
+        "magnitud": "Magnitud",
+        "Value #A": "Último valor",
+        "Value #B": "Hace"
+       }
+      }
+     },
+     {
+      "id": "sortBy",
+      "options": {
+       "sort": [
+        {
+         "field": "Hace",
+         "desc": false
+        }
+       ]
+      }
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "custom": {
+       "align": "auto",
+       "cellOptions": {
+        "type": "auto"
+       }
+      }
+     },
+     "overrides": [
+      {
+       "matcher": {
+        "id": "byName",
+        "options": "Hace"
+       },
+       "properties": [
+        {
+         "id": "unit",
+         "value": "s"
+        },
+        {
+         "id": "decimals",
+         "value": 0
+        },
+        {
+         "id": "custom.cellOptions",
+         "value": {
+          "type": "color-background",
+          "mode": "basic"
+         }
+        },
+        {
+         "id": "thresholds",
+         "value": {
+          "mode": "absolute",
+          "steps": [
+           {
+            "color": "green",
+            "value": null
+           },
+           {
+            "color": "yellow",
+            "value": 120
+           },
+           {
+            "color": "red",
+            "value": 900
+           }
+          ]
+         }
+        },
+        {
+         "id": "color",
+         "value": {
+          "mode": "thresholds"
+         }
+        }
+       ]
+      },
+      {
+       "matcher": {
+        "id": "byName",
+        "options": "Último valor"
+       },
+       "properties": [
+        {
+         "id": "decimals",
+         "value": 2
+        }
+       ]
+      }
+     ]
+    },
+    "options": {
+     "showHeader": true,
+     "cellHeight": "sm",
+     "footer": {
+      "show": false
+     }
+    }
+   },
+   {
+    "id": 6,
+    "type": "state-timeline",
+    "title": "Actuadores y estados (ON/OFF)",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "description": "Para actuadores y sensores de dos estados (ON/OFF, abierto/cerrado, online/offline). 1 = encendido/abierto/online, 0 = apagado/cerrado/offline.",
+    "gridPos": {
+     "x": 0,
+     "y": 15,
+     "w": 24,
+     "h": 6
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "mqtt_valor and on(equipo, dispositivo, magnitud) (max_over_time(mqtt_valor[15d]) <= 1 and min_over_time(mqtt_valor[15d]) >= 0)",
+      "legendFormat": "{{dispositivo}} · {{magnitud}}",
+      "range": true
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "color": {
+       "mode": "thresholds"
+      },
+      "thresholds": {
+       "mode": "absolute",
+       "steps": [
+        {
+         "color": "#5a6270",
+         "value": null
+        },
+        {
+         "color": "green",
+         "value": 1
+        }
+       ]
+      },
+      "mappings": [
+       {
+        "type": "value",
+        "options": {
+         "0": {
+          "text": "OFF / cerrado",
+          "color": "#5a6270"
+         },
+         "1": {
+          "text": "ON / abierto",
+          "color": "green"
+         }
+        }
+       }
+      ],
+      "custom": {
+       "fillOpacity": 80,
+       "lineWidth": 0
+      }
+     },
+     "overrides": []
+    },
+    "options": {
+     "mergeValues": true,
+     "showValue": "auto",
+     "rowHeight": 0.8,
+     "legend": {
+      "showLegend": false
+     }
+    }
+   },
+   {
+    "id": 7,
+    "type": "timeseries",
+    "title": "Todas las magnitudes",
+    "description": "",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "gridPos": {
+     "x": 0,
+     "y": 21,
+     "w": 24,
+     "h": 9
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "mqtt_valor",
+      "legendFormat": "{{dispositivo}} · {{magnitud}}",
+      "range": true
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "unit": "short",
+      "custom": {
+       "lineWidth": 2,
+       "fillOpacity": 10,
+       "showPoints": "auto",
+       "spanNulls": 3600000,
+       "stacking": {
+        "mode": "none"
+       }
+      }
+     },
+     "overrides": []
+    },
+    "options": {
+     "legend": {
+      "displayMode": "table",
+      "placement": "right",
+      "calcs": [
+       "lastNotNull",
+       "max"
+      ]
+     },
+     "tooltip": {
+      "mode": "multi",
+      "sort": "desc"
+     }
+    }
+   },
+   {
+    "id": 8,
+    "type": "timeseries",
+    "title": "Mensajes por minuto",
+    "description": "",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-__EQUIPO__"
+    },
+    "gridPos": {
+     "x": 0,
+     "y": 30,
+     "w": 24,
+     "h": 6
+    },
+    "targets": [
+     {
+      "refId": "A",
+      "datasource": {
+       "type": "prometheus",
+       "uid": "mqtt-__EQUIPO__"
+      },
+      "expr": "sum by (dispositivo) (count_over_time(mqtt_valor[1m]))",
+      "legendFormat": "{{dispositivo}}",
+      "range": true
+     }
+    ],
+    "fieldConfig": {
+     "defaults": {
+      "unit": "short",
+      "custom": {
+       "lineWidth": 2,
+       "fillOpacity": 10,
+       "showPoints": "auto",
+       "spanNulls": 3600000,
+       "stacking": {
+        "mode": "normal"
+       }
+      }
+     },
+     "overrides": []
+    },
+    "options": {
+     "legend": {
+      "displayMode": "table",
+      "placement": "right",
+      "calcs": [
+       "lastNotNull",
+       "max"
+      ]
+     },
+     "tooltip": {
+      "mode": "multi",
+      "sort": "desc"
+     }
+    }
+   }
+  ],
+  "templating": {
+   "list": []
+  },
+  "links": []
+ },
+ "folderUid": "__EQUIPO__",
+ "overwrite": false,
+ "message": "Dashboard inicial (Ansible)"
+}

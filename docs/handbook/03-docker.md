@@ -11,7 +11,18 @@ volumen, bind mount, healthcheck, límites de recursos, cgroup.
 
 ---
 
-## 📖 El problema que resuelve Docker
+## 📖 Empecemos por lo cercano: el contenedor de un barco
+
+Antes de los contenedores de carga, cargar un barco era un caos: bolsas, cajas y
+barriles de todos los tamaños, cada uno se acomodaba distinto. El **contenedor**
+de metal lo cambió todo: **una caja estándar** que entra igual en un barco, un
+camión o un tren, sin importar qué lleva adentro.
+
+**Docker** hace lo mismo con los programas: mete una aplicación **con todo lo que
+necesita** en una "caja" estándar que corre igual en cualquier computadora. De ahí
+el nombre "contenedor".
+
+## El problema que resuelve Docker
 
 Antes, instalar una aplicación en un servidor era un dolor: dependencias que
 chocan, "en mi máquina funcionaba", versiones distintas. **Docker** empaqueta una
@@ -32,8 +43,12 @@ flowchart LR
   img["Imagen: postgres:16.4-alpine (plantilla)"] -->|docker run| c1["Contenedor postgres (corriendo)"]
 ```
 
-> **Analogía:** la imagen es la *clase*, el contenedor es el *objeto*. O: la
-> imagen es la receta, el contenedor es el plato servido.
+> **Otra analogía:** la imagen es la **receta**, el contenedor es el **plato
+> servido**. Con una receta cocinás muchos platos iguales.
+>
+> **¿Qué es `alpine`?** En `postgres:16.4-alpine`, lo que va después de `:` es la
+> **etiqueta** (*tag*): la versión exacta. `alpine` es una versión de Linux muy
+> chiquita que se usa de "base", para que la imagen ocupe poco.
 
 ### El engine
 El **motor de Docker** (`dockerd`, un daemon) es el que construye imágenes, y
@@ -43,8 +58,13 @@ por el operador. Los alumnos **no** lo tocan directo (ver [cap. 9](09-plataforma
 ### ¿Por qué "aislado"?
 Cada contenedor corre como si tuviera su propio mini-sistema: su propio filesystem,
 su propia red, sus propios procesos. Ese aislamiento lo da el **kernel** de Linux
-con dos mecanismos: **namespaces** (qué ve el contenedor) y **cgroups** (cuántos
-recursos puede usar — ver abajo).
+con dos mecanismos:
+
+- **namespaces** ("espacios de nombres"): son como **anteojeras**. Deciden **qué
+  ve** el contenedor: solo sus propios archivos, sus procesos y su red, no los de
+  los demás.
+- **cgroups** ("grupos de control"): son como un **medidor con corte**. Deciden
+  **cuánto usa**: cuánta CPU, RAM y procesos (ver abajo).
 
 ---
 
@@ -53,6 +73,11 @@ recursos puede usar — ver abajo).
 Prender un contenedor a mano (`docker run` con veinte flags) es incómodo.
 **Docker Compose** permite describir uno o varios contenedores en un archivo
 **YAML** (`compose.yml`) y prenderlos juntos con `docker compose up`.
+
+> **YAML** (*YAML Ain't Markup Language*) es un formato de texto para escribir
+> configuración, que se lee casi como una lista hecha a mano: `nombre: valor`, y
+> lo que va "adentro" de algo se escribe **más a la derecha** (con espacios, no
+> con tabulación). Si la sangría está mal, el archivo no se entiende.
 
 Ejemplo mínimo (de este proyecto):
 
@@ -70,9 +95,11 @@ services:
 
 - **`services:`** — la lista de contenedores.
 - **`image:`** — la imagen (siempre con versión fija, nunca `latest`).
-- **`ports:`** — "publica" un puerto del contenedor en la máquina anfitriona.
-  `127.0.0.1:8080:80` = el puerto 80 del contenedor se ve como 8080, **solo en
-  loopback**.
+- **`ports:`** — "publica" un puerto del contenedor en la máquina **anfitriona**
+  (el *host*: la computadora real donde corre Docker, en nuestro caso el
+  servidor). `127.0.0.1:8080:80` = el puerto 80 del contenedor se ve como 8080
+  del servidor, **solo en loopback** (`127.0.0.1`, "esta misma máquina": nadie de
+  afuera lo ve).
 
 ### Redes Docker
 Cuando levantás un proyecto Compose, Docker le crea una **red privada** propia.
@@ -100,7 +127,8 @@ flowchart TB
 > política y se levanta con `labctl validate && labctl up`.
 
 ### Volúmenes y bind mounts
-Un contenedor es **efímero**: si lo borrás, se pierde lo que escribió adentro.
+Un contenedor es **efímero** (dura poco, es descartable): si lo borrás, se pierde
+lo que escribió adentro. Es como una mesada que se limpia al final del día.
 Para **guardar datos**, se montan carpetas desde afuera:
 
 - **Bind mount:** montás una carpeta del host dentro del contenedor
@@ -173,4 +201,6 @@ configura **rotación**: `max-size: 10m, max-file: 3` = guardá hasta 3 archivos
 1. Escribí un `compose.yml` mínimo que cumpla la política (imagen con tag,
    límites, logging, restart, puerto en 127.0.0.1).
 2. Explicá qué pasaría si dos equipos usan la imagen `postgres:16.4-alpine`:
-   ¿se descarga dos veces? (pista: capas de imagen compartidas).
+   ¿se descarga dos veces? (pista: una imagen está hecha de **capas**, como un
+   sándwich de pisos: la base de Linux, después Postgres, después la
+   configuración. Si dos imágenes comparten capas, esas se guardan una sola vez).

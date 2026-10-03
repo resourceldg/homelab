@@ -35,6 +35,7 @@ services:
       - caddy_config:/config
     networks:
       - edge
+      - grafana-aula-proxy   # solo Caddy <-> Grafana del aula (ver rol docker)
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:2019/config/"]
       interval: 30s
@@ -43,6 +44,8 @@ services:
 
 networks:
   edge:
+    external: true
+  grafana-aula-proxy:
     external: true
 
 volumes:

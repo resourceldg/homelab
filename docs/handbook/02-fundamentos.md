@@ -6,10 +6,28 @@ no te cierre.
 
 🧩 **Prerequisitos:** ninguno.
 
-🆕 **Conceptos nuevos:** proceso, servicio, daemon, kernel, systemd, boot,
-usuario, grupo, permisos, filesystem, inode, IP, puerto, TCP, DNS, HTTPS.
+🆕 **Conceptos nuevos:** CPU, RAM, disco, sistema operativo, proceso, servicio,
+daemon, kernel, systemd, boot, usuario, grupo, permisos, filesystem, inode, IP,
+puerto, TCP, DNS, HTTPS.
 
 ---
+
+## 📖 Empecemos por lo cercano: una computadora es una cocina
+
+Antes de cualquier palabra técnica, pensá en una cocina de restaurante:
+
+| En la cocina | En la computadora | Qué es |
+|---|---|---|
+| el **cocinero** | la **CPU** (*Central Processing Unit*, unidad central de procesamiento) | el que hace el trabajo: hace cuentas, sigue instrucciones. Si tiene "4 núcleos", son 4 cocineros |
+| la **mesada** | la **RAM** (*Random Access Memory*, memoria de acceso aleatorio) | donde se pone lo que se está usando ahora. Es rápida pero chica, y **se vacía al apagar** |
+| la **heladera y la alacena** | el **disco** (en el servidor, un SSD) | donde se **guarda** todo. Es grande y no se borra al apagar, pero es más lento de usar |
+| el **jefe de cocina** | el **sistema operativo** (acá, Ubuntu Linux) | reparte cocineros, mesada y alacena entre todos los pedidos |
+| cada **pedido en curso** | un **proceso** | un programa que se está ejecutando |
+| el **cocinero de guardia** que siempre está | un **servicio** | un programa que corre siempre, esperando pedidos |
+
+Cuando más adelante leas "el servidor tiene 15 GiB de RAM", pensá "la mesada es
+de este tamaño": si todos los pedidos juntos no entran, algo se cae (eso se llama
+**OOM**, *Out Of Memory*, "sin memoria").
 
 ## Parte A — Computación básica
 
@@ -25,7 +43,8 @@ Un proceso que corre **en segundo plano y de forma permanente** para ofrecer alg
 comandos. En este proyecto, Grafana, Prometheus o la base de datos son servicios.
 
 ### ¿Qué es un daemon?
-Es **otra palabra para "servicio de fondo"** en el mundo Unix/Linux. Los daemons
+Es **otra palabra para "servicio de fondo"** en el mundo **Unix** (la familia de
+sistemas operativos de la que vienen Linux y macOS). Los daemons
 suelen terminar en `d`: `sshd` (el de SSH), `dockerd` (el de Docker),
 `tailscaled` (el de Tailscale). Cuando veas un nombre con `d` al final, pensá
 "servicio de fondo".
@@ -136,11 +155,18 @@ muestra los del servicio SSH). Docker tiene sus propios logs: `docker logs
 ## Parte C — Redes
 
 ### ¿Qué es una IP?
-Una **dirección IP** es el "número de teléfono" de una computadora en una red
-(ej: `192.168.100.48`). Sirve para que los datos sepan a quién llegar.
+Una **dirección IP** (*Internet Protocol*, el protocolo de internet) es el
+"número de teléfono" de una computadora en una red (ej: `192.168.8.144`). Sirve
+para que los datos sepan a quién llegar.
+
+Una compu puede tener **varias** IP, una por cada **interfaz** de red (cada
+"enchufe" por donde se conecta: el WiFi, el cable, la red privada de Tailscale).
+El servidor del aula, por ejemplo, tiene una IP de la red de la casa
+(`192.168.8.x`) y otra de Tailscale (`100.110.123.76`).
 
 ### ¿Qué es una IP privada?
-Los rangos como `192.168.x.x`, `10.x.x.x` o `172.16-31.x.x` son **privados**:
+Los rangos como `192.168.x.x`, `10.x.x.x` o `172.16-31.x.x` son **privados**
+(Tailscale usa además los `100.64` a `100.127`):
 solo existen dentro de tu red local (casa, aula). No son alcanzables desde
 Internet. Tu router tiene además una **IP pública** (la que te ve el mundo).
 
@@ -180,8 +206,10 @@ la IP nueva). Así el dominio siempre apunta a tu casa.
 **HTTP** es el idioma de la web. **HTTPS** es HTTP **cifrado** con **TLS**: nadie
 en el medio puede leer ni modificar lo que va y viene (es el candado del
 navegador). Para eso, el servidor necesita un **certificado**: un documento
-firmado por una autoridad (como Let's Encrypt o ZeroSSL) que prueba que ese
-dominio es realmente ese servidor. En este proyecto, **Caddy** obtiene y renueva
+firmado por una **autoridad de certificación** (una organización en la que los
+navegadores confían, como **Let's Encrypt** o **ZeroSSL**, que los dan gratis)
+que prueba que ese dominio es realmente ese servidor. Es como un DNI firmado por
+el Registro Civil. En este proyecto, **Caddy** obtiene y renueva
 los certificados **solo**, automáticamente.
 
 ### ¿Qué es un proxy inverso?

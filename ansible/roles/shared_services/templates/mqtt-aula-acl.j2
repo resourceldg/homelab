@@ -6,3 +6,17 @@
 user {{ team.name | replace('-', '_') }}
 topic readwrite {{ team.name }}/#
 {% endfor %}
+{% for svc in shared_mqtt_service_users | default([]) %}
+
+# {{ svc.name }} (servicio, solo lectura)
+user {{ svc.name }}
+{% for rule in svc.acl %}
+{% if '{teams}' in rule %}
+{% for team in classroom_teams %}
+{{ rule | replace('{teams}', team.name) }}
+{% endfor %}
+{% else %}
+{{ rule }}
+{% endif %}
+{% endfor %}
+{% endfor %}

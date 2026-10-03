@@ -1,0 +1,721 @@
+{
+ "uid": "aula-general",
+ "title": "Aula — todos los equipos",
+ "description": "Vista del operador: actividad MQTT de todos los equipos del aula.",
+ "tags": [
+  "aula",
+  "mqtt"
+ ],
+ "timezone": "browser",
+ "editable": true,
+ "refresh": "10s",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "schemaVersion": 39,
+ "version": 1,
+ "graphTooltip": 1,
+ "panels": [
+  {
+   "id": 1,
+   "type": "row",
+   "title": "Ahora",
+   "collapsed": false,
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "Equipos con datos (últimos 5 min)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 1,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "count(count by (equipo) (last_over_time(mqtt_valor[5m]))) or vector(0)",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "green",
+        "value": 1
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Dispositivos reportando (5 min)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 1,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "count(count by (equipo, dispositivo) (last_over_time(mqtt_valor[5m]))) or vector(0)",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "green",
+        "value": 1
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "Clientes conectados al broker",
+   "description": "Placas, Node-REDs y servicios conectados ahora a mqtt-aula.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 1,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "broker_clients_connected",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 5,
+   "type": "stat",
+   "title": "Mensajes por minuto (todos)",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "gridPos": {
+    "x": 18,
+    "y": 1,
+    "w": 6,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "sum(count_over_time(mqtt_valor[1m])) or vector(0)",
+     "instant": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "decimals": 0,
+     "color": {
+      "mode": "thresholds"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "value",
+    "justifyMode": "center"
+   }
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "Mensajes por minuto, por equipo",
+   "description": "Cuánto publica cada equipo. Un pico enorme suele ser una placa en un bucle sin delay.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 5,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "sum by (equipo) (count_over_time(mqtt_valor[1m]))",
+     "legendFormat": "{{equipo}}",
+     "range": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 10,
+      "showPoints": "auto",
+      "spanNulls": 3600000,
+      "stacking": {
+       "mode": "normal"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "lastNotNull",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 7,
+   "type": "table",
+   "title": "Último valor de cada sensor y actuador (todos los equipos)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "description": "Último valor que llegó de cada dispositivo y magnitud, y hace cuánto llegó. Si 'Hace' crece y no baja, el dispositivo dejó de publicar.",
+   "gridPos": {
+    "x": 0,
+    "y": 13,
+    "w": 24,
+    "h": 10
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "last_over_time(mqtt_valor[15d])",
+     "instant": true,
+     "format": "table"
+    },
+    {
+     "refId": "B",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "time() - tlast_over_time(mqtt_valor[15d])",
+     "instant": true,
+     "format": "table"
+    }
+   ],
+   "transformations": [
+    {
+     "id": "merge",
+     "options": {}
+    },
+    {
+     "id": "organize",
+     "options": {
+      "excludeByName": {
+       "Time": true,
+       "__name__": true,
+       "db": true
+      },
+      "indexByName": {
+       "equipo": 0,
+       "dispositivo": 1,
+       "magnitud": 2,
+       "Value #A": 3,
+       "Value #B": 4
+      },
+      "renameByName": {
+       "equipo": "Equipo",
+       "dispositivo": "Dispositivo",
+       "magnitud": "Magnitud",
+       "Value #A": "Último valor",
+       "Value #B": "Hace"
+      }
+     }
+    },
+    {
+     "id": "sortBy",
+     "options": {
+      "sort": [
+       {
+        "field": "Hace",
+        "desc": false
+       }
+      ]
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "align": "auto",
+      "cellOptions": {
+       "type": "auto"
+      }
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Hace"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "s"
+       },
+       {
+        "id": "decimals",
+        "value": 0
+       },
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-background",
+         "mode": "basic"
+        }
+       },
+       {
+        "id": "thresholds",
+        "value": {
+         "mode": "absolute",
+         "steps": [
+          {
+           "color": "green",
+           "value": null
+          },
+          {
+           "color": "yellow",
+           "value": 120
+          },
+          {
+           "color": "red",
+           "value": 900
+          }
+         ]
+        }
+       },
+       {
+        "id": "color",
+        "value": {
+         "mode": "thresholds"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Último valor"
+      },
+      "properties": [
+       {
+        "id": "decimals",
+        "value": 2
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm",
+    "footer": {
+     "show": false
+    }
+   }
+  },
+  {
+   "id": 8,
+   "type": "row",
+   "title": "Por equipo",
+   "collapsed": false,
+   "gridPos": {
+    "x": 0,
+    "y": 23,
+    "w": 24,
+    "h": 1
+   },
+   "panels": []
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "$equipo — todas las magnitudes",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "mqtt-aula"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "expr": "mqtt_valor{equipo=\"$equipo\"}",
+     "legendFormat": "{{dispositivo}} · {{magnitud}}",
+     "range": true
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "lineWidth": 2,
+      "fillOpacity": 10,
+      "showPoints": "auto",
+      "spanNulls": 3600000,
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "lastNotNull",
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "repeat": "equipo",
+   "repeatDirection": "v"
+  },
+  {
+   "id": 10,
+   "type": "row",
+   "title": "Broker (mqtt-aula)",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 32,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 11,
+     "type": "timeseries",
+     "title": "Clientes conectados",
+     "description": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "gridPos": {
+      "x": 0,
+      "y": 33,
+      "w": 12,
+      "h": 7
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "mqtt-aula"
+       },
+       "expr": "broker_clients_connected",
+       "legendFormat": "conectados",
+       "range": true
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "unit": "short",
+       "custom": {
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "auto",
+        "spanNulls": 3600000,
+        "stacking": {
+         "mode": "none"
+        }
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "legend": {
+       "displayMode": "table",
+       "placement": "right",
+       "calcs": [
+        "lastNotNull",
+        "max"
+       ]
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     }
+    },
+    {
+     "id": 12,
+     "type": "timeseries",
+     "title": "Mensajes por segundo",
+     "description": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "mqtt-aula"
+     },
+     "gridPos": {
+      "x": 12,
+      "y": 33,
+      "w": 12,
+      "h": 7
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "mqtt-aula"
+       },
+       "expr": "rate(broker_messages_received[2m])",
+       "legendFormat": "recibidos",
+       "range": true
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "unit": "short",
+       "custom": {
+        "lineWidth": 2,
+        "fillOpacity": 10,
+        "showPoints": "auto",
+        "spanNulls": 3600000,
+        "stacking": {
+         "mode": "none"
+        }
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "legend": {
+       "displayMode": "table",
+       "placement": "right",
+       "calcs": [
+        "lastNotNull",
+        "max"
+       ]
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "equipo",
+    "label": "Equipo",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "mqtt-aula"
+    },
+    "query": {
+     "query": "label_values(mqtt_valor, equipo)",
+     "refId": "V"
+    },
+    "definition": "label_values(mqtt_valor, equipo)",
+    "refresh": 2,
+    "multi": true,
+    "includeAll": true,
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   }
+  ]
+ },
+ "links": []
+}

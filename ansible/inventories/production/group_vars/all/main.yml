@@ -57,3 +57,9 @@ panol_funnel_enabled: true
 # Broker MQTT del aula por Funnel (ESP32 de los equipos desde cualquier red).
 shared_mqtt_funnel_enabled: true
 shared_mqtt_public_host: "homelab-01.tail4eda13.ts.net"
+
+# Grafana del aula (rol aula_iot): APAGADO hasta probarlo en vivo. El código
+# está listo y testeado en CI, pero el despliegue quedó pendiente porque el
+# servidor se cayó (oct 2026). Prender (true) y aplicar `--tags aula-iot`
+# cuando se verifique; ver docs/aula-iot.md.
+aula_iot_enabled: false

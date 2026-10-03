@@ -1,0 +1,8 @@
+# VictoriaMetrics también scrapea la salud del broker, así Grafana del aula
+# tiene todo (datos de equipos + broker) en una sola fuente.
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: mqtt-aula
+    static_configs:
+      - targets: ["aula-mosquitto-exporter:9234"]

@@ -1,127 +1,203 @@
-# Runbook
+# Runbook (procedimientos de operación)
 
-Operational procedures for day-2 tasks.
+Procedimientos para el día a día del servidor. El recorrido completo de una
+instalación, con todas las trampas, está en
+[deployment-guide.md](deployment-guide.md).
 
-## First-time provisioning
+> **Dónde se corre cada cosa:** salvo que se diga otra cosa, los comandos `make`
+> y `ansible-playbook` se corren **en el servidor**, como usuario `homelab`, desde
+> `~/homelab` (o `~/homelab/ansible` para `ansible-playbook`), y llevan `-K`
+> porque `homelab` usa `sudo` con contraseña.
 
-1. `make deps` — install collections and test tooling.
-2. Edit `ansible/inventories/production/group_vars/all/main.yml`: SSH keys,
-   `lan_cidr`, `caddy_base_domain`, `caddy_acme_email`, `duckdns_domains`.
-   Role-specific knobs (`borg_repo`, retention, timers…) live in each role's
-   `defaults/main.yml`; override them here only when they must differ.
-   Use `ENV=staging` on any `make` target to act on the staging inventory.
-3. `make vault-create`, then `make vault-edit` to fill real tokens.
-4. Store the vault password in `~/.vault_pass` (gitignored, `chmod 600`).
-5. `make dry-run` → review the diff.
-6. **SSH — phase 1 (safe, no lockout):** create the account + install keys
-   without applying the restrictive `sshd_config` yet:
+## Primera instalación
+
+1. `make deps` — instala las colecciones y las herramientas de pruebas.
+2. Editar `ansible/inventories/production/group_vars/all/main.yml`: llaves SSH,
+   `lan_cidr` (la red **real** de la casa: `hostname -I`), `caddy_base_domain`,
+   `caddy_acme_email`, `duckdns_domains`. Los ajustes propios de cada rol
+   (`borg_repo`, retención, timers…) están en el `defaults/main.yml` de cada rol;
+   se pisan acá solo si tienen que ser distintos. Con `ENV=staging` cualquier
+   `make` actúa sobre el inventario de staging.
+3. `make vault-create` y después `make vault-edit` para cargar los tokens reales.
+4. Guardar la clave del vault en `~/.vault_pass` (está en `.gitignore`, `chmod 600`).
+5. `make dry-run` → revisar las diferencias.
+6. **SSH — fase 1 (segura, sin riesgo de quedarse afuera):** crear la cuenta e
+   instalar las llaves **sin** aplicar todavía el `sshd_config` restrictivo:
    ```
    ansible-playbook site.yml --tags ssh --skip-tags ssh-lockdown
    ```
-   Then confirm key access from another terminal: `ssh <admin_user>@<host>`.
-7. `make apply` — full converge. The **SSH lockdown** (`PasswordAuthentication
-   no`, `AllowUsers`, sshd restart) now applies. A safety gate aborts the play
-   if `admin_ssh_authorized_keys` is empty or still a `REPLACE_ME` placeholder,
-   so you cannot lock yourself out by forgetting the key. Set
-   `ssh_lockdown_enabled: false` to defer the hardening entirely.
-8. `sudo tailscale up --ssh --accept-routes` (one-time browser auth).
-9. Mount the backup drive at `borg_repo`'s parent, then `make backups`.
+   Confirmar desde **otra** terminal que se entra con la llave:
+   `ssh <admin_user>@<host>`.
+7. `make apply` — todo. Ahora sí se aplica el **cierre de SSH**
+   (`PasswordAuthentication no`, `AllowUsers`, reinicio de sshd). Una guarda corta
+   el play si `admin_ssh_authorized_keys` está vacío o todavía dice `REPLACE_ME`,
+   para que no te quedes afuera por olvidarte la llave. Con
+   `ssh_lockdown_enabled: false` se posterga el cierre.
+8. `sudo tailscale up --ssh --accept-routes` (autenticación por navegador, una vez).
+9. Montar el disco de copias en el directorio padre de `borg_repo` y correr
+   `make backups`.
 10. `make verify && make test`.
 
-### User accounts
+### Cuentas de usuario
 
-`extra_users` (in the environment's group_vars) defines the human accounts:
+`extra_users` (en los group_vars del entorno) define las cuentas de personas:
 
-- **operator** — your account: in the `sudo` group (sudo asks for a password)
-  and SSH-allowed. Set a login password once so `sudo` works:
-  `sudo passwd operator`. Fill its real key before `make apply` (the SSH lockdown
-  gate refuses to run while an SSH-enabled user still has a `REPLACE_ME` key).
-- **familia** — daily-use account: no sudo, `ssh: false`, so it can log in at the
-  desktop but never over SSH (not added to `AllowUsers`).
-- **ansible** (`admin_user`) — automation only: passwordless sudo, key-based SSH.
+- **`homelab` / operador:** tu cuenta. Está en el grupo `sudo` (pide contraseña)
+  y puede entrar por SSH. Ponele una contraseña una vez para que `sudo` funcione:
+  `sudo passwd homelab`. Cargá su llave real antes de `make apply` (la guarda del
+  cierre de SSH no corre mientras un usuario con SSH tenga `REPLACE_ME`).
+- **`familia`:** cuenta de uso diario, sin `sudo` y con `ssh: false`: entra al
+  escritorio pero nunca por SSH (no queda en `AllowUsers`).
+- **`ansible`** (`admin_user`): solo para la automatización: `sudo` sin
+  contraseña, SSH con llave.
 
-## Add a new educational project
+## Aula: alumnos, equipos y servicios
 
-1. Copy `compose/apps/` to `compose/apps-<name>/`, rename the service.
-2. Add a site block to `compose/proxy/Caddyfile`:
+Todo se edita en `ansible/inventories/production/group_vars/all/classroom.yml`
+y se aplica con `--tags classroom`. El detalle está en
+[operator-guide.md](operator-guide.md) y [aula-iot.md](aula-iot.md).
+
+**Alta de un alumno** (tres lugares; si falta uno queda a medias):
+
+1. `classroom_teams[].members` — sumar el usuario al equipo.
+2. `sso_users` — `{ username, displayname, groups: [students] }` (login web).
+3. `vault_sso_passwords[<usuario>]` en el **vault del servidor** — su contraseña
+   (la misma para la web y para SSH). Sin esto el usuario se crea **sin
+   contraseña** y no puede entrar.
+
+Después, en el servidor:
+
+```
+cd ~/homelab && git pull
+cd ~/homelab/ansible
+~/homelab/.venv/bin/ansible-playbook site.yml --tags classroom -K
+```
+
+Esto crea el usuario Linux, lo suma a su equipo, le arma su usuario en el
+**Grafana del aula** dentro del equipo correcto y, si el equipo es nuevo, crea su
+folder, su datasource y su tablero inicial.
+
+**Sumar a un alumno a Tailscale:** generar una *auth key* con **Pre-approved**
+(<https://login.tailscale.com/admin/settings/keys>) y que el alumno corra
+`tailscale logout` y después `tailscale up --auth-key=…`. El `logout` evita que
+quede en una red propia (pasa cuando entró antes con su Google).
+
+**Ver la clave MQTT de un equipo** (para su placa):
+
+```
+sudo grep MQTT_ /srv/classroom/equipo-NN/.shared-services.env
+```
+
+## Agregar un proyecto educativo propio
+
+1. Copiar `compose/apps/` a `compose/apps-<nombre>/` y renombrar el servicio.
+2. Agregar un bloque en `compose/proxy/Caddyfile`:
    ```
-   <name>.{$CADDY_BASE_DOMAIN} {
-       reverse_proxy <service>:<port>
+   <nombre>.{$CADDY_BASE_DOMAIN} {
+       reverse_proxy <servicio>:<puerto>
    }
    ```
-3. Attach the service to the external `edge` network (no published ports).
-4. `make monitoring` (re-syncs and restarts the proxy + stacks).
-5. Reachable at `https://<name>.<your-domain>`.
+3. Conectar el servicio a la red externa `edge` (sin puertos publicados).
+4. `make monitoring` (sincroniza y reinicia el proxy y los stacks).
+5. Queda en `https://<nombre>.<tu-dominio>`.
 
-## Rotate a secret
-
-```bash
-make vault-edit          # change the value
-make apply               # re-renders env files and restarts affected services
-```
-
-## Replicate the whole thing to another machine
+## Cambiar (rotar) un secreto
 
 ```bash
-make new-site NAME=<sitio>   # clone the inventory template, then fill the REPLACE_ values
+make vault-edit          # cambiar el valor
+make apply               # vuelve a armar los .env y reinicia lo afectado
 ```
 
-Full flow (one inventory = one site, several servers per site with host_vars) in
-[replicar-y-escalar.md](replicar-y-escalar.md).
+Las claves generadas en el host (`/etc/classroom/secrets/*.mqttpass`, etc.) se
+rotan borrando el archivo y aplicando `--tags classroom`: se genera una nueva y se
+reparte sola. **Ojo:** las placas del equipo dejan de conectarse hasta que les
+cargues la clave nueva.
 
-## Pañol IoT (access control)
-
-The `panol` role owns the broker + audit DB + Node-RED; the brain (api, bridge,
-scheduler) deploys from the `panol-iot` repo. Everything —credentials, rotation,
-firewall, the test-data reset, the end-to-end walkthrough— lives in
-[panol-iot.md](panol-iot.md). Quick ones:
+## Replicar todo en otra máquina
 
 ```bash
-make panol                                      # redeploy the plane
-sudo cat /etc/panol/secrets/nodos.txt           # node credentials for flashing
-systemctl status panol-reset-prueba.timer       # test-mode reset (temporary)
+make new-site NAME=<sitio>   # clona la plantilla de inventario; completar los REPLACE_
 ```
 
-## Backups
+Flujo completo (un inventario = un sitio, varios servidores por sitio con
+host_vars) en [replicar-y-escalar.md](replicar-y-escalar.md).
 
-- Manual run: `sudo borgmatic --verbosity 1`
-- List archives: `sudo borgmatic list`
-- Restore a path:
+## Pañol IoT (control de acceso)
+
+El rol `panol` maneja el broker, la base de auditoría y Node-RED; el "cerebro"
+(API, puente, planificador) se despliega desde el repo `panol-iot`. Todo
+(credenciales, rotación, firewall, el reset de prueba, el recorrido de punta a
+punta) está en [panol-iot.md](panol-iot.md). Lo rápido:
+
+```bash
+make panol                                      # redesplegar el plano
+sudo cat /etc/panol/secrets/nodos.txt           # credenciales de los nodos para grabar el firmware
+systemctl status panol-reset-prueba.timer       # reset del modo prueba (temporal)
+```
+
+## Copias de seguridad
+
+> ⚠️ Hoy **no están activas** (falta el disco en `/mnt/backup`).
+
+- Correr una ya: `sudo borgmatic --verbosity 1`
+- Listar copias: `sudo borgmatic list`
+- Restaurar un archivo:
   ```bash
   sudo borgmatic extract --archive latest --path etc/ssh/sshd_config
   ```
-- Check repo integrity: `sudo borgmatic check`
-- Timer status: `systemctl status borgmatic.timer`
+- Chequear integridad: `sudo borgmatic check`
+- Estado del timer: `systemctl status borgmatic.timer`
 
-## Audit review
+## Revisión de auditoría
 
-- Lynis score: `journalctl -t lynis` or `/var/log/lynis/lynis-report.dat`
+- Puntaje de Lynis: `journalctl -t lynis` o `/var/log/lynis/lynis-report.dat`
   (`grep hardening_index`).
-- AIDE changes: `journalctl -t aide`; investigate any "INTEGRITY CHANGES".
-- After an intentional change, refresh the AIDE baseline:
+- Cambios detectados por AIDE: `journalctl -t aide`; investigar cualquier
+  "INTEGRITY CHANGES".
+- Después de un cambio intencional, renovar la línea de base de AIDE:
   ```bash
   sudo aideinit -y -f && sudo systemctl restart aide-check.timer
   ```
 
-## Firewall / connectivity troubleshooting
+## Red y conectividad
 
-- `sudo ufw status verbose` — current rules.
-- Locked out of SSH? Use the physical console or Tailscale SSH
-  (`tailscale ssh ansible@homelab-01`).
-- A container port is unexpectedly public → confirm `ufw-docker` installed and
-  the service publishes on `127.0.0.1` only.
+- `make como-conectar` (en **tu** compu) — prueba todos los caminos al servidor y
+  te dice cuál anda y por qué los otros no.
+- `make uplink` — mide la calidad real de cada conexión del servidor (WiFi,
+  cable) y muestra cuál conviene. No cambia nada.
+- **Si el servidor se cae y no estás cerca:** `scripts/diagnosticar-caida.sh`
+  corre en **tu** compu (por cron, cada 5 minutos). Cuando el servidor vuelve, lee
+  sus registros y deja un informe con la causa más probable en
+  `~/homelab-reportes/caida-<fecha>.md`, con una notificación en el escritorio.
+  Instalación: `crontab -e` y agregar
+  `*/5 * * * * /home/zen/homelab/scripts/diagnosticar-caida.sh --cron`.
+- `sudo ufw status verbose` — reglas actuales del firewall.
+- ¿Te quedaste afuera del SSH? Usá la consola física o Tailscale SSH
+  (`ssh ansible@homelab-01`, que no pasa por el sshd endurecido).
+- **El servidor cambió de red** (pasa: ya fueron tres): actualizar `lan_cidr` y
+  aplicar `make firewall`. Mientras tanto se entra por Tailscale.
+- **Sumar una red WiFi sin perder la anterior:**
+  `sudo ~/homelab/scripts/agregar-wifi.sh "Nombre-de-la-red"` (pide la clave;
+  si la nueva no levanta, vuelve a la anterior).
+- Un puerto de un contenedor quedó público sin querer → confirmar que
+  `ufw-docker` está instalado y que el servicio publica solo en `127.0.0.1`.
 
-## Updates
+## Actualizaciones
 
-- Host security patches apply automatically (`unattended-upgrades`), rebooting at
-  `autoupdate_reboot_time` if needed. Review with `journalctl -u unattended-upgrades`.
-- Container images: `cd /opt/homelab/stacks/<stack> && docker compose pull && docker compose up -d`
-  (kept manual on purpose so a bad image never auto-breaks a running class demo).
+- Los parches de seguridad del host se aplican solos (`unattended-upgrades`) y,
+  si hace falta, el servidor se reinicia a la hora `autoupdate_reboot_time`
+  (04:30). Revisar con `journalctl -u unattended-upgrades`.
+- Imágenes de contenedores:
+  `cd /opt/homelab/stacks/<stack> && docker compose pull && docker compose up -d`.
+  Es manual **a propósito**: una imagen nueva rota nunca tiene que tumbar una
+  clase en vivo.
 
-## Disaster recovery outline
+## Recuperación ante un desastre (esquema)
 
-1. Re-install Ubuntu LTS, create the sudo user, add your SSH key.
-2. Clone the repo, restore `.vault_pass` and the vault from your password manager.
+1. Reinstalar Ubuntu LTS, crear el usuario con `sudo` y cargar tu llave SSH.
+2. Clonar el repo y recuperar `.vault_pass` y el vault desde tu gestor de
+   contraseñas.
 3. `make apply`.
-4. Mount the backup drive, `borgmatic extract` the Docker volumes and `/opt/homelab`.
-5. `make monitoring` to bring services back.
+4. Montar el disco de copias y restaurar con `borgmatic extract` los volúmenes de
+   Docker y `/opt/homelab`.
+5. `make monitoring` para levantar los servicios.

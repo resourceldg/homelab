@@ -1,0 +1,14 @@
+apiVersion: 1
+# Solo el dashboard general (del operador) va por archivo. Los de cada equipo
+# los crea Ansible por la API UNA vez: así son de los alumnos y los pueden
+# editar sin que el provisioning se los pise.
+providers:
+  - name: aula-general
+    orgId: 1
+    folder: "Aula — General"
+    folderUid: aula-general
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards/general

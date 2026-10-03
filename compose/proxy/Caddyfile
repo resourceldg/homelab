@@ -46,12 +46,23 @@ auth.{$CADDY_BASE_DOMAIN} {
 	reverse_proxy homepage:3000
 }
 
-# Grafana — behind SSO; Grafana trusts Authelia's Remote-User header (auth proxy).
+# Grafana de OPERACIÓN (infra + pañol) — behind SSO, solo operadores. Los alumnos
+# usan grafana-aula: este tiene la base de auditoría del pañol.
 grafana.{$CADDY_BASE_DOMAIN} {
 	import secure_headers
 	import authelia
 	encode zstd gzip
 	reverse_proxy grafana:3000
+}
+
+# Grafana del AULA — dashboards MQTT de cada equipo. Detrás de SSO (operadores +
+# alumnos). Grafana toma el usuario de Remote-User (auth proxy) y solo le cree
+# a pedidos que llegan por la red grafana-aula-proxy, que es solo de Caddy.
+grafana-aula.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	import authelia
+	encode zstd gzip
+	reverse_proxy grafana-aula:3000
 }
 
 # Example educational project.

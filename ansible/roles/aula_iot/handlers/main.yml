@@ -1,0 +1,6 @@
+---
+# Grafana relee datasources y Telegraf su config solo al reiniciar.
+- name: Restart aula-iot
+  community.docker.docker_compose_v2:
+    project_src: "{{ aula_iot_dir }}"
+    state: restarted
