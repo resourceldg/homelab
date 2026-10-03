@@ -340,25 +340,61 @@ void loop() {
 
 ---
 
-## Comprobar que llega a Grafana
+## Comprobar que llega (en dos pasos)
+
+### 1. ¿Llegó al broker? → MQTT Explorer
+
+Antes de mirar Grafana, confirmá que tu mensaje **entró al servidor**. Con
+**MQTT Explorer** te conectás al broker desde tu compu, con la clave de tu equipo,
+y ves tus topics en vivo. Cómo configurarlo:
+[la herramienta clave del diagnóstico](diagnostico.md#la-herramienta-clave-escuchar-el-broker-desde-tu-compu).
+
+Si tu topic aparece ahí con el valor correcto, **la placa y la red están bien**:
+cualquier problema está del broker para adelante.
+
+### 2. ¿Se guardó? → Grafana
+
+> 🚧 Mientras el Grafana del aula se pone en marcha, el paso 1 es la comprobación
+> que sí podés hacer.
 
 1. Entrá a **https://grafana-aula.lucasland.duckdns.org** con **Tailscale**
-   conectado (la red privada del aula) y tu usuario y contraseña del aula. Cómo usarlo: [capítulo 13](13-usar-grafana.md).
+   conectado (la red privada del aula) y tu usuario y contraseña del aula. Cómo
+   usarlo: [capítulo 13](13-usar-grafana.md).
 2. Menú → **Dashboards** → carpeta **equipo-NN** → **equipo-NN — sensores y actuadores**.
 3. En la tabla **Estado actual** tiene que aparecer tu `dispositivo` y tu
    `magnitud`, con el **último valor** y **hace cuántos segundos** llegó.
 
-Llega en menos de **15 segundos** desde que la placa publica.
+Llega en unos **15 segundos** desde que la placa publica
+([por qué ese tiempo](11-arquitectura-iot.md#paso-a-paso)).
 
 ---
 
 ## Si no aparece
 
-| Síntoma | Causa más probable | Qué hacer |
+Los errores más comunes, en una línea (el recorrido completo, paso a paso, está en
+el **[Diagnóstico](diagnostico.md#mi-esp32-mide-pero-no-veo-los-datos)**):
+
+| Síntoma | Causa más probable | Ir a… |
 |---|---|---|
-| La placa dice `MQTT OK` pero en Grafana no hay nada | el topic no empieza con `equipo-NN/` (con guion) o tiene menos de 3 partes | revisá la Regla 1 |
-| Aparece el dispositivo pero no la magnitud | el mensaje no es número ni palabra de la tabla | revisá la Regla 2 (¿coma decimal? ¿unidades pegadas?) |
-| La placa da error `5` o `4` | usuario o clave mal | usuario con guion bajo, clave de `MQTT_PASSWORD=` |
-| La placa da error `-2` o `-4` | no llega o falta TLS | puerto `10000`, `WiFiClientSecure` + `setInsecure()` |
-| "Hace" crece en la tabla y no baja | la placa dejó de publicar | mirá el monitor serie / Thonny |
-| Tus gráficos tienen picos raros cada tanto | publicás muy rápido o mezclás unidades | Regla 3 |
+| MQTT Explorer **no** ve tu topic | el topic no empieza con `equipo-NN/` (guion) o la placa no llegó | [Regla 1](#regla-1-el-topic-tiene-3-partes-o-mas) · [diagnóstico, pasos 3 a 6](diagnostico.md#paso-3-llega-al-broker) |
+| MQTT Explorer lo ve, Grafana **no** | el mensaje no es número ni palabra de estado, o tiene menos de 3 partes | [Regla 2](#regla-2-el-mensaje-es-un-numero-una-palabra-de-estado-o-un-json) |
+| La placa da error `5` o `4` | usuario o clave MQTT mal | [tabla de credenciales](red-y-accesos.md#tus-credenciales-en-una-tabla) |
+| La placa da error `-2` o `-4` | no llega, o falta el cifrado | [diagnóstico, paso 3](diagnostico.md#paso-3-llega-al-broker) |
+| "Hace" crece en la tabla y no baja | la placa dejó de publicar | mirá Thonny / el Monitor Serie |
+| Picos raros en los gráficos | publicás muy rápido o mezclás unidades | [Regla 3](#regla-3-publica-seguido-y-con-mesura) |
+
+---
+
+## Ahora deberías entender
+
+- Que **el topic es un contrato**: `equipo-NN/dispositivo/magnitud`, y el mensaje
+  un número, una palabra de estado o un JSON.
+- Que tu placa **solo conoce al broker**: lo que pasa después (guardar, mostrar) lo
+  hacen otros ([quién conoce a quién](11-arquitectura-iot.md#quien-conoce-a-quien)).
+- Cómo comprobar que llegó: primero **MQTT Explorer**, después **Grafana**.
+
+**Seguí por acá:**
+
+- Si querés **armar tus gráficos** → [capítulo 13](13-usar-grafana.md).
+- Si necesitás **calcular algo o reaccionar** a tus datos → [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+- Si **no aparece** → [Diagnóstico](diagnostico.md).

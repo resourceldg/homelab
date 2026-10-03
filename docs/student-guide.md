@@ -12,7 +12,9 @@ un archivo que describe tu aplicación, y prenderla con **un solo comando**
 > **Esta es la guía de primeros pasos** (terminal, editor, primer proyecto). La
 > referencia completa del trabajo en equipo (puertos de cada equipo, MQTT, tu
 > página web, Grafana) está en la
-> [Guía práctica del equipo](handbook/guia-equipo.md) del manual.
+> [Guía práctica del equipo](handbook/guia-equipo.md) del manual. Si algo no anda,
+> el [Diagnóstico](handbook/diagnostico.md) te lleva paso a paso; y para entender
+> por qué hay túneles y tantas contraseñas, [Red y accesos](handbook/red-y-accesos.md).
 
 ## Antes de empezar
 

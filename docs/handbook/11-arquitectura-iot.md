@@ -150,8 +150,8 @@ dirección lleva al edificio (el servidor) y el puerto al servicio exacto (el
 
 > **Para ustedes como personas** (no para las placas) hay otro camino:
 > **Tailscale**, una red privada que conecta sus computadoras con el servidor como
-> si estuvieran en la misma casa. Está explicado en la
-> [guía del equipo](guia-equipo.md#1-conectarte).
+> si estuvieran en la misma casa. **Por qué dos caminos, qué es un túnel y por qué
+> te piden tantas contraseñas** → [Red y accesos](red-y-accesos.md).
 
 ### Capa 3 — Mensajería: el que reparte los mensajes
 
@@ -194,6 +194,11 @@ Los mensajes crudos hay que **usarlos**. En el aula hay dos piezas:
   mensajes de todos los equipos, los traduce a números (`ON` → 1, `abierto` → 1,
   `"23.5"` → 23.5) y los anota en la base de datos con la hora exacta.
 
+Ojo con un detalle que confunde: **Telegraf escucha el broker directamente**. Los
+datos llegan a Grafana **sin pasar por Node-RED**. Node-RED es para **reglas y
+botones**, y es opcional para graficar. Cuándo usar cada uno →
+[¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+
 ### Capa 5 — Persistencia: guardar para después
 
 **Persistir** quiere decir **guardar de forma que no se pierda** aunque se apague
@@ -230,6 +235,107 @@ por todos (como la electricidad o las cañerías):
   se rompe, se reconstruye igual.
 
 ---
+
+## Seguí un dato de punta a punta: 24,7 °C
+
+Las capas explican **qué** hay. Ahora seguimos **un dato concreto** por todas
+ellas, con los nombres reales del sistema. Supongamos que el equipo-03 tiene un
+sensor de temperatura en la sala y mide **24,7 °C**.
+
+### El mapa real (lo que existe hoy)
+
+```mermaid
+flowchart LR
+  subgraph PLACA["En la placa"]
+    s["sensor"] --> f["firmware<br/>(MicroPython / Arduino)"]
+  end
+  f -->|"WiFi → internet<br/>MQTT con TLS"| fun["Funnel: el portero en internet<br/>homelab-01.tail4eda13.ts.net:10000"]
+  subgraph SERVIDOR["En el servidor (homelab-01)"]
+    b["mqtt-aula<br/>(broker)"]
+    b --> t["Telegraf<br/>(traduce)"]
+    t --> v["VictoriaMetrics<br/>(guarda 15 días)"]
+    v --> g["Grafana del aula<br/>(muestra)"]
+    b <--> nr["Node-RED de tu equipo<br/>(opcional: reglas, botones)"]
+  end
+  fun -->|"túnel de Tailscale"| b
+  g -->|"HTTPS por el tailnet"| vos["Tu navegador"]
+  nr -->|"túnel SSH"| vos
+```
+
+### Paso a paso
+
+```mermaid
+sequenceDiagram
+  participant S as Sensor
+  participant E as ESP32 (firmware)
+  participant F as Funnel
+  participant B as mqtt-aula
+  participant T as Telegraf
+  participant V as VictoriaMetrics
+  participant G as Grafana
+  S->>E: 24.7 (sensor.read)
+  E->>E: lo convierte a texto "24.7"
+  E->>F: publica en equipo-03/sala/temperatura (cifrado)
+  F->>B: lo pasa al broker, adentro del servidor
+  B->>B: ¿usuario equipo_03? ¿topic equipo-03/...? OK
+  B->>T: Telegraf está suscripto a equipo-03/#
+  T->>T: topic → equipo/dispositivo/magnitud, "24.7" → 24.7
+  T->>V: guarda mqtt_valor = 24.7 con la hora
+  G->>V: cada 10 s pregunta: ¿último valor de la sala?
+  V->>G: 24.7 → el panel suma un punto
+```
+
+| # | ¿Quién? | ¿Qué hace con el dato? | ¿En qué formato está? |
+|---|---|---|---|
+| 1 | **Sensor** | mide la temperatura | una señal eléctrica |
+| 2 | **Firmware de la ESP32** | lo lee (`sensor.read()`) y lo pasa a texto | número `24.7` → texto `"24.7"` (con **punto**, no coma) |
+| 3 | **Firmware** | lo **publica** en el topic `equipo-03/sala/temperatura` | mensaje MQTT: *topic* + *payload* `"24.7"` |
+| 4 | **WiFi → internet** | lleva el mensaje cifrado hasta el portero | MQTT dentro de **TLS** (el sobre cerrado) |
+| 5 | **Funnel** | recibe en `homelab-01.tail4eda13.ts.net:10000`, saca el sobre y lo entrega adentro del servidor | MQTT sin cifrar, pero ya **dentro** del servidor |
+| 6 | **mqtt-aula** | comprueba que el usuario sea `equipo_03` y que el topic empiece con `equipo-03/`; se lo reparte a **todos los suscriptos** | el mismo mensaje |
+| 7 | **Telegraf** | separa el topic en partes (`equipo-03` / `sala` / `temperatura`) y convierte `"24.7"` en el número 24.7 | `mqtt_valor{equipo="equipo-03", dispositivo="sala", magnitud="temperatura"} = 24.7` |
+| 8 | **VictoriaMetrics** | lo **guarda** con la hora exacta, durante 15 días | una fila más en la serie temporal |
+| 9 | **Grafana** | cada 10 segundos le pregunta a VictoriaMetrics y dibuja | un punto en el gráfico |
+
+**Tiempo total:** el mensaje llega al broker en menos de un segundo; Telegraf
+escribe cada 5 segundos; Grafana se actualiza cada 10. En unos **15 segundos** el
+24,7 está en tu panel.
+
+> **El mismo camino, con un dato real del aula:** cuando el enchufe de Jorge
+> publica `ON` en `equipo-04/enchufe/estado`, recorre exactamente los pasos 3 a 9.
+> En el paso 7, Telegraf convierte la palabra `ON` en el número **1** (y `OFF` en
+> **0**) para poder graficarla.
+
+### ¿Quién conoce a quién?
+
+Una de las ideas más importantes de este diseño: **cada pieza conoce solo a su
+vecina**.
+
+| Pieza | Conoce a… | NO conoce a… |
+|---|---|---|
+| ESP32 | la dirección del broker, su usuario y su topic | a Telegraf, a Grafana, a Node-RED |
+| mqtt-aula | quién está suscripto a qué (en ese momento) | qué hace cada uno con los mensajes |
+| Telegraf | el broker (para escuchar) y VictoriaMetrics (para escribir) | a las placas |
+| VictoriaMetrics | nada: solo guarda y responde preguntas | de dónde vienen los datos |
+| Grafana | VictoriaMetrics (su *datasource*) | a las placas y al broker |
+| Node-RED | el broker | a Telegraf y a Grafana |
+
+Por eso se pudo **sumar Grafana sin tocar ninguna placa**: la placa sigue
+publicando igual que antes, y alguien nuevo se suscribió (decisión 1, abajo).
+
+### ¿Qué pasa si se cae cada pieza?
+
+| Si se cae… | Pasa esto | Lo que sigue andando |
+|---|---|---|
+| el **WiFi** de la placa | no sale nada; la placa reintenta sola | todo lo demás |
+| **Funnel** (el portero) | ninguna placa llega al broker | Grafana muestra lo ya guardado; Node-RED sigue abierto |
+| **mqtt-aula** | nadie recibe ni manda mensajes | Grafana muestra el historial hasta ese momento |
+| **Node-RED** | no hay botones ni reglas | los datos **siguen llegando a Grafana** (no pasan por Node-RED) |
+| **Telegraf** | los datos llegan al broker pero **no se guardan** | Node-RED y las placas funcionan; Grafana muestra un hueco |
+| **VictoriaMetrics** | no se guarda ni se puede consultar | las placas y Node-RED |
+| **Grafana** | no se puede **ver** | los datos se siguen guardando: al volver, aparecen |
+
+Cuando no sabés cuál se cayó, el [diagnóstico](diagnostico.md) lo recorre paso a paso.
 
 ## El viaje completo de un mensaje: Jorge prende su enchufe
 
@@ -398,3 +504,21 @@ existían**, **qué se eligió** y **qué pasaría si no**.
    **estados**.
 3. Elegí una de las 9 decisiones y escribí qué le pasaría a **tu** proyecto si no
    se hubiera tomado.
+
+---
+
+## Ahora deberías entender
+
+- **Qué problema resuelve** cada capa, y **dónde está** cada pieza del aula.
+- El **recorrido de un dato**: sensor → firmware → WiFi → Funnel → broker →
+  Telegraf → VictoriaMetrics → Grafana, con Node-RED al costado.
+- **Quién conoce a quién**, y qué sigue andando cuando una pieza se cae.
+
+**Seguí por acá:**
+
+- Si querés entender **la parte invisible de la red** (Tailscale, túneles, por qué
+  tantas contraseñas) → [Red y accesos](red-y-accesos.md).
+- Si querés **conectar tu placa ya** → [capítulo 12](12-conectar-a-grafana.md).
+- Si no sabés **si usar Node-RED, Grafana o los dos** → [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+- Si tu dato **no aparece** → [Diagnóstico](diagnostico.md).
+

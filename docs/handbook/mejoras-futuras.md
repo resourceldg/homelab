@@ -17,7 +17,23 @@ Mantenerlo al día evita "documentación fantasma".
   `architecture`, `deployment-guide`, `runbook`).
 - El CI ahora corre también los tests de `shared-data` y `aula-iot`.
 
+## Hecho en la tercera tanda: navegación para alumnos (octubre 2026)
+- Rutas de lectura por necesidad en el inicio (muestra, arquitectura, visualizar,
+  procesar, acceso, diagnóstico).
+- Páginas nuevas: **Red y accesos** (Tailscale, Funnel, túneles, las 4 capas de
+  autenticación), **¿Node-RED, Grafana o ambos?** y **Diagnóstico** (árbol paso a
+  paso, también para la muestra).
+- "Seguí un dato: 24,7 °C" en el cap. 11: recorrido real, quién conoce a quién y
+  qué pasa si se cae cada pieza.
+- El ciclo de vida del dato y del software del proyecto del alumno (cap. 15).
+- Bloques de "Ahora deberías entender / Seguí por acá" en los capítulos clave.
+- Glosario con definiciones "en el aula" (118 términos).
+
 ## Pendiente
+- **Cuando se active el Grafana del aula:** sacar los avisos "en puesta en
+  marcha" (caps. 9, 12, 13, guía, diagnóstico paso 8, node-red-o-grafana).
+- **Salida pública para la muestra** (que un visitante sin Tailscale vea un
+  tablero): hoy no existe; hay que decidirla.
 - **Anclas en GitHub:** los enlaces a secciones (`#...`) del manual siguen el
   formato de MkDocs (sin acentos). En el sitio funcionan; leyendo el `.md` directo
   en GitHub, los de títulos con acentos o rayas no saltan a la sección.

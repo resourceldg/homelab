@@ -1,7 +1,7 @@
 # Glosario
 
 Cada entrada tiene una **definición simple**, una **técnica** y **dónde aparece**
-en este proyecto. Ordenado alfabéticamente.
+en este proyecto (en los términos centrales, **qué significa en el aula**). Ordenado alfabéticamente.
 
 > La definición **simple** está pensada para leerla primero, sin saber nada de
 > sistemas. La **técnica** es la que vas a encontrar en internet o en un libro.
@@ -46,11 +46,21 @@ en este proyecto. Ordenado alfabéticamente.
   programa.
 - **Dónde:** rol `apparmor`, en modo enforce.
 
+### Autenticación
+- **Simple:** probar **quién sos** (usuario y contraseña, una clave).
+- **Técnica:** verificación de identidad de un usuario o sistema.
+- **En el aula:** hay cuatro puertas, cada una con su llave: Tailscale, SSH, el login web y el usuario MQTT. Ver [las 4 capas](red-y-accesos.md#5-por-que-me-autentico-tantas-veces).
+
 ### Authelia
 - **Simple:** el portal de login único (SSO) del laboratorio.
 - **Técnica:** servidor de autenticación/forward-auth con reglas por grupo.
 - **Dónde:** stack `auth`, integrado a Caddy con `forward_auth`. Ver
   [cap. 7](07-seguridad.md).
+
+### Autorización
+- **Simple:** decidir **qué podés hacer** una vez que se sabe quién sos.
+- **Técnica:** control de permisos sobre recursos para una identidad ya autenticada.
+- **En el aula:** solo tu carpeta, solo tus topics `equipo-NN/...`, solo tu folder de Grafana. Ver [Red y accesos](red-y-accesos.md#las-4-capas).
 
 ### Backup
 - **Simple:** una copia de seguridad de los datos.
@@ -65,7 +75,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### Broker (MQTT)
 - **Simple:** el "cartero" que recibe los mensajes y se los reparte a quien los quiere (como el servidor de WhatsApp).
 - **Técnica:** servidor intermediario del modelo publicar/suscribir: recibe publicaciones y las entrega a los suscriptores de cada topic.
-- **Dónde:** `mqtt-aula` (Mosquitto). Ver [cap. 11](11-arquitectura-iot.md#capa-3-mensajeria-el-que-reparte-los-mensajes).
+- **En el aula:** `mqtt-aula`. Tu ESP32 y tu Node-RED se conectan a él; él reparte cada mensaje a quien esté suscripto (Telegraf, tu Node-RED, MQTT Explorer). Ver [Seguí un dato](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c).
 
 ### Caddy
 - **Simple:** el portero web: recibe todo y reparte, con HTTPS automático.
@@ -105,7 +115,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### Contenedor
 - **Simple:** una imagen en ejecución, aislada.
 - **Técnica:** proceso(s) aislados con namespaces + cgroups.
-- **Dónde:** todos los servicios y proyectos de alumnos.
+- **En el aula:** cada servicio del servidor corre en uno: `mqtt-aula`, `grafana-aula`, y el Node-RED de tu equipo (`equipo-04-nodered-1`). Los levantás con `labctl up`. Ver [cap. 3](03-docker.md).
 
 ### Contrato (de mensajes)
 - **Simple:** el acuerdo escrito de "cómo nos vamos a hablar": qué nombre tiene cada mensaje y qué formato lleva.
@@ -117,6 +127,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** unidad central de procesamiento; cada núcleo ejecuta instrucciones en paralelo.
 - **Dónde:** el servidor tiene 4 núcleos. Ver [cap. 2](02-fundamentos.md).
 
+### Credencial
+- **Simple:** lo que usás para probar quién sos: un usuario con su contraseña, una clave, un token.
+- **Técnica:** dato secreto que autentica a un usuario o sistema.
+- **En el aula:** tenés cuatro distintas (tailnet, aula, MQTT del equipo, WiFi). Ver [la tabla](red-y-accesos.md#tus-credenciales-en-una-tabla).
+
 ### Daemon
 - **Simple:** un servicio que corre de fondo, permanente.
 - **Técnica:** proceso en segundo plano (suele terminar en `d`).
@@ -125,7 +140,12 @@ en este proyecto. Ordenado alfabéticamente.
 ### Dashboard
 - **Simple:** un tablero con gráficos.
 - **Técnica:** conjunto de paneles de visualización (en Grafana).
-- **Dónde:** los 3 dashboards del aula + el de homelab.
+- **En el aula:** hay dos tipos: el de **Node-RED** (`localhost:1880/dashboard`, para controlar en vivo) y el de **Grafana** (para ver la historia). Ver [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+
+### Datasource (fuente de datos)
+- **Simple:** la base de datos a la que un panel de Grafana le hace preguntas.
+- **Técnica:** conexión configurada en Grafana hacia un origen de datos.
+- **En el aula:** la tuya es **MQTT — equipo-NN**: consulta VictoriaMetrics y solo ve los datos de tu equipo. Ver [cap. 13](13-usar-grafana.md).
 
 ### DDNS / DuckDNS
 - **Simple:** mantener un dominio apuntando a tu casa aunque cambie tu IP.
@@ -150,7 +170,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### DNS
 - **Simple:** la guía telefónica que traduce nombres a IPs.
 - **Técnica:** *Domain Name System*.
-- **Dónde:** DuckDNS (público) + dnsmasq (Split DNS del tailnet).
+- **En el aula:** `homelab-01.tail4eda13.ts.net` (el nombre que usa tu placa) y `grafana-aula.lucasland.duckdns.org` (el que usás vos) se traducen a direcciones IP. Dentro del tailnet, el segundo apunta a la IP privada del servidor (Split DNS).
 
 ### Docker
 - **Simple:** empaquetar y correr apps en contenedores.
@@ -161,6 +181,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** cuando el servidor real ya no es lo que dicen los archivos, porque alguien cambió algo a mano.
 - **Técnica:** divergencia entre el estado declarado (IaC) y el estado real de la infraestructura.
 - **Dónde:** el broker del aula existió unos días solo en el servidor. Ver [cap. 4](04-ansible-iac.md).
+
+### Endpoint
+- **Simple:** una "puerta" con dirección a la que un programa le manda pedidos.
+- **Técnica:** URL o dirección de un servicio que acepta peticiones.
+- **En el aula:** `POST /api/led` en el Node-RED de los equipos con página propia; para el broker, `homelab-01.tail4eda13.ts.net:10000`.
 
 ### ESP32
 - **Simple:** una placa chiquita y barata, con WiFi, que se programa para leer sensores y manejar actuadores.
@@ -187,6 +212,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** el programa que vive **adentro** de un aparato (la placa).
 - **Técnica:** software grabado en la memoria no volátil de un dispositivo embebido.
 - **Dónde:** el `main.py` de MicroPython o el `.ino` de Arduino.
+
+### Flujo (flow)
+- **Simple:** en Node-RED, un dibujo de cajitas conectadas que dice "cuando pasa esto, hacé aquello".
+- **Técnica:** grafo de nodos que procesa mensajes en Node-RED.
+- **En el aula:** el flujo del interruptor del LED: `ui-switch` → `mqtt out`. Ver [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
 
 ### Funnel (Tailscale Funnel)
 - **Simple:** un "portero" en internet que recibe a las placas y las hace pasar al servidor sin abrir puertas del router.
@@ -318,6 +348,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** *Message Queuing Telemetry Transport*: protocolo publicar/suscribir sobre TCP, pensado para dispositivos con pocos recursos.
 - **Dónde:** todo el aula habla MQTT con `mqtt-aula`. Ver [cap. 11](11-arquitectura-iot.md).
 
+### MQTT Explorer
+- **Simple:** un programa para tu compu que se conecta al broker y te muestra los mensajes de tus topics en vivo.
+- **Técnica:** cliente MQTT de escritorio con vista en árbol de topics.
+- **En el aula:** la herramienta clave para saber si tu dato llegó al servidor. Ver [Diagnóstico](diagnostico.md#la-herramienta-clave-escuchar-el-broker-desde-tu-compu).
+
 ### Namespace
 - **Simple:** las "anteojeras" de un contenedor: deciden qué puede ver (sus archivos, sus procesos, su red).
 - **Técnica:** mecanismo del kernel Linux que aísla la vista de recursos de un grupo de procesos.
@@ -351,7 +386,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### Payload (carga)
 - **Simple:** el **contenido** de un mensaje: `23.5`, `ON`, `abierto`.
 - **Técnica:** datos útiles transportados por un mensaje MQTT, sin los encabezados del protocolo.
-- **Dónde:** cap. 12, regla 2.
+- **En el aula:** lo que tu placa manda en cada mensaje: `24.7`, `ON`, `abierto` o un JSON. Telegraf lo convierte en número para Grafana. Ver [regla 2](12-conectar-a-grafana.md#regla-2-el-mensaje-es-un-numero-una-palabra-de-estado-o-un-json).
 
 ### Playbook
 - **Simple:** la "receta" de Ansible: qué configurar y en qué orden.
@@ -376,7 +411,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### Proxy inverso
 - **Simple:** un portero que recibe todo y reparte a los servicios.
 - **Técnica:** proxy del lado del servidor (single entry point).
-- **Dónde:** Caddy.
+- **En el aula:** **Caddy** es la puerta web: recibe `https://grafana-aula…`, pide el login del aula y te deriva a Grafana. Tu Node-RED **no** pasa por Caddy (no tiene login): se llega por túnel. Ver [Red y accesos](red-y-accesos.md#por-que-grafana-no-necesita-tunel-y-node-red-si).
 
 ### Publicar / suscribir
 - **Simple:** mandar un mensaje a un "grupo con nombre" / anotarse para recibir lo de ese grupo.
@@ -386,7 +421,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### Puerto
 - **Simple:** el "interno" de un servicio dentro de una IP.
 - **Técnica:** número (0-65535) que identifica un endpoint TCP/UDP.
-- **Dónde:** 443 (Caddy), 22 (SSH), 5432 (Postgres), 9090 (Prometheus)…
+- **En el aula:** tu placa usa el `10000` (el broker, por Funnel); tu Node-RED escucha en un puerto propio del equipo (`1882`, `1884`…), y lo traés a tu compu con el túnel. Ver [guía, paso 1.2](guia-equipo.md#12-el-tunel-ssh-traer-tus-servicios-a-tu-compu).
 
 ### Pull request (PR)
 - **Simple:** pedir formalmente "sumen mis cambios a la versión principal", para que se revisen antes.
@@ -448,6 +483,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** secuencia de muestras (timestamp, valor) identificada por un nombre y etiquetas.
 - **Dónde:** `mqtt_valor{equipo, dispositivo, magnitud}` en VictoriaMetrics.
 
+### Servicio
+- **Simple:** un programa que está siempre corriendo, esperando pedidos (el "cocinero de guardia").
+- **Técnica:** proceso de larga duración que ofrece una función a otros.
+- **En el aula:** el broker, Grafana, tu Node-RED: cada uno es un servicio en su contenedor. Ver [cap. 5](05-servicios.md).
+
 ### Shift-left
 - **Simple:** buscar los errores lo antes posible, cuando arreglarlos es más barato.
 - **Técnica:** práctica de mover las pruebas y controles a etapas tempranas del ciclo de desarrollo.
@@ -496,7 +536,7 @@ en este proyecto. Ordenado alfabéticamente.
 ### Tailscale / Tailnet
 - **Simple:** tu red privada propia para llegar al server desde cualquier lado.
 - **Técnica:** red mesh basada en WireGuard; el *tailnet* es tu red.
-- **Dónde:** acceso remoto seguro + Split DNS. Ver [cap. 7](07-seguridad.md).
+- **En el aula:** la red privada del aula: el servidor (`100.110.123.76`) y las compus de alumnos y profe. Las ESP32 **no** están (usan Funnel). Ver [Red y accesos](red-y-accesos.md#2-el-camino-de-las-personas-tailscale-una-red-privada).
 
 ### TCP
 - **Simple:** enviar datos por red de forma confiable.
@@ -521,7 +561,12 @@ en este proyecto. Ordenado alfabéticamente.
 ### Topic
 - **Simple:** el "nombre del grupo" al que se manda un mensaje MQTT. Se escribe como una ruta: `equipo-04/enchufe/estado`.
 - **Técnica:** cadena jerárquica separada por `/` que identifica el canal de un mensaje MQTT; admite comodines `+` y `#` al suscribirse.
-- **Dónde:** el contrato del aula: `equipo-NN/dispositivo/magnitud`.
+- **En el aula:** la "dirección" de cada mensaje, con el contrato `equipo-NN/dispositivo/magnitud` (ej. `equipo-04/enchufe/estado`). El broker solo te deja usar los que empiezan con tu equipo. Ver [las 3 reglas](12-conectar-a-grafana.md#las-3-reglas).
+
+### Túnel
+- **Simple:** un pasillo privado y cifrado entre tu compu y el servidor: lo que entra por una punta sale por la otra.
+- **Técnica:** canal que encapsula tráfico dentro de otra conexión (p. ej. reenvío de puertos por SSH).
+- **En el aula:** `ssh -L 1880:localhost:1884 …` trae tu Node-RED a `localhost:1880`. Ver [Red y accesos](red-y-accesos.md#4-el-tunel-llegar-a-lo-que-no-esta-publicado).
 
 ### UFW
 - **Simple:** el firewall (decide qué puertos se abren).
@@ -537,6 +582,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** la base de datos que guarda el historial de los sensores (15 días).
 - **Técnica:** base de datos de series temporales compatible con Prometheus.
 - **Dónde:** `aula-victoriametrics`, consultada por el Grafana del aula.
+
+### VPN (Virtual Private Network)
+- **Simple:** una red privada que viaja por adentro de internet, cifrada: como estar en la misma sala aunque estés lejos.
+- **Técnica:** red privada virtual: enlaza dispositivos remotos en una red lógica cifrada.
+- **En el aula:** Tailscale es la VPN del aula. Ver [Red y accesos](red-y-accesos.md#2-el-camino-de-las-personas-tailscale-una-red-privada).
 
 ### WebSocket
 - **Simple:** una conexión que queda **abierta** para que los datos lleguen solos, como una llamada en vez de cartas.

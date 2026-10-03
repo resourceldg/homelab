@@ -225,3 +225,16 @@ mindmap
 2. Jessi tiene que pasar de `equipo-01/reed` a `equipo-01/puerta/reed`. Listá
    **todo** lo que hay que cambiar, en qué archivo y en qué máquina.
 3. Dibujá el viaje de un mensaje de **tu** proyecto como el diagrama del caso 1.
+
+---
+
+## Ahora deberías poder
+
+- Ubicar cada pieza de **tu** proyecto en las capas del capítulo 11.
+- Explicar qué decisiones tomó tu equipo y qué aprendieron de sus errores.
+
+**Seguí por acá:**
+
+- Si tu proyecto necesita **reglas o botones** además de gráficos → [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+- Si querés ver **tu proyecto en su ciclo de vida** (del código a la muestra) → [capítulo 15](15-ciclo-de-vida-y-madurez.md#el-ciclo-de-vida-de-tu-proyecto).
+- Si algo de tu proyecto **dejó de andar** → [Diagnóstico](diagnostico.md).

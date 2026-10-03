@@ -33,7 +33,8 @@ del aula** y una **clave de Tailscale** (empieza con `tskey-auth-`).
 ### 1.1 Tailscale: la red privada del aula
 
 **Tailscale** arma una red privada entre tu compu y el servidor, como si
-estuvieran enchufados al mismo router aunque estés en tu casa. Se hace **una
+estuvieran enchufados al mismo router aunque estés en tu casa. (**Por qué** la
+usamos y qué resuelve → [Red y accesos](red-y-accesos.md#2-el-camino-de-las-personas-tailscale-una-red-privada).) Se hace **una
 sola vez**. Instalalo desde <https://tailscale.com/download> y después:
 
 **Windows** (en "Símbolo del sistema" / CMD, un comando por vez):
@@ -246,6 +247,30 @@ labctl usage      # cuánto disco/recursos usás
 labctl down       # apagar tu stack
 ```
 
+### 3.5 Tu dashboard de Node-RED y tu página
+
+Con el túnel abierto ([paso 1.2](#12-el-tunel-ssh-traer-tus-servicios-a-tu-compu)),
+en tu navegador:
+
+| Qué | Dirección | Para qué |
+|---|---|---|
+| **Editor** de Node-RED | `http://localhost:1880` | armar tus flujos (cajitas conectadas) |
+| **Dashboard** de Node-RED | `http://localhost:1880/dashboard` | la pantalla con botones e indicadores: lo que se muestra |
+| **Tu página** (si tu equipo tiene nginx) | `http://localhost:8080` | tu propia interfaz web |
+
+Los equipos que ya tienen un tablero armado (equipo-01, equipo-03 y equipo-04) lo
+encuentran en `/dashboard` → página **ESP32**. Para que el dashboard funcione, tu
+Node-RED tiene que tener el nodo *mqtt-broker* conectado a `mqtt-aula`
+([paso 3.3](#33-mqtt-usa-el-broker-del-aula-mqtt-aula)).
+
+**¿Dashboard de Node-RED o Grafana?** El de Node-RED es para **controlar en vivo**
+(botones, estados); Grafana es para **ver la historia**. Cuál usar →
+[¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+
+> **Para la muestra:** el dashboard se abre en **tu** compu, con el túnel. Si lo
+> van a mostrar en otra compu, esa compu necesita Tailscale y el túnel. Checklist
+> completo → [chequeo rápido antes de la muestra](diagnostico.md#chequeo-rapido-antes-de-la-muestra).
+
 ---
 
 ## 4. SSL / HTTPS — quién lo hace
@@ -276,7 +301,15 @@ equipo01.lucasland.duckdns.org {
 ## 5. Salir a la web (producción)
 
 Los alumnos **nunca** abren puertos públicos (la política lo bloquea). Si tu proyecto
-tiene que verse desde internet, lo **habilita el operador**. Vos preparás el servicio.
+tiene que tener una dirección propia con HTTPS, lo **habilita el operador**. Vos
+preparás el servicio.
+
+> ⚠️ **Hoy, "publicado" quiere decir "visible desde el tailnet", no desde internet.**
+> El router de la casa del servidor no deja entrar conexiones de afuera (ver
+> [Red y accesos](red-y-accesos.md#1-el-problema-el-servidor-esta-en-una-casa)).
+> Una dirección como `https://equipo01.lucasland.duckdns.org` funciona para quien
+> tenga **Tailscale** conectado. Para mostrar algo a público general hace falta
+> otra salida, que se decide aparte con el profe.
 
 **Qué preparás vos:**
 
@@ -304,7 +337,7 @@ student_exposures:
 
 …y aplica `ansible-playbook site.yml --tags publish -K`. Caddy toma el cambio y tu
 servicio queda en **`https://equipo01.lucasland.duckdns.org`** (HTTPS automático, sobre
-el puerto estándar 443). El vhost responde aunque tu servicio esté apagado (verías un
+el puerto estándar 443), alcanzable desde el tailnet. El vhost responde aunque tu servicio esté apagado (verías un
 502 hasta que hagas `labctl up`).
 
 ---
@@ -350,3 +383,19 @@ Otros:
 1. Escribí un `compose.yml` con un servicio `web` que pase `labctl validate`.
 2. Modificalo para que use la Postgres compartida (`env_file: .shared-services.env`).
 3. Listá los 4 datos que le tenés que dar al operador para que publique tu servicio.
+
+---
+
+## Ahora deberías poder
+
+- **Conectarte**: Tailscale + túnel SSH con los puertos de **tu** equipo.
+- Saber **dónde vive** cada archivo de tu proyecto y por qué.
+- Conectar tu Node-RED y tu placa al **broker del aula**.
+- Abrir tu **dashboard** y tu **página** para la muestra.
+
+**Seguí por acá:**
+
+- Si querés **conectar tu placa** y que aparezca en Grafana → [capítulo 12](12-conectar-a-grafana.md).
+- Si algo **no te deja entrar** → [Diagnóstico: no puedo entrar](diagnostico.md#no-puedo-entrar-a-algo).
+- Si querés entender **por qué hay túneles y tantas contraseñas** → [Red y accesos](red-y-accesos.md).
+

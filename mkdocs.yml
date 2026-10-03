@@ -47,10 +47,13 @@ nav:
       - Guía práctica del equipo: guia-equipo.md
   - "Parte III — IoT aplicado":
       - 11. Arquitectura IoT del aula: 11-arquitectura-iot.md
+      - Red y accesos: red-y-accesos.md
       - 12. Conectar tus sensores a Grafana: 12-conectar-a-grafana.md
+      - ¿Node-RED, Grafana o ambos?: node-red-o-grafana.md
       - 13. Usar Grafana: 13-usar-grafana.md
       - 14. Los proyectos de los equipos: 14-proyectos-de-los-equipos.md
   - "Parte IV — Operar y evolucionar":
+      - Diagnóstico (¿dónde se cortó?): diagnostico.md
       - 10. Casos prácticos: 10-casos-practicos.md
       - 15. Ciclo de vida y madurez: 15-ciclo-de-vida-y-madurez.md
   - Glosario: glosario.md

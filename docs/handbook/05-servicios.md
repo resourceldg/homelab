@@ -81,6 +81,8 @@ Cada ficha responde siempre lo mismo: **qué es** (con algo cercano), **para qu�
 - **Expone:** la IP privada `100.110.123.76`.
 - **Si se cae:** nadie entra desde afuera de la casa (ni SSH ni web). La consola
   física del servidor sigue funcionando.
+- **Para entenderlo desde cero** (qué problema resuelve, qué es un túnel) →
+  [Red y accesos](red-y-accesos.md).
 
 **Tailscale Funnel** — *el portero de internet*
 

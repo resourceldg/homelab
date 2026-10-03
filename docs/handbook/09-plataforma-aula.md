@@ -142,3 +142,15 @@ desde afuera, lo publica el **operador** con un registro declarativo
 1. Escribí un `compose.yml` que la política **rechace** y explicá por qué.
 2. Escribí uno que la política **acepte** y que use la Postgres compartida
    (`env_file: .shared-services.env`).
+
+---
+
+## Ahora deberías entender
+
+- Por qué trabajás con `labctl` y no con Docker directo, y qué te protege a vos y a los demás.
+- Qué servicios te da el aula (base de datos, broker MQTT, Grafana) y cómo llegan a tu proyecto.
+
+**Seguí por acá:**
+
+- Para **trabajar en tu proyecto** paso a paso → [Guía práctica del equipo](guia-equipo.md).
+- Para entender **cómo llegás** a tus servicios (túnel, contraseñas) → [Red y accesos](red-y-accesos.md).

@@ -167,3 +167,17 @@ guardar. Si ya guardaste: ⚙️ → **Versions** → elegí la anterior → **R
 
 **¿Puedo prender el LED desde Grafana?** No: Grafana es para **ver**. Las
 órdenes se mandan desde Node-RED o tu página.
+
+---
+
+## Ahora deberías entender
+
+- Qué es un **dashboard**, un **panel**, una **consulta** y un **datasource**.
+- Que Grafana **consulta lo guardado** (no recibe los mensajes directo): por eso
+  muestra historia, y por eso no prende LEDs.
+
+**Seguí por acá:**
+
+- Si un panel dice **"No data"** → [Diagnóstico, paso 9](diagnostico.md#paso-9-grafana-consulta-lo-correcto).
+- Si querés graficar un valor **calculado** (no lo manda la placa) → [Caso C](node-red-o-grafana.md#caso-c-los-dos-node-red-procesa-grafana-muestra).
+- Si querés entender **de dónde salen** los datos que ves → [Seguí un dato](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c).

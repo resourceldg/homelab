@@ -28,6 +28,10 @@ pulseras, y las pulseras no sirven si se puede entrar por la ventana. **Juntas**
 sí. Eso se llama **defensa en profundidad**: varias capas **independientes**, para
 que romper una no alcance.
 
+> **Este capítulo mira la seguridad desde el servidor.** Si querés la vista **del
+> alumno** (qué puertas cruzás vos, con qué llave y por qué son distintas) →
+> [Red y accesos: ¿por qué me autentico tantas veces?](red-y-accesos.md#5-por-que-me-autentico-tantas-veces).
+
 ---
 
 ## Las capas de este sistema

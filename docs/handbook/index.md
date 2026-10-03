@@ -8,6 +8,75 @@
 >
 > **Autor:** Lucas D. Gómez, arquitecto de software · [Créditos y autoría](creditos.md)
 
+## ¿Qué necesitás hoy?
+
+No hace falta leer todo en orden. Elegí tu camino:
+
+### 🚀 Tengo que hacer funcionar mi proyecto para la muestra
+
+1. [Guía del equipo: conectarte](guia-equipo.md#1-conectarte) (Tailscale + túnel)
+2. [Conectar tu placa: las 3 reglas del topic](12-conectar-a-grafana.md#las-3-reglas)
+3. [Comprobar que llega, con MQTT Explorer](12-conectar-a-grafana.md#comprobar-que-llega-en-dos-pasos)
+4. [Abrir tu dashboard de Node-RED](guia-equipo.md#35-tu-dashboard-de-node-red-y-tu-pagina)
+5. [Chequeo rápido antes de la muestra](diagnostico.md#chequeo-rapido-antes-de-la-muestra)
+
+### 🧠 Quiero entender la arquitectura completa
+
+1. [Visión general](01-vision-general.md) → los planos del sistema
+2. [Arquitectura IoT](11-arquitectura-iot.md) → las 6 capas y las 9 decisiones
+3. [Seguí un dato: 24,7 °C](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c) → el recorrido real
+4. [Red y accesos](red-y-accesos.md) → la parte invisible
+5. [Ciclo de vida y madurez](15-ciclo-de-vida-y-madurez.md) → cómo nace y crece
+
+### 📊 Necesito visualizar mis sensores
+
+1. [Las 3 reglas del topic](12-conectar-a-grafana.md#las-3-reglas) → MQTT
+2. [Seguí un dato](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c) → cómo se guarda
+3. [Usar Grafana](13-usar-grafana.md) → tu dashboard
+4. [Recetario de consultas](13-usar-grafana.md#6-recetario-de-consultas)
+
+### 🔀 Necesito procesar datos o automatizar algo
+
+1. [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md) → decidir
+2. [Caso B: reglas y órdenes](node-red-o-grafana.md#caso-b-hace-falta-node-red)
+3. [Caso C: calcular y graficar](node-red-o-grafana.md#caso-c-los-dos-node-red-procesa-grafana-muestra)
+4. [Los proyectos de los equipos](14-proyectos-de-los-equipos.md) → cómo lo hicieron otros
+
+### 🔐 No puedo acceder al servidor
+
+1. [Diagnóstico: no puedo entrar](diagnostico.md#no-puedo-entrar-a-algo) → paso a paso
+2. [Red y accesos](red-y-accesos.md) → Tailscale, túneles y las 4 capas
+3. [Tus credenciales, en una tabla](red-y-accesos.md#tus-credenciales-en-una-tabla)
+
+### 🔧 Algo dejó de funcionar
+
+1. [Diagnóstico](diagnostico.md) → dónde se cortó el recorrido
+2. [Casos prácticos](10-casos-practicos.md) → errores reales y cómo se resolvieron
+3. [¿Qué pasa si se cae cada pieza?](11-arquitectura-iot.md#que-pasa-si-se-cae-cada-pieza)
+
+---
+
+## Lo que vas a poder explicar al terminar
+
+> "Mi **ESP32** toma el dato del **sensor**, lo **publica por MQTT** en el topic de
+> mi equipo; viaja por **WiFi e internet** y entra al servidor por **Funnel**; el
+> **broker** lo reparte; **Telegraf** lo guarda en **VictoriaMetrics**, y **Grafana**
+> lo consulta para dibujar mi dashboard. **Node-RED**, al costado, recibe los
+> eventos, aplica mis reglas y manda órdenes a mis actuadores. Yo llego a todo eso
+> por **Tailscale**, con un **túnel** para lo que no tiene login."
+
+```mermaid
+flowchart LR
+  s["Sensor"] --> e["ESP32"] --> w["WiFi"] --> m["MQTT"] --> f["Funnel"] --> b["Broker"]
+  b --> t["Telegraf"] --> v["VictoriaMetrics"] --> g["Grafana"] --> d["Dashboard"]
+  b <--> n["Node-RED"]
+```
+
+Y también el ciclo del software: **código → repositorio → despliegue → ejecución
+→ observabilidad → mantenimiento** ([capítulo 15](15-ciclo-de-vida-y-madurez.md#el-ciclo-de-vida-de-tu-proyecto)).
+
+---
+
 ## ¿Para quién es este manual?
 
 Está pensado para tres tipos de lectores:
@@ -90,8 +159,10 @@ flowchart LR
 
 | # | Capítulo | De qué trata |
 |---|---|---|
-| 11 | [Arquitectura IoT del aula](11-arquitectura-iot.md) | **La columna del libro:** las 6 capas y las 9 decisiones de diseño |
+| 11 | [Arquitectura IoT del aula](11-arquitectura-iot.md) | **La columna del libro:** las 6 capas, el recorrido de un dato y las 9 decisiones |
+| — | [Red y accesos](red-y-accesos.md) | Tailscale, Funnel, túneles y por qué hay tantas contraseñas |
 | 12 | [Conectar tus sensores a Grafana](12-conectar-a-grafana.md) | Las 3 reglas del topic, ejemplos en MicroPython y Arduino |
+| — | [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md) | Quién procesa, quién muestra, y cómo se combinan |
 | 13 | [Usar Grafana](13-usar-grafana.md) | Leer y editar el tablero de tu equipo |
 | 14 | [Los proyectos de los equipos](14-proyectos-de-los-equipos.md) | El LED, la puerta y el enchufe como casos de diseño |
 
@@ -99,6 +170,7 @@ flowchart LR
 
 | # | Capítulo | De qué trata |
 |---|---|---|
+| — | [Diagnóstico](diagnostico.md) | **Dónde se cortó el recorrido:** árbol paso a paso, también para la muestra |
 | 10 | [Casos prácticos](10-casos-practicos.md) | Nueve problemas reales y cómo se resolvieron |
 | 15 | [Ciclo de vida y madurez](15-ciclo-de-vida-y-madurez.md) | Cómo nace y crece el sistema, sus stacks y qué tan maduro está |
 

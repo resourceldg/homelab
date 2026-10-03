@@ -59,6 +59,60 @@ del aula:
 
 ---
 
+## El ciclo de vida de tu proyecto
+
+Tu proyecto también tiene dos ciclos de vida, y al terminar el año los vas a
+poder explicar los dos.
+
+### El ciclo de vida del **dato**: de lo que mide el sensor a la pantalla
+
+```mermaid
+flowchart TB
+  a["🌡️ Sensor<br/>mide"] --> b["🧠 Firmware de la ESP32<br/>lee y arma el mensaje"]
+  b --> c["📶 WiFi<br/>sale a internet"]
+  c --> d["✉️ MQTT<br/>topic equipo-NN/dispositivo/magnitud"]
+  d --> e["🚪 Funnel / Tailscale<br/>entra al servidor"]
+  e --> f["🖥️ Servidor homelab-01"]
+  f --> g["📦 Servicios en Docker<br/>mqtt-aula, Telegraf, Node-RED"]
+  g --> h["⚙️ Node-RED (opcional)<br/>reglas, botones, datos calculados"]
+  g --> i["💾 VictoriaMetrics<br/>guarda 15 días"]
+  h -. "republica en MQTT" .-> d
+  i --> j["📊 Grafana<br/>consulta y dibuja"]
+  j --> k["🎤 Dashboard de la muestra"]
+```
+
+Cada flecha está explicada: el recorrido completo en el
+[capítulo 11](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c), la red en
+[Red y accesos](red-y-accesos.md), el contrato en el [capítulo 12](12-conectar-a-grafana.md)
+y la parte de Node-RED en [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md).
+
+### El ciclo de vida del **software**: de tu código a algo que funciona y se cuida
+
+```mermaid
+flowchart LR
+  a["1 · Código<br/>main.py, .ino, flows"] --> b["2 · Repositorio<br/>versiones guardadas"]
+  b --> c["3 · Despliegue<br/>cargar a la placa · Deploy en Node-RED"]
+  c --> d["4 · Ejecución<br/>la placa corre, el flujo escucha"]
+  d --> e["5 · Observabilidad<br/>Thonny, MQTT Explorer, Grafana"]
+  e --> f["6 · Mantenimiento<br/>corregir, mejorar, actualizar"]
+  f --> a
+```
+
+| Etapa | En tu proyecto | Si la salteás… |
+|---|---|---|
+| **1 · Código** | el `main.py` o el `.ino` de la placa; los flujos de Node-RED; tu página | — |
+| **2 · Repositorio** | guardar **cada versión** que anda (en git, o como mínimo copias con fecha) | el día que algo se rompe, no tenés a qué volver |
+| **3 · Despliegue** | cargar el firmware a la placa (Thonny / IDE de Arduino); el botón **Deploy** de Node-RED; `labctl up` | "en mi compu andaba": lo que corre no es lo que escribiste |
+| **4 · Ejecución** | la placa conectada y publicando; tu stack `Up` | — |
+| **5 · Observabilidad** | Thonny / Monitor Serie, **MQTT Explorer**, tu dashboard, Grafana, `labctl logs` | te enterás de que no anda en el medio de la muestra |
+| **6 · Mantenimiento** | ajustar el topic al contrato, cambiar una clave, mejorar un flujo | el proyecto envejece y deja de andar solo |
+
+El salto que queremos que des este año: dejar de pensar **"hice andar un sensor"**
+y poder decir **"construí un pequeño sistema IoT y entiendo el ciclo de vida del
+dato y del software"**.
+
+---
+
 ## La historia de este sistema (hasta hoy)
 
 Cada punto es un cambio real, sacado del historial del repositorio (git guarda

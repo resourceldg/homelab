@@ -3,6 +3,10 @@
 🎯 **Objetivo:** aprender a **diagnosticar y resolver** problemas reales, con
 recorridos paso a paso. Es el capítulo "de taller".
 
+> **¿Tenés un problema ahora?** Este capítulo cuenta **historias** de errores reales.
+> Para buscar **tu** problema paso a paso, andá al **[Diagnóstico](diagnostico.md)**,
+> que te trae a estos casos cuando corresponde.
+
 🧩 **Prerequisitos:** todos los anteriores (se usan como referencia).
 
 > 📝 **Capítulo en crecimiento.** Tiene nueve casos reales: tres del servidor y
