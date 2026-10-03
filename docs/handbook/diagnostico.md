@@ -225,7 +225,7 @@ Se revisan **en orden**: si falla una, las de abajo no tienen sentido todavía.
 flowchart TB
   A{"1 · tailscale status<br/>¿aparece homelab-01?"} -->|no| A1["Tailscale apagado, máquina sin aprobar<br/>o estás en tu propio tailnet → logout + up"]
   A -->|sí| B{"2 · ssh tu-usuario@100.110.123.76<br/>¿entra?"}
-  B -->|"timed out"| B1["Tailscale no conectado, o el servidor está caído:<br/>avisá al profe"]
+  B -->|"timed out"| B1["Tailscale no conectado, o el servidor está caído:<br/>esperá unos minutos (se recupera solo) y avisá al profe"]
   B -->|"Permission denied"| B2["Contraseña del aula equivocada"]
   B -->|sí| C{"3 · Con el túnel abierto,<br/>¿abre localhost:1880?"}
   C -->|no| C1["Puertos del túnel de OTRO equipo,<br/>o la ventana del SSH se cerró"]

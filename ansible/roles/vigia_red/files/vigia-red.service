@@ -1,0 +1,11 @@
+[Unit]
+Description=Guardián de red de homelab-01 (detecta cortes y los repara)
+Documentation=file:///home/homelab/homelab/docs/vigia-red.md
+After=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vigia-red
+# Un paso puede tardar (reconectar a otra red espera hasta 30 s por red).
+TimeoutStartSec=5min
+Nice=5

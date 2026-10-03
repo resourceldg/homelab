@@ -1,0 +1,14 @@
+---
+- name: Restart journald
+  ansible.builtin.systemd_service:
+    name: systemd-journald
+    state: restarted
+
+# daemon-reexec relee system.conf.d (RuntimeWatchdogSec) sin reiniciar el equipo.
+- name: Reexec systemd
+  ansible.builtin.systemd_service:
+    daemon_reexec: true
+
+- name: Reload NetworkManager config
+  ansible.builtin.command: nmcli general reload conf
+  changed_when: true

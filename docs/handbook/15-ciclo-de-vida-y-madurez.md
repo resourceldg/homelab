@@ -230,7 +230,8 @@ una escala simple, como los niveles de un videojuego:
 | Grafana del aula (este manual) | 2→3 | 🟩🟩🟨⬜⬜ | está escrito en el repositorio; falta **desplegarlo y probarlo** |
 | Proyectos de los equipos (Node-RED, páginas) | 2 | 🟩🟩⬜⬜⬜ | se armaron a mano: pasarlos al repositorio |
 | Firmware de las placas | 1–2 | 🟩🟨⬜⬜⬜ | guardarlo en git, versiones, contrato de topics |
-| Red del servidor (WiFi USB) | 2 | 🟩🟩⬜⬜⬜ | se cayó varias veces: cable de red o un segundo enlace |
+| Robustez ante caídas (watchdog, guardián de red) | 3 | 🟩🟩🟩⬜⬜ | armado y probado (oct 2026); falta el cable de red, el BIOS "encender al volver la luz" y alertas |
+| Red del servidor (WiFi USB) | 2 | 🟩🟩⬜⬜⬜ | adaptador de 15 años (RTL8187B): cable de red o un adaptador nuevo |
 | **Copias de seguridad** | **1** | 🟩⬜⬜⬜⬜ | están diseñadas pero **no corren**: falta el disco |
 | Documentación | 2–3 | 🟩🟩🟨⬜⬜ | capítulos 4 a 8 incompletos |
 
@@ -248,7 +249,7 @@ quadrantChart
   quadrant-3 Mas adelante
   quadrant-4 Esta bien
   Copias de seguridad: [0.12, 0.95]
-  Red del servidor: [0.35, 0.85]
+  Red del servidor: [0.38, 0.85]
   Firmware de placas: [0.28, 0.6]
   Proyectos de equipos: [0.4, 0.55]
   Grafana del aula: [0.48, 0.5]
@@ -278,6 +279,7 @@ flowchart LR
     a1["Desplegar Grafana del aula"]
     a2["Firewall con la red nueva"]
     a3["Disco para copias de seguridad"]
+    a4["BIOS: encender al volver la luz"]
   end
   subgraph PRONTO["Pronto"]
     p1["Red del servidor por cable"]

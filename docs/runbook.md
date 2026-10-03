@@ -165,6 +165,11 @@ systemctl status panol-reset-prueba.timer       # reset del modo prueba (tempora
   te dice cuál anda y por qué los otros no.
 - `make uplink` — mide la calidad real de cada conexión del servidor (WiFi,
   cable) y muestra cuál conviene. No cambia nada.
+- **Robustez ante caídas** (rol `vigia_red`): watchdog de hardware, guardián de
+  red cada minuto, latido y resumen al arrancar. Qué hizo:
+  `sudo tail /var/log/homelab/vigia-red.log`; por qué se reinició la última vez:
+  `sudo sh -c 'cat $(ls -1t /var/log/homelab/arranques/*.txt | head -1)'`. Detalle
+  en [vigia-red.md](vigia-red.md).
 - **Si el servidor se cae y no estás cerca:** `scripts/diagnosticar-caida.sh`
   corre en **tu** compu (por cron, cada 5 minutos). Cuando el servidor vuelve, lee
   sus registros y deja un informe con la causa más probable en

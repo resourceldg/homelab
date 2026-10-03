@@ -1,0 +1,158 @@
+---
+# Capas, de la más baja a la más alta. Cada una sirve sola: si una no aplica en
+# este hardware (p. ej. sin chip watchdog), las demás siguen.
+
+# --- Capa 5 primero: evidencia ---------------------------------------------------------
+# Antes que nada, que quede registro: es lo que permite entender la próxima caída.
+- name: Ensure journald drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    mode: "0755"
+  when: vigia_red_enabled | bool
+
+- name: Persistent journal, synced every 30 s
+  ansible.builtin.copy:
+    src: journald-vigia.conf
+    dest: /etc/systemd/journald.conf.d/50-vigia.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart journald
+  when: vigia_red_enabled | bool
+
+# --- Capa 0: watchdog de hardware ------------------------------------------------------
+- name: Load the hardware watchdog module at boot
+  ansible.builtin.copy:
+    content: "# Chip watchdog de la placa (ver docs/vigia-red.md)\n{{ vigia_red_watchdog_modulo }}\n"
+    dest: /etc/modules-load.d/vigia-watchdog.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+
+- name: Load the hardware watchdog module now
+  community.general.modprobe:
+    name: "{{ vigia_red_watchdog_modulo }}"
+    state: present
+  register: vigia_wdt_mod
+  failed_when: false
+  when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+
+- name: Check that the watchdog device exists
+  ansible.builtin.stat:
+    path: /dev/watchdog0
+  register: vigia_wdt_dev
+  when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+
+# Solo se arma si el chip existe: armar systemd contra un watchdog inexistente no
+# hace nada útil, y es mejor que el resumen diga que la capa no está.
+- name: Ensure systemd system.conf.d exists
+  ansible.builtin.file:
+    path: /etc/systemd/system.conf.d
+    state: directory
+    mode: "0755"
+  when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+
+- name: Arm the hardware watchdog in systemd
+  ansible.builtin.copy:
+    src: watchdog-systemd.conf
+    dest: /etc/systemd/system.conf.d/50-vigia-watchdog.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reexec systemd
+  when:
+    - vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+    - vigia_wdt_dev.stat.exists | default(false)
+
+- name: Report a missing watchdog chip
+  ansible.builtin.debug:
+    msg: "No apareció /dev/watchdog0 con el módulo {{ vigia_red_watchdog_modulo }}: la capa 0 queda apagada en este equipo."
+  when:
+    - vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+    - not (vigia_wdt_dev.stat.exists | default(false))
+
+# --- Capa 2: enlace -------------------------------------------------------------------
+- name: Disable WiFi power saving (NetworkManager)
+  ansible.builtin.copy:
+    src: nm-wifi-powersave.conf
+    dest: /etc/NetworkManager/conf.d/50-vigia-wifi-powersave.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload NetworkManager config
+  when: vigia_red_enabled | bool and vigia_red_wifi_powersave_off | bool
+
+- name: Install iw (to turn WiFi power saving off without reconnecting)
+  ansible.builtin.apt:
+    name: iw
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: vigia_red_enabled | bool and vigia_red_wifi_powersave_off | bool
+
+# La config de NM aplica en la próxima conexión; esto lo apaga YA, sin cortar.
+- name: Turn WiFi power saving off now on every WiFi device
+  ansible.builtin.shell:
+    cmd: |
+      set -uo pipefail
+      cambio=0
+      for d in $(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi"{print $1}'); do
+        if iw dev "$d" get power_save 2>/dev/null | grep -q ": on"; then
+          iw dev "$d" set power_save off && cambio=1
+        fi
+      done
+      echo "cambio=$cambio"
+  args:
+    executable: /bin/bash
+  register: vigia_ps
+  changed_when: "'cambio=1' in vigia_ps.stdout"
+  when: vigia_red_enabled | bool and vigia_red_wifi_powersave_off | bool
+
+# --- Capas 3 y 4: guardián de red -----------------------------------------------------
+- name: Install the network guardian and the boot post-mortem
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "/usr/local/sbin/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - { src: vigia-red.sh, dest: vigia-red }
+    - { src: postmortem-arranque.sh, dest: postmortem-arranque }
+  when: vigia_red_enabled | bool
+
+- name: Guardian settings
+  ansible.builtin.template:
+    src: vigia-red.default.j2
+    dest: /etc/default/vigia-red
+    owner: root
+    group: root
+    mode: "0644"
+  when: vigia_red_enabled | bool
+
+- name: Guardian systemd units
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [vigia-red.service, vigia-red.timer, postmortem-arranque.service]
+  register: vigia_units
+  when: vigia_red_enabled | bool
+
+- name: Enable the guardian timer and the boot post-mortem
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    daemon_reload: "{{ vigia_units is changed }}"
+  loop: [vigia-red.timer, postmortem-arranque.service]
+  when: vigia_red_enabled | bool
+
+- name: Start the guardian timer
+  ansible.builtin.systemd_service:
+    name: vigia-red.timer
+    state: started
+  when: vigia_red_enabled | bool

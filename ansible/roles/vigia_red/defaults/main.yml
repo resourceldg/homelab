@@ -1,0 +1,32 @@
+---
+# vigia_red — robustez del servidor ante caídas: watchdog de hardware, enlace,
+# guardián de red con escalera de arreglos y evidencia para entender cada caída.
+# Ver docs/vigia-red.md.
+vigia_red_enabled: true
+
+# --- Watchdog de hardware ------------------------------------------------------
+# Módulo del chip watchdog de la placa (Intel: iTCO_wdt). Ubuntu lo deja en lista
+# negra; se carga explícito. Si el módulo no crea /dev/watchdog, la capa se salta.
+vigia_red_watchdog_hw: true
+vigia_red_watchdog_modulo: "iTCO_wdt"
+
+# --- Enlace -----------------------------------------------------------------------
+vigia_red_wifi_powersave_off: true
+
+# --- Escalera (minutos SEGUIDOS sin router) ----------------------------------------
+vigia_red_paso_reconectar: 3
+vigia_red_paso_reiniciar_nm: 6
+vigia_red_paso_reset_usb: 10
+vigia_red_paso_otras_redes: 14
+vigia_red_ciclo: 15
+# Último recurso: reiniciar el servidor tras N minutos sin router (0 = nunca),
+# como mucho una vez cada H horas, y nunca en los primeros G minutos de encendido.
+vigia_red_reinicio_min: 30
+vigia_red_reinicio_cada_h: 6
+vigia_red_gracia_min: 20
+
+# Tailscale: minutos con internet pero sin tailnet antes de reiniciar tailscaled.
+vigia_red_tailscale_min: 3
+
+# Destinos para decidir "hay internet" (se prueba el siguiente si uno no responde).
+vigia_red_destinos: ["1.1.1.1", "8.8.8.8"]

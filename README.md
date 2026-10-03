@@ -37,6 +37,7 @@ real → [docs/handbook/](docs/handbook/index.md). Para verlo como libro:
 | DNS dinámico | DuckDNS (timer de systemd) + Split DNS dentro del tailnet |
 | Monitoreo | Prometheus + Grafana de operación (solo operadores) + node-exporter + cAdvisor; logs con Loki a pedido |
 | Aula IoT | broker MQTT compartido `mqtt-aula` (usuario por equipo + ACL), alcanzable por las ESP32 vía Tailscale Funnel; Telegraf → VictoriaMetrics (15 días) → **Grafana del aula**, un folder por equipo |
+| Resiliencia ante caídas | watchdog de hardware (reinicio ante congelamientos), guardián de red con escalera de arreglos, latido y resumen al arrancar, vigía externo desde la notebook ([vigia-red.md](docs/vigia-red.md)) |
 | Copias de seguridad | Borg con borgmatic (cifradas, retención) — **diseñadas, todavía no activas:** falta un disco en `/mnt/backup` |
 | Tests / CI | tests unitarios, gitleaks, yamllint + ansible-lint, chequeo de sintaxis, Molecule (Ubuntu 24.04) en GitHub Actions; testinfra e idempotencia en el servidor |
 
@@ -84,7 +85,7 @@ homelab/
 │   │       ├── hosts.ini
 │   │       └── group_vars/all/  # ajustes de staging + vault
 │   └── roles/                   # cada rol trae sus defaults/main.yml
-│       ├── bootstrap/ users_ssh/ tailscale/ ddns/ dns/
+│       ├── bootstrap/ users_ssh/ tailscale/ ddns/ dns/ vigia_red/
 │       ├── firewall/ fail2ban/ apparmor/ hardening/ auto_updates/ audit/
 │       ├── docker/ monitoring/ backups/ authelia/
 │       ├── classroom/ shared_services/ labctl/ classroom_publish/   # plataforma de aula

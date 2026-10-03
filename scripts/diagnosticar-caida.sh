@@ -96,7 +96,9 @@ seccion "final_arranque_anterior"
 journalctl -b -1 -n 25 --no-pager -o short-iso 2>/dev/null
 
 seccion "apagado_ordenado"
-journalctl -b -1 --no-pager 2>/dev/null | grep -cE "systemd-shutdown|Reached target.*(Power-Off|Reboot|Shutdown)|System is (rebooting|powering down)" || true
+# Solo el gestor del SISTEMA (systemd[1]): las sesiones de usuario también dicen
+# "Reached target Shutdown" al cerrar sesión (falso positivo real del 2026-10-03).
+journalctl -b -1 --no-pager 2>/dev/null | grep -cE "systemd\[1\]: .*(Reached target .*(System Power Off|System Reboot|Power-Off|Reboot)|Shutting down)|systemd-shutdown\[|System is (rebooting|powering down)" || true
 
 seccion "reinicio_por_actualizacion"
 journalctl -b -1 --no-pager 2>/dev/null | grep -iE "unattended-upgrade.*reboot|Rebooting.*unattended|reboot-required" | tail -5
@@ -129,11 +131,20 @@ journalctl -k -b -1 --no-pager 2>/dev/null | grep -E "$CRITICO" | tail -10
 journalctl -k --since "$DESDE" --no-pager 2>/dev/null | grep -E "$CRITICO" | head -10
 
 seccion "kernel_panico_o_cuelgue"
-journalctl -k -b -1 --no-pager 2>/dev/null | grep -iE "panic|BUG:|hung task|soft lockup|hard lockup|watchdog" | tail -10
+# Solo eventos reales: "NMI watchdog: Enabled" o "drm panic" salen en todo arranque.
+journalctl -k -b -1 --no-pager 2>/dev/null | grep -E "Kernel panic|BUG: |hung_task|soft lockup|hard LOCKUP|watchdog: BUG" | tail -10
+echo "watchdog_hw_reinicio=$(wdctl 2>/dev/null | awk '$1=="CARDRESET"{print $NF}')"
 
 seccion "tailscale_en_la_ventana"
 journalctl -u tailscaled --since "$DESDE" --no-pager -o short-iso 2>/dev/null \
   | grep -iE "link change|LinkChange|network is unreachable|no route|magicsock.*(error|fail)|DERP.*(error|fail)" | head -15
+
+seccion "resumen_del_servidor"
+# Lo escribe el propio servidor al arrancar (rol vigia_red): incluye el último latido.
+f="$(ls -1t /var/log/homelab/arranques/*.txt 2>/dev/null | head -1)"; [ -n "$f" ] && head -12 "$f"
+
+seccion "guardian_de_red"
+tail -15 /var/log/homelab/vigia-red.log 2>/dev/null
 
 seccion "red_ahora"
 nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null | grep -vE "^(br-|veth|docker|lo)"
@@ -171,11 +182,14 @@ if [[ $REINICIO -eq 1 ]]; then
   if tiene reinicio_por_actualizacion; then
     CAUSAS+=("**Reinicio por la actualización automática** (unattended-upgrades reinicia a las 04:30 si una actualización lo pide). Si después del reinicio no volvió a la red, el problema real es el WiFi al arrancar.")
   fi
-  if tiene kernel_panico_o_cuelgue; then
+  if pista kernel_panico_o_cuelgue | grep -q "watchdog_hw_reinicio=1"; then
+    CAUSAS+=("**El servidor se CONGELÓ y el watchdog de hardware lo reinició solo** (el chip de la placa lo informa). Revisá en \`resumen_del_servidor\` el último latido: dice a qué minuto se congeló.")
+  fi
+  if pista kernel_panico_o_cuelgue | grep -v "watchdog_hw_reinicio" | grep -q .; then
     CAUSAS+=("**El sistema se colgó o tuvo un error grave del kernel** (ver \`kernel_panico_o_cuelgue\`). Después se reinició.")
   fi
   if [[ "$ORDENADO" -eq 0 ]]; then
-    CAUSAS+=("**Se apagó de golpe, sin apagado ordenado** (el arranque anterior termina sin los mensajes de apagado). Lo más típico: **corte de luz** o alguien lo desenchufó/apagó con el botón. Si pasa seguido, una UPS (batería) lo resuelve.")
+    CAUSAS+=("**Se apagó de golpe, sin apagado ordenado** (el diario se corta en seco). Tres posibilidades: **corte de luz**, alguien lo apagó con el botón, o **se congeló** y alguien lo reinició a mano. Si el BIOS no está en 'encender al volver la luz' y nadie lo tocó, se queda apagado hasta que alguien vaya.")
   else
     CAUSAS+=("**Se reinició o apagó de forma ordenada** (alguien lo apagó, o un reinicio programado). Revisá \`final_arranque_anterior\` para ver quién lo pidió.")
   fi

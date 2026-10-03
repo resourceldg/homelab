@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# Ajustes del guardián de red (/usr/local/sbin/vigia-red). Minutos SEGUIDOS sin router.
+VIGIA_PASO1={{ vigia_red_paso_reconectar }}
+VIGIA_PASO2={{ vigia_red_paso_reiniciar_nm }}
+VIGIA_PASO3={{ vigia_red_paso_reset_usb }}
+VIGIA_PASO4={{ vigia_red_paso_otras_redes }}
+VIGIA_CICLO={{ vigia_red_ciclo }}
+# Último recurso: reiniciar el servidor (0 = nunca).
+VIGIA_REINICIO_MIN={{ vigia_red_reinicio_min }}
+VIGIA_REINICIO_CADA_H={{ vigia_red_reinicio_cada_h }}
+VIGIA_GRACIA_MIN={{ vigia_red_gracia_min }}
+# Tailscale: minutos con internet pero sin tailnet antes de reiniciar tailscaled (0 = no tocar).
+VIGIA_TAILSCALE_MIN={{ vigia_red_tailscale_min }}
+VIGIA_DESTINOS="{{ vigia_red_destinos | join(' ') }}"

@@ -462,6 +462,11 @@ Si en algún momento no podés entrar por SSH de ninguna forma:
    adaptador): desde la consola, `nmcli device status`, y para sumar una red sin
    perder la anterior, `sudo ~/homelab/scripts/agregar-wifi.sh "Nombre-de-la-red"`.
 
+6. **Si el servidor se congela**, el watchdog de hardware lo reinicia solo en
+   30 s; si pierde la red, el guardián la repara por escalones (ver
+   [vigia-red.md](vigia-red.md)). Si igual no vuelve, el informe de
+   `scripts/diagnosticar-caida.sh` (en tu notebook) dice por qué.
+
 > El objetivo del diseño es que **ningún cambio solo te deje afuera**: consola,
 > Tailscale SSH y OpenSSH con llave son tres puertas independientes.
 

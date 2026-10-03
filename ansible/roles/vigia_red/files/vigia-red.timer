@@ -1,0 +1,12 @@
+[Unit]
+Description=Correr el guardián de red cada minuto
+
+[Timer]
+# El primer chequeo, 2 minutos después de arrancar: le da tiempo a la red, y
+# deja que postmortem-arranque lea el último latido antes de que se pise.
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

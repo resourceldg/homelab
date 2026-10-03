@@ -1,0 +1,11 @@
+[Unit]
+Description=Resumen de qué pasó en el arranque anterior (homelab)
+After=systemd-journald.service local-fs.target
+Before=vigia-red.timer
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/postmortem-arranque
+
+[Install]
+WantedBy=multi-user.target

@@ -9,7 +9,7 @@ recorridos paso a paso. Es el capítulo "de taller".
 
 🧩 **Prerequisitos:** todos los anteriores (se usan como referencia).
 
-> 📝 **Capítulo en crecimiento.** Tiene nueve casos reales: tres del servidor y
+> 📝 **Capítulo en crecimiento.** Tiene diez casos reales: cuatro del servidor y
 > seis de las placas de los equipos. Se suman más a medida que pasan.
 
 ## Método general de diagnóstico
@@ -251,6 +251,52 @@ Tailscale, que no depende de la red de la casa.
 **Lección:** cuando algo **se cuelga** (no da error, solo espera) sospechá de la
 **red** o del **firewall** antes que de la aplicación. Y tené siempre **una
 segunda puerta** (acá, Tailscale) para no quedarte afuera.
+
+---
+
+## Caso 10 — El servidor se congeló, y el diagnóstico automático se equivocó
+
+**Síntoma:** el sábado 3 de octubre, a eso de las 12:50, el servidor dejó de
+responder por **todos** los caminos: Tailscale, Funnel (las placas no llegaban al
+broker) y la IP pública. Volvió recién a las 14:40, cuando alguien lo prendió.
+
+**Lo que dijo el informe automático** (el vigía de la notebook del profe, que
+arma un informe solo cuando el servidor vuelve):
+
+> "Apagado ordenado: **sí**" · "El sistema tuvo un **error grave del kernel**"
+
+**Lo que mostraban las pistas de verdad:** el diario del sistema terminaba así:
+
+```
+12:48:30 systemd[851038]: Reached target shutdown.target - Shutdown.
+12:48:30 systemd[1]: Removed slice user-1001.slice - User Slice of UID 1001.
+          (… y nada más hasta las 14:40)
+```
+
+Esa línea de "Shutdown" la escribió `systemd[851038]`: el gestor de **una sesión de
+usuario** (la conexión SSH del profe cerrándose), no `systemd[1]`, que es el del
+**sistema**. El "error del kernel" eran mensajes normales de **cualquier**
+arranque ("NMI watchdog: Enabled", "drm panic"). La conclusión real: el diario
+**se corta en seco**, sin apagado y sin cortes de red registrados antes. La máquina
+entera **se congeló o se quedó sin luz**.
+
+**Por qué ningún programa lo arregló:** en una máquina congelada no corre nada, ni
+siquiera un guardián. Hace falta algo **debajo** del sistema operativo.
+
+**Solución** (rol `vigia_red`, ver [`docs/vigia-red.md`](https://github.com/resourceldg/homelab/blob/main/docs/vigia-red.md)):
+
+1. **Watchdog de hardware:** la placa madre tiene un chip (iTCO) que reinicia el
+   equipo si el sistema deja de "darle señal" durante 30 segundos. Ubuntu lo traía
+   apagado; ahora está armado.
+2. **Más evidencia:** el diario se escribe cada 30 s (antes, cada 5 min: en un
+   congelamiento se perdían esos minutos), y un **latido** por minuto dice a qué
+   hora murió la máquina.
+3. **El diagnóstico corregido:** solo cuenta como apagado ordenado lo que dice
+   `systemd[1]`, y solo cuenta errores del kernel reales.
+
+**Lección:** una herramienta automática **también se equivoca**. Antes de creerle
+a una conclusión, mirá las **pistas crudas** que la sostienen. Y si algo puede
+congelarse, la protección tiene que estar **por debajo** de lo que se congela.
 
 ---
 
