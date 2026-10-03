@@ -1,29 +1,33 @@
-# Architecture & Design Decisions
+# Arquitectura y decisiones de diseño
 
-## 1. Two-plane model
+Este documento es la referencia técnica del **operador**: los diagramas y el
+porqué de cada decisión. La explicación para alumnos, desde cero, está en el
+[manual](handbook/index.md) (capítulos 1, 7, 11 y 15).
 
-The core decision is separating the **host plane** from the **service plane**.
+## 1. Modelo de dos planos
+
+La decisión central es separar el **plano del host** del **plano de servicios**.
 
 ```mermaid
 flowchart TB
     subgraph Control["Control (IaC)"]
-        A[Ansible site.yml] -->|configures OS| HOST
-        A -->|lays down compose + .env| SVC
+        A[Ansible site.yml] -->|configura el SO| HOST
+        A -->|deja los compose + .env| SVC
     end
-    subgraph HOST["Host plane (Ansible-managed)"]
+    subgraph HOST["Plano del host (lo maneja Ansible)"]
         direction LR
-        H1[SSH / users] --- H2[CIS hardening]
+        H1[SSH / usuarios] --- H2[Endurecimiento CIS]
         H2 --- H3[UFW + Fail2ban]
         H3 --- H4[AppArmor]
-        H4 --- H5[auto-updates]
+        H4 --- H5[actualizaciones]
         H5 --- H6[Lynis / AIDE]
         H6 --- H7[Tailscale / DuckDNS]
         H7 --- H8[Docker engine]
     end
-    subgraph SVC["Service plane (Docker Compose)"]
+    subgraph SVC["Plano de servicios (Docker Compose)"]
         direction LR
-        S1[Caddy proxy] --> S2[Grafana]
-        S1 --> S3[Educational apps]
+        S1[Caddy] --> S2[Grafana]
+        S1 --> S3[Apps educativas]
         S4[Prometheus] --> S2
         S5[node-exporter] --> S4
         S6[cAdvisor] --> S4
@@ -31,176 +35,196 @@ flowchart TB
     HOST --> SVC
 ```
 
-**Why:** the host changes rarely and wants declarative convergence; services
-change often and want the fast Compose loop. Installing apps with Ansible `apt`
-would couple them and make rollbacks painful. Ansible *deposits* compose files
-and renders `.env` from Vault, Docker *runs* them.
+**Por qué:** el host cambia poco y conviene que converja de forma declarativa; los
+servicios cambian seguido y conviene el ciclo rápido de Compose. Instalar las apps
+con `apt` desde Ansible las acoplaría al host y haría dolorosos los rollbacks.
+Ansible **deja** los compose y arma los `.env` desde el vault; Docker los **corre**.
 
-The diagram shows the **core** service plane. Two larger subsystems run on top of
-it, each with its own architecture doc so this one stays about the core:
+El diagrama muestra el plano de servicios **base**. Encima corren tres
+subsistemas, cada uno con su propio documento:
 
-- **Teaching lab** — multi-user Docker Compose sandbox for student teams
-  (`labctl`, per-team networks, shared Postgres/Redis/Mailpit). See
+- **Plataforma de aula:** sandbox multiusuario de Docker Compose para los equipos
+  (`labctl`, redes por equipo, Postgres/Redis/Mailpit compartidos). Ver
   [classroom-architecture.md](classroom-architecture.md).
-- **IoT classroom** — shared MQTT broker (`mqtt-aula`) for the teams' ESP32s, and
-  a visualization layer (Telegraf → VictoriaMetrics → Grafana del aula, one folder
-  per team). See [aula-iot.md](aula-iot.md); the beginner explanation (layers,
-  decisions, lifecycle) is in handbook chapters 11 and 15.
-- **Pañol IoT** — access-control service plane (Mosquitto + audit Postgres +
-  Node-RED) for the ESP32 nodes, deployed by the `panol` role and connected to
-  EMATP for tickets. See [panol-iot.md](panol-iot.md).
+- **Aula IoT:** broker MQTT compartido (`mqtt-aula`) para las ESP32 de los
+  equipos, y una capa de visualización (Telegraf → VictoriaMetrics → Grafana del
+  aula, un folder por equipo). Ver [aula-iot.md](aula-iot.md); la explicación
+  para principiantes (capas, decisiones, ciclo de vida) está en los capítulos 11
+  y 15 del manual.
+- **Pañol IoT:** plano de servicios del control de acceso (Mosquitto + Postgres de
+  auditoría + Node-RED) para los nodos ESP32, desplegado por el rol `panol` y
+  conectado a EMATP para los tickets. Ver [panol-iot.md](panol-iot.md).
 
-The same replication model applies to both: one inventory = one site; see
-[replicar-y-escalar.md](replicar-y-escalar.md) to stand the whole thing up on
-another machine.
+El modelo de réplica es el mismo para todos: un inventario = un sitio; ver
+[replicar-y-escalar.md](replicar-y-escalar.md) para montar todo en otra máquina.
 
-## 2. Network & access model
+## 2. Modelo de red y de acceso
 
 ```mermaid
 flowchart LR
     Internet(("Internet"))
-    Router["Home router<br/>(no port-forward today)"]
-    Internet -.->|"80/443: only if forwarded"| Router
-    Laptop["Operator / student laptop"] -. "Tailscale (WireGuard)" .-> TS[tailscale0]
-    ESP["ESP32 boards<br/>(any network)"] -->|"MQTT over TLS :10000"| Funnel["Tailscale Funnel"]
-    PanolNode["Pañol node"] -->|"HTTPS :8443"| Funnel
-    subgraph Server
-        TS -->|"SSH (students: password; admins: keys)"| SSHD[sshd]
+    Router["Router de la casa<br/>(hoy sin redirección de puertos)"]
+    Internet -.->|"80/443: solo si se redirigen"| Router
+    Laptop["Compu del operador / de un alumno"] -. "Tailscale (WireGuard)" .-> TS[tailscale0]
+    ESP["Placas ESP32<br/>(cualquier red)"] -->|"MQTT sobre TLS :10000"| Funnel["Tailscale Funnel"]
+    PanolNode["Nodo del pañol"] -->|"HTTPS :8443"| Funnel
+    subgraph Server["Servidor"]
+        TS -->|"SSH (alumnos: contraseña; admins: llave)"| SSHD[sshd]
         TS -->|"443"| Caddy
         Funnel --> Broker["mqtt-aula"]
         Funnel --> PanolAPI["panol-api"]
-        Caddy -->|"Authelia SSO"| Grafana & GrafanaAula["Grafana del aula"] & Apps
+        Caddy -->|"login Authelia"| Grafana & GrafanaAula["Grafana del aula"] & Apps
     end
 ```
 
-- **SSH is never exposed to the internet.** UFW allows port 22 only from the LAN
-  CIDR and the Tailscale CGNAT range (`100.64.0.0/10`); remote admin goes through
-  Tailscale's WireGuard tunnel. This removes public brute-force surface entirely.
-- **Web services are reached over the tailnet.** The DuckDNS names resolve to the
-  server's tailnet IP through split DNS (`dns` role). The current router does not
-  forward 80/443, so nothing web-facing is public unless that changes.
-- **Devices use Tailscale Funnel** (outbound tunnel, no port-forward): `:10000`
-  for the classroom MQTT broker (TLS + per-team credentials + ACL) and `:8443`
-  for the pañol API (token). Funnel only allows ports 443/8443/10000; 443 stays
-  with Caddy on the tailnet.
-- Backends bind to `127.0.0.1` or internal Docker networks — never a public host
-  port.
+- **El SSH nunca está expuesto a internet.** UFW permite el puerto 22 solo desde
+  la red de la casa (`lan_cidr`) y el rango de Tailscale (`100.64.0.0/10`); la
+  administración remota va por el túnel WireGuard de Tailscale. Así no hay
+  superficie pública para fuerza bruta.
+- **Lo web se usa por el tailnet.** Los nombres de DuckDNS resuelven a la IP de
+  Tailscale del servidor gracias al Split DNS (rol `dns`). El router actual no
+  redirige 80/443, así que nada web es público mientras eso no cambie.
+- **Los dispositivos usan Tailscale Funnel** (túnel saliente, sin redirección de
+  puertos): `:10000` para el broker del aula (TLS + credencial por equipo + ACL)
+  y `:8443` para la API del pañol (token). Funnel solo admite los puertos
+  443/8443/10000; el 443 queda para Caddy en el tailnet.
+- Los servicios internos escuchan en `127.0.0.1` o en redes internas de Docker:
+  nunca en un puerto público del host.
 
-> ⚠️ **Known drift (Oct 2026):** the server moved LANs (192.168.100.x → 192.168.8.x);
-> `lan_cidr` and the pañol broker's LAN bind still point to the old network.
-> Tracked in handbook chapter 15 (roadmap).
+> ⚠️ **Desajuste conocido (octubre 2026):** el servidor se mudó de red
+> (192.168.100.x → 192.168.8.x); `lan_cidr` y el broker del pañol (atado a la IP
+> de la LAN) siguen apuntando a la red vieja. Anotado en la hoja de ruta del
+> capítulo 15 del manual.
 
-## 3. The Docker × UFW trap (and the fix)
+## 3. La trampa Docker × UFW (y la solución)
 
 ```mermaid
 sequenceDiagram
-    participant U as UFW rules
+    participant U as Reglas de UFW
     participant D as Docker (iptables)
-    participant P as Published port
-    Note over U,P: Without ufw-docker
-    D->>P: inserts ACCEPT in DOCKER chain
-    U--xP: UFW deny is bypassed ❌
-    Note over U,P: With ufw-docker
-    D->>U: traffic routed via DOCKER-USER
-    U->>P: UFW verdict wins ✅
+    participant P as Puerto publicado
+    Note over U,P: Sin ufw-docker
+    D->>P: agrega ACCEPT en la cadena DOCKER
+    U--xP: el deny de UFW queda salteado ❌
+    Note over U,P: Con ufw-docker
+    D->>U: el tráfico pasa por DOCKER-USER
+    U->>P: decide UFW ✅
 ```
 
-Docker programs iptables directly and **bypasses UFW**, so `docker run -p 8080:80`
-is reachable even when UFW denies 8080. We mitigate two ways: publish backends on
-`127.0.0.1` + front them with Caddy, and install `ufw-docker` so the `DOCKER-USER`
-chain honours UFW. Without this, the firewall is cosmetic.
+Docker programa `iptables` directamente y **saltea UFW**: un `docker run -p
+8080:80` queda accesible aunque UFW niegue el 8080. Se mitiga de dos formas:
+publicar los servicios en `127.0.0.1` detrás de Caddy, e instalar `ufw-docker`
+para que la cadena `DOCKER-USER` respete a UFW. Sin esto, el firewall es decorativo.
 
-## 4. Hardening: why CIS **Level 1**, not Level 2
+## 4. Endurecimiento: por qué CIS **nivel 1** y no nivel 2
 
-`usg` (Ubuntu Security Guide) applies CIS benchmarks. We pick **Level 1 Server**
-deliberately:
+`usg` (Ubuntu Security Guide) aplica los benchmarks CIS. Se eligió **nivel 1
+Server** a propósito:
 
-- This is a **Desktop LTS** used interactively. Level 2 / STIG remounts `/tmp`,
-  disables kernel modules and GDM features, and enforces auditd rules that break
-  a GUI workstation.
-- Level 1 gives strong, low-friction wins. We then **add** targeted controls
-  `usg` doesn't cover well: sysctl network/kernel hardening, `pwquality`,
-  `login.defs` aging, strict file perms, module blacklist, core-dump disabling.
+- La máquina es un **Ubuntu Desktop LTS** que también se usa con interfaz
+  gráfica. El nivel 2 / STIG remonta `/tmp`, desactiva módulos del kernel y
+  funciones de GDM, y fuerza reglas de auditd que rompen un escritorio.
+- El nivel 1 da mejoras fuertes con poca fricción. Encima se **suman** controles
+  que `usg` no cubre bien: sysctl de red y kernel, `pwquality`, vencimiento en
+  `login.defs`, permisos estrictos, módulos bloqueados y core dumps desactivados.
 
-Everything is auditable: `usg audit` runs report-only in the play; `usg fix`
-applies remediation and is idempotent.
+Todo es auditable: `usg audit` corre en modo solo-reporte; `usg fix` aplica la
+remediación y es idempotente. `usg` requiere Ubuntu Pro y hoy está **apagado**
+(`usg_enabled: false`); los controles complementarios se aplican igual.
 
-## 5. Defence-in-depth layers
+## 5. Capas de defensa en profundidad
 
 ```mermaid
 flowchart TB
-    L1[Tailscale overlay: no public SSH] --> L2[UFW: default deny + DOCKER-USER]
-    L2 --> L3[Fail2ban: ban brute-force]
-    L3 --> L4[SSH: keys only, strong crypto]
-    L4 --> L5[CIS L1 + sysctl/PAM hardening]
-    L5 --> L6[AppArmor: MAC enforce]
-    L6 --> L7[Auto security updates]
-    L7 --> L8[Lynis posture + AIDE integrity]
-    L8 --> L9[Borg encrypted backups]
+    L1[Tailscale: sin SSH público] --> L2[UFW: deny por defecto + DOCKER-USER]
+    L2 --> L3[Fail2ban: bloquea fuerza bruta]
+    L3 --> L4[SSH: llaves para admins, cifrado fuerte]
+    L4 --> L5[CIS N1 + endurecimiento sysctl/PAM]
+    L5 --> L6[AppArmor: MAC en enforce]
+    L6 --> L7[Actualizaciones de seguridad automáticas]
+    L7 --> L8[Lynis + integridad AIDE]
+    L8 --> L9[Copias cifradas con Borg — pendiente]
 ```
 
-Each layer is independent: compromise of one does not defeat the others.
+Cada capa es independiente: comprometer una no anula a las demás. Detalle para
+principiantes en el [capítulo 7 del manual](handbook/07-seguridad.md).
 
-## 6. Backups
+## 6. Copias de seguridad
 
-> ⚠️ **Status (Oct 2026): designed but not running** — no drive is mounted at
-> `/mnt/backup`, so the role's guard skips it. Until then there are **no backups**.
+> ⚠️ **Estado (octubre 2026): diseñadas pero no activas.** No hay un disco
+> montado en `/mnt/backup`, así que la guarda del rol las saltea. Mientras tanto
+> **no hay copias de seguridad**.
 
-Borg via **borgmatic** to a local encrypted, deduplicated repository (external
-drive / NAS mount at `/mnt/backup`). The borgmatic config uses the flat schema
-(borgmatic ≥ 1.8, Ubuntu 24.04+). Retention 7 daily / 4 weekly / 6 monthly,
-pruned after each run; integrity checks every two weeks. Docker volumes, `/etc`,
-`/opt/homelab` and the admin home are included. For databases, borgmatic dumps
-them consistently *before* the filesystem snapshot (hook stubs in the config).
+Borg con **borgmatic** hacia un repositorio local cifrado y deduplicado (disco
+externo o NAS montado en `/mnt/backup`). La config de borgmatic usa el esquema
+plano (borgmatic ≥ 1.8, Ubuntu 24.04+). Retención: 7 diarias / 4 semanales / 6
+mensuales, con poda después de cada corrida y chequeo de integridad cada dos
+semanas. Incluye los volúmenes de Docker, `/etc`, `/opt/homelab` y el home del
+administrador. Las bases de datos se vuelcan de forma consistente **antes** de la
+copia del filesystem (ganchos previstos en la config).
 
-> Off-site is the one gap of a local-only repo. `borgmatic` can add a second
-> `repositories:` entry (e.g. an SSH target or rclone remote) with no host changes.
+> La copia fuera del sitio es el único hueco de un repositorio local. borgmatic
+> admite un segundo `repositories:` (un destino SSH o un remoto de rclone) sin
+> cambios en el host.
 
-## 7. Monitoring
+## 7. Monitoreo
 
-Prometheus scrapes **node-exporter** (host metrics) and **cAdvisor** (per-container
-metrics); Grafana visualises them with a pre-provisioned Prometheus datasource
-**and a pre-provisioned "Homelab Overview" dashboard** (uptime, running
-containers, memory/disk gauges, CPU, network I/O, per-container CPU & memory) that
-loads automatically on first boot — no manual import. Grafana is the only
-monitoring component reachable through Caddy (HTTPS + SSO, operators only).
-Prometheus binds to loopback. Students get a separate **Grafana del aula** for
-their MQTT data (see [aula-iot.md](aula-iot.md)): a second instance, because
-Grafana OSS has no per-datasource permissions and this one reads the pañol audit DB.
+Prometheus scrapea **node-exporter** (métricas del host) y **cAdvisor** (métricas
+por contenedor); Grafana las muestra con un datasource de Prometheus y tableros
+provisionados (*Homelab Overview*, los tres del aula y los del pañol) que aparecen
+solos al arrancar. Este Grafana de **operación** es el único componente de
+monitoreo alcanzable por Caddy (HTTPS + login, **solo operadores**). Prometheus
+escucha en loopback. Los logs (Loki + Alloy) se prenden a pedido (`make logs-on`)
+y se apagan solos.
 
-Dashboards live in `compose/monitoring/grafana/provisioning/dashboards/json/`;
-drop any additional `*.json` there and it is picked up within 30s.
+Los alumnos tienen un **Grafana del aula** aparte para sus datos MQTT (ver
+[aula-iot.md](aula-iot.md)): una segunda instancia, porque Grafana OSS no tiene
+permisos por datasource y la de operación lee la base de auditoría del pañol.
 
-## 8. Idempotency & testing strategy
+Los tableros de operación están en
+`compose/monitoring/grafana/provisioning/dashboards/json/`; cualquier `*.json`
+nuevo ahí aparece en unos 30 segundos.
 
-Three levels, wired into the Makefile:
+## 8. Idempotencia y estrategia de pruebas
 
-1. **Static** — `yamllint` + `ansible-lint` (production profile).
-2. **Idempotence** — `make idempotence` runs the play twice and fails if the
-   second run reports any `changed`.
-3. **Behavioural** — `tests/verify.yml` (in-Ansible asserts) and
-   `tests/test_homelab.py` (testinfra: sshd config, UFW active, Fail2ban jail,
-   AppArmor enforce, sysctl values, timers enabled, containers running).
+Cuatro niveles (detalle en el [capítulo 8 del manual](handbook/08-pipeline.md)):
 
-## 9. Secrets
+1. **Estático** — `yamllint` + `ansible-lint` (perfil production) y tests
+   unitarios en Python (política de Compose, tableros, stacks del pañol, del aula
+   y de `aula-iot`), en el CI.
+2. **Roles aislados** — Molecule (Ubuntu 24.04) para `ddns` y `backups`, en el CI.
+3. **Idempotencia** — `make idempotence` corre el play dos veces y falla si la
+   segunda reporta algún `changed`.
+4. **Comportamiento** — `tests/verify.yml` (asserts dentro de Ansible) y
+   testinfra (`tests/test_*.py`: sshd, UFW, Fail2ban, AppArmor, sysctl, timers,
+   contenedores, permisos del aula), sobre el servidor real.
 
-Ansible Vault (`inventories/<env>/group_vars/all/vault.yml`, one per
-environment) holds the Ubuntu Pro token, DuckDNS token, Grafana password and
-Borg passphrase. It renders directly into systemd env files and compose `.env`
-at deploy time; nothing secret is committed. Chosen over SOPS/age for zero extra
-dependencies in a single-operator homelab.
+## 9. Secretos
 
-## 10. Variable layering
+Ansible Vault (`inventories/<entorno>/group_vars/all/vault.yml`, uno por entorno)
+guarda los tokens (Ubuntu Pro, DuckDNS), las contraseñas (Grafana, aula,
+Authelia) y la passphrase de Borg. Se vuelca a los archivos de entorno de systemd
+y a los `.env` de Compose al desplegar; nada secreto queda en el repositorio. Se
+eligió por sobre SOPS/age para no sumar dependencias en un homelab de un solo
+operador.
 
-Configuration is resolved in three precedence layers (lowest to highest):
+Los secretos que **no** conviene cifrar en el repo (porque se agregan seguido) se
+generan **en el host** la primera vez y quedan solo para `root`:
+`/etc/classroom/secrets/` (claves MQTT por equipo, usuarios de servicio, admin
+del Grafana del aula) y `/etc/panol/secrets/` (pañol). Así sumar un equipo o un
+nodo no obliga a editar el vault.
 
-1. **`roles/<role>/defaults/main.yml`** — each role owns its tunables and ships
-   sane defaults, so a role is self-contained and reusable.
-2. **`group_vars/all/main.yml`** — cross-role constants identical in every
-   environment (`admin_user`, `ssh_port`, `apt_repo_release`, `stacks_root`).
-3. **`inventories/<env>/group_vars/all/`** — per-environment identity, network,
-   domain and secrets. This is the only layer that differs between prod and
-   staging, and it wins over the two below it.
+## 10. Capas de variables
 
-Select an environment with `-i inventories/production` or `-i inventories/staging`
+La configuración se resuelve en tres capas de precedencia (de menor a mayor):
+
+1. **`roles/<rol>/defaults/main.yml`** — cada rol trae sus ajustes con valores
+   razonables, así es autocontenido y reutilizable.
+2. **`group_vars/all/main.yml`** — constantes comunes a todos los entornos
+   (`admin_user`, `ssh_port`, `apt_repo_release`, `stacks_root`).
+3. **`inventories/<entorno>/group_vars/all/`** — identidad, red, dominio, roster
+   del aula y secretos de cada entorno. Es la única capa que cambia entre
+   producción y staging, y le gana a las otras dos.
+
+El entorno se elige con `-i inventories/production` o `-i inventories/staging`
 (`make apply ENV=staging`).

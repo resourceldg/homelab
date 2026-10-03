@@ -278,6 +278,7 @@ Los alumnos **nunca** abren puertos públicos (la política lo bloquea). Si tu p
 tiene que verse desde internet, lo **habilita el operador**. Vos preparás el servicio.
 
 **Qué preparás vos:**
+
 1. Un servicio en tu `compose.yml` que sirva **HTTP** en un puerto **loopback**
    (ej. `web` en `127.0.0.1:8080:80`).
 2. Que esté **sano** (`labctl ps` lo muestra `Up`/`healthy`) y responda en ese puerto.

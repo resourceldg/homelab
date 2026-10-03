@@ -16,10 +16,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Install pytest
-        run: pip install pytest
-      - name: Run unit tests (policy + dashboards + panol stack)
-        run: pytest tests/test_labctl_policy.py tests/test_dashboards.py tests/test_panol_stack.py -q
+      - name: Install pytest (+ yaml/jinja2 for the stack checks)
+        run: pip install pytest pyyaml jinja2
+      - name: Run unit tests (policy + dashboards + panol, shared-services and aula-iot stacks)
+        run: >-
+          pytest -q
+          tests/test_labctl_policy.py tests/test_dashboards.py tests/test_panol_stack.py
+          tests/test_shared_services_stack.py tests/test_aula_iot_stack.py
 
   secrets:
     name: Secret scan (gitleaks)

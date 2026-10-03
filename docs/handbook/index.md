@@ -73,16 +73,16 @@ flowchart LR
 | 1 | [Visión general](01-vision-general.md) | Qué es el laboratorio y sus "planos" (host, servicios, aula, IoT) |
 | 2 | [Fundamentos](02-fundamentos.md) | Computación, Linux y redes desde cero |
 | 3 | [Docker y contenedores](03-docker.md) | Imágenes, contenedores, Compose, redes, volúmenes |
-| 4 | [Ansible e IaC](04-ansible-iac.md) | Infraestructura como código *(en desarrollo)* |
+| 4 | [Ansible e IaC](04-ansible-iac.md) | Infraestructura como código |
 
 ### Parte II — La plataforma
 
 | # | Capítulo | De qué trata |
 |---|---|---|
-| 5 | [Los servicios uno por uno](05-servicios.md) | Caddy, Grafana, Tailscale, Postgres, el broker… *(en desarrollo)* |
-| 6 | [Observabilidad](06-observabilidad.md) | Medir, guardar y mostrar *(en desarrollo)* |
-| 7 | [Seguridad](07-seguridad.md) | Defensa en capas *(en desarrollo)* |
-| 8 | [El pipeline](08-pipeline.md) | Git, revisión, pruebas automáticas *(en desarrollo)* |
+| 5 | [Los servicios uno por uno](05-servicios.md) | Caddy, Grafana, Tailscale, Postgres, el broker… |
+| 6 | [Observabilidad](06-observabilidad.md) | Medir, guardar y mostrar |
+| 7 | [Seguridad](07-seguridad.md) | Defensa en capas |
+| 8 | [El pipeline](08-pipeline.md) | Git, revisión, pruebas automáticas |
 | 9 | [La plataforma de aula](09-plataforma-aula.md) | `labctl`, aislamiento, servicios compartidos |
 | — | [Guía práctica del equipo](guia-equipo.md) | **Tu día a día:** conectarte, tus puertos, MQTT, tu página web |
 

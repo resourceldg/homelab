@@ -1,171 +1,181 @@
-# Homelab — Secure Ubuntu Home & Dev Server (IaC)
+# Homelab — servidor del aula, seguro y descripto como código
 
 [![CI](https://github.com/resourceldg/homelab/actions/workflows/ci.yml/badge.svg)](https://github.com/resourceldg/homelab/actions/workflows/ci.yml)
 
-Reproducible, modular infrastructure-as-code for an **Ubuntu Desktop LTS** box that
-doubles as a **development server** and **hosting platform for educational projects**
-— including an **IoT classroom** where student teams connect ESP32 boards over MQTT
-and see their data in Grafana.
+Infraestructura como código (IaC), reproducible y modular, para una computadora con
+**Ubuntu LTS** que funciona a la vez como **servidor de desarrollo** y como
+**plataforma para proyectos educativos**, incluida un **aula IoT** donde los
+equipos de alumnos conectan placas ESP32 por MQTT y ven sus datos en Grafana.
 
-**Author:** Lucas D. Gómez, software architect (<resourceldg@gmail.com>). Student
-projects are credited to their teams in the handbook (chapter 14).
+**Autor:** Lucas D. Gómez, arquitecto de software (<resourceldg@gmail.com>). Los
+proyectos de los alumnos están atribuidos a sus equipos en el manual (capítulo 14).
 
-Built by a two-plane design:
+📚 **Manual de arquitectura (para empezar desde cero):** arquitectura de software
+aplicada al diseño IoT, explicada para principiantes con este servidor como caso
+real → [docs/handbook/](docs/handbook/index.md). Para verlo como libro:
+`pip install mkdocs-material && mkdocs serve`.
 
-- **Host plane → Ansible** — OS config, CIS hardening, SSH, firewall, Fail2ban,
-  AppArmor, auto-updates, Lynis/AIDE auditing, Tailscale, DuckDNS, Docker.
-- **Service plane → Docker Compose** — Caddy reverse proxy (auto-HTTPS),
-  Prometheus + Grafana monitoring, and your projects.
+## La idea en dos planos
 
-| Requirement | Implementation |
+- **Plano del host → Ansible:** sistema operativo, endurecimiento CIS, SSH,
+  firewall, Fail2ban, AppArmor, actualizaciones automáticas, auditoría
+  (Lynis/AIDE), Tailscale, DuckDNS y Docker.
+- **Plano de servicios → Docker Compose:** Caddy (proxy inverso con HTTPS
+  automático), login único, monitoreo, servicios del aula y los proyectos.
+
+| Requisito | Cómo se cumple |
 |---|---|
-| IaC | Ansible roles + Docker Compose |
-| Hardening (CIS) | Ubuntu Security Guide `usg` (CIS L1 Server) + custom controls |
-| SSH | keys only, no root, LAN/Tailscale only |
-| Remote access | Tailscale (SSH never exposed to WAN) |
-| Firewall | UFW + `ufw-docker` (closes the Docker bypass) |
-| Brute-force defense | Fail2ban (systemd backend, UFW ban action) |
-| MAC | AppArmor, all profiles enforcing |
-| Auto-updates | `unattended-upgrades` (security only) |
-| Auditing | Lynis (weekly) + AIDE (daily FIM) |
-| Dynamic DNS | DuckDNS (systemd timer) |
-| Monitoring | Prometheus + Grafana (operators) + node-exporter + cAdvisor; on-demand Loki logs |
-| IoT classroom | shared MQTT broker `mqtt-aula` (per-team user + ACL) reached by ESP32s through Tailscale Funnel; Telegraf → VictoriaMetrics (15 d) → **Grafana del aula** with one folder per team |
-| Backups | Borg via borgmatic (encrypted, local repo, retention) — **designed, not running yet:** needs a drive at `/mnt/backup` |
-| Tests / CI | ansible-lint, idempotence, testinfra, verify playbook, Molecule (Ubuntu 24.04) via GitHub Actions |
+| IaC | roles de Ansible + Docker Compose |
+| Endurecimiento (CIS) | Ubuntu Security Guide `usg` (CIS nivel 1, opcional) + controles propios |
+| SSH | administradores solo con llave, sin `root`; alumnos con contraseña solo desde la LAN o Tailscale |
+| Acceso remoto | Tailscale (el SSH nunca está expuesto a internet) |
+| Firewall | UFW + `ufw-docker` (cierra el "atajo" que Docker abre en el firewall) |
+| Fuerza bruta | Fail2ban (backend systemd, bloqueo vía UFW) |
+| Control de acceso obligatorio | AppArmor, todos los perfiles en modo *enforce* |
+| Actualizaciones | `unattended-upgrades` (solo seguridad, reinicio 04:30) |
+| Auditoría | Lynis (semanal) + AIDE (integridad de archivos, diaria) |
+| DNS dinámico | DuckDNS (timer de systemd) + Split DNS dentro del tailnet |
+| Monitoreo | Prometheus + Grafana de operación (solo operadores) + node-exporter + cAdvisor; logs con Loki a pedido |
+| Aula IoT | broker MQTT compartido `mqtt-aula` (usuario por equipo + ACL), alcanzable por las ESP32 vía Tailscale Funnel; Telegraf → VictoriaMetrics (15 días) → **Grafana del aula**, un folder por equipo |
+| Copias de seguridad | Borg con borgmatic (cifradas, retención) — **diseñadas, todavía no activas:** falta un disco en `/mnt/backup` |
+| Tests / CI | tests unitarios, gitleaks, yamllint + ansible-lint, chequeo de sintaxis, Molecule (Ubuntu 24.04) en GitHub Actions; testinfra e idempotencia en el servidor |
 
-A **multi-user Docker Compose teaching lab** runs on top of this server — 5
-student teams deploy isolated stacks via `labctl`, with no Docker/sudo/socket
-access. See [docs/classroom-architecture.md](docs/classroom-architecture.md) and
-the guides ([student](docs/student-guide.md), [operator](docs/operator-guide.md),
-[labctl](docs/labctl.md), [policy](docs/docker-compose-policy.md),
-[resources](docs/resource-model.md), [shared services](docs/servicios-compartidos.md)).
+## Qué corre encima
 
-An **IoT classroom layer** lets every team connect ESP32 boards to a shared,
-authenticated MQTT broker (`mqtt-aula`, published through Tailscale Funnel) and
-see their data in a per-team Grafana. See [docs/aula-iot.md](docs/aula-iot.md) and
-handbook chapters 11–15.
+- **Plataforma de aula:** 5 equipos de alumnos despliegan stacks aislados con
+  `labctl`, sin acceso a Docker, `sudo` ni al socket. Ver
+  [docs/classroom-architecture.md](docs/classroom-architecture.md) y las guías
+  ([alumno](docs/student-guide.md), [operador](docs/operator-guide.md),
+  [labctl](docs/labctl.md), [política](docs/docker-compose-policy.md),
+  [recursos](docs/resource-model.md),
+  [servicios compartidos](docs/servicios-compartidos.md)).
+- **Aula IoT:** cada equipo conecta sus ESP32 a un broker MQTT compartido y
+  autenticado (`mqtt-aula`, publicado por Tailscale Funnel) y ve sus datos en su
+  propio Grafana. Ver [docs/aula-iot.md](docs/aula-iot.md) y los capítulos 11 a 15
+  del manual.
+- **Pañol IoT:** broker MQTT + base de auditoría + Node-RED para el sistema de
+  control de acceso al pañol (su código vive en el repo `panol-iot`). Los nodos
+  ESP32 reportan a su API (por la LAN, o desde otra red vía Tailscale Funnel) y el
+  tablero se publica detrás del login único. Ver [docs/panol-iot.md](docs/panol-iot.md).
 
-A **Pañol IoT service plane** (MQTT broker + audit database + Node-RED) hosts the
-access-control project whose code lives in the `panol-iot` repo: ESP32 nodes report
-to its API (over the LAN, or from another network through Tailscale Funnel), and
-the dashboard is published behind SSO. See [docs/panol-iot.md](docs/panol-iot.md).
-
-📚 **Architecture Handbook (Spanish):** a beginner-friendly study book covering
-Linux, Docker, observability, DevSecOps and IaC using this repo as a real case
-study — see [docs/handbook/](docs/handbook/index.md) (build with
-`pip install mkdocs-material && mkdocs serve`).
-
-To run the same server on more machines or manage several sites, see
+Para montar el mismo servidor en otras máquinas o administrar varios sitios:
 **[docs/replicar-y-escalar.md](docs/replicar-y-escalar.md)**.
 
-See [docs/architecture.md](docs/architecture.md) for the diagrams and the full
-rationale behind each decision, and
-**[docs/deployment-guide.md](docs/deployment-guide.md)** for the exhaustive,
-pedagogical deploy walkthrough — the access model, every gotcha, and break-glass
-recovery. Read that one before deploying (or re-deploying after a while).
+Los diagramas y el porqué de cada decisión están en
+[docs/architecture.md](docs/architecture.md). Antes de desplegar (o de volver a
+desplegar después de un tiempo), leé
+**[docs/deployment-guide.md](docs/deployment-guide.md)**: el recorrido completo,
+con el modelo de acceso, cada trampa conocida y cómo recuperarse si te quedás
+afuera.
 
-## Repository layout
+## Estructura del repositorio
 
 ```
 homelab/
 ├── ansible/
-│   ├── site.yml                 # orchestrator (tagged roles)
-│   ├── ansible.cfg              # defaults to inventories/production
-│   ├── group_vars/all/main.yml  # cross-role constants (same in every env)
+│   ├── site.yml                 # orquestador (roles con tags)
+│   ├── ansible.cfg              # por defecto usa inventories/production
+│   ├── group_vars/all/main.yml  # constantes comunes a todos los entornos
 │   ├── inventories/
 │   │   ├── production/
 │   │   │   ├── hosts.ini
-│   │   │   └── group_vars/all/  # prod identity/network/domain + vault
+│   │   │   └── group_vars/all/  # identidad, red y dominio de prod + vault + roster del aula
 │   │   └── staging/
 │   │       ├── hosts.ini
-│   │       └── group_vars/all/  # staging overrides + vault
-│   └── roles/                   # each role owns its defaults/main.yml
-│       ├── bootstrap/ users_ssh/ tailscale/ ddns/
+│   │       └── group_vars/all/  # ajustes de staging + vault
+│   └── roles/                   # cada rol trae sus defaults/main.yml
+│       ├── bootstrap/ users_ssh/ tailscale/ ddns/ dns/
 │       ├── firewall/ fail2ban/ apparmor/ hardening/ auto_updates/ audit/
-│       ├── docker/ monitoring/ backups/ authelia/ dns/
-│       ├── classroom/ shared_services/ labctl/ classroom_publish/   # teaching lab
-│       ├── aula_iot/            # IoT classroom: Telegraf + VictoriaMetrics + Grafana del aula
-│       └── panol/                # Pañol IoT service plane (MQTT + audit DB)
+│       ├── docker/ monitoring/ backups/ authelia/
+│       ├── classroom/ shared_services/ labctl/ classroom_publish/   # plataforma de aula
+│       ├── aula_iot/            # aula IoT: Telegraf + VictoriaMetrics + Grafana del aula
+│       └── panol/               # pañol IoT (MQTT + base de auditoría)
 ├── compose/
-│   ├── proxy/                   # Caddy (custom build w/ DuckDNS DNS-01)
-│   ├── dashboard/               # Homepage launchpad (links every service)
+│   ├── proxy/                   # Caddy (compilado con DuckDNS para DNS-01)
+│   ├── dashboard/               # Homepage (página de inicio con enlaces)
 │   ├── monitoring/              # Prometheus + Grafana + exporters
-│   ├── logs/                    # Loki + Alloy (on demand: make logs-on)
-│   ├── auth/                    # Authelia SSO
-│   ├── shared-data/             # classroom shared services + mqtt-aula broker
-│   ├── aula-iot/                # IoT classroom visualization layer
-│   ├── apps/                    # example educational project
-│   └── panol/                   # Pañol IoT: Mosquitto + Postgres + Node-RED
-├── tests/                       # testinfra + verify playbook
-├── docs/                        # architecture, runbook, diagrams
-└── Makefile                     # operator interface
+│   ├── logs/                    # Loki + Alloy (a pedido: make logs-on)
+│   ├── auth/                    # Authelia (login único)
+│   ├── shared-data/             # servicios compartidos del aula + broker mqtt-aula
+│   ├── aula-iot/                # capa de visualización del aula IoT
+│   ├── apps/                    # proyecto educativo de ejemplo
+│   └── panol/                   # pañol IoT: Mosquitto + Postgres + Node-RED
+├── tests/                       # tests unitarios, testinfra y playbook de verificación
+├── docs/                        # arquitectura, guías y el manual (handbook/)
+└── Makefile                     # interfaz del operador (make help)
 ```
 
-## Quickstart
+## Puesta en marcha rápida
 
-Prerequisites: fresh Ubuntu **24.04 LTS** (primary target; a future 26.04 also
-planned), a sudo user, a DuckDNS token, and your SSH public key.
+Requisitos: Ubuntu **24.04 LTS** recién instalado (objetivo principal; 26.04
+planificado), un usuario con `sudo`, un token de DuckDNS y tu llave pública SSH.
 
-> Ubuntu Pro is **optional** and off by default (`usg_enabled: false`). It only
-> unlocks the `usg` CIS tooling; all the complementary hardening (sysctl,
-> pwquality, core dumps, AppArmor, Fail2ban…) applies without it. Enable it only
-> if you have a Pro token.
+> Ubuntu Pro es **opcional** y está apagado por defecto (`usg_enabled: false`).
+> Solo habilita la herramienta CIS `usg`; todo el endurecimiento complementario
+> (sysctl, pwquality, core dumps, AppArmor, Fail2ban…) se aplica igual sin él.
 
 ```bash
-# 0. Clone onto the server (or a control node with SSH access).
-git clone <this-repo> homelab && cd homelab
+# 0. Clonar en el servidor (o en una compu de control con acceso SSH).
+git clone <este-repo> homelab && cd homelab
 
-# 1. Install dependencies.
+# 1. Instalar dependencias.
 make deps
 
-# 2. Fill in your settings for the target environment (production by default).
-$EDITOR ansible/inventories/production/group_vars/all/main.yml  # keys, domain, LAN CIDR…
-make vault-create                            # create + encrypt secrets for ENV
-echo "your-vault-password" > ~/.vault_pass && chmod 600 ~/.vault_pass
+# 2. Completar los datos del entorno (producción por defecto).
+$EDITOR ansible/inventories/production/group_vars/all/main.yml  # llaves, dominio, red (lan_cidr)…
+make vault-create                            # crea y cifra los secretos del entorno
+echo "tu-clave-del-vault" > ~/.vault_pass && chmod 600 ~/.vault_pass
 
-# 3. Preview everything (no changes made).
-make dry-run                                 # add ENV=staging to target staging
+# 3. Ver qué cambiaría (sin cambiar nada).
+make dry-run                                 # agregar ENV=staging para staging
 
-# 4. Converge.
-make apply                                   # or: make apply ENV=staging
+# 4. Aplicar.
+make apply                                   # o: make apply ENV=staging
 
-# 5. Authenticate Tailscale once (interactive, one time only).
+# 5. Autenticar Tailscale (una sola vez, interactivo).
 sudo tailscale up --ssh --accept-routes
 
-# 6. Verify.
-make verify        # in-Ansible posture assertions
-make test          # testinfra smoke tests
-make idempotence   # proves a second run changes nothing
+# 6. Verificar.
+make verify        # chequeos de postura dentro de Ansible
+make test          # pruebas testinfra sobre el servidor
+make idempotence   # prueba que una segunda corrida no cambia nada
 ```
 
-Grafana (operators) is then at `https://grafana.<your-domain>`, the classroom
-Grafana at `https://grafana-aula.<your-domain>`, your demo app at
-`https://demo.<your-domain>`. In this deployment those names resolve to the
-**tailnet** (split DNS), so they are reached over Tailscale.
+Después, el Grafana de operación queda en `https://grafana.<tu-dominio>`, el del
+aula en `https://grafana-aula.<tu-dominio>` y la app de ejemplo en
+`https://demo.<tu-dominio>`. En este despliegue esos nombres apuntan a la **IP de
+Tailscale** (Split DNS), así que se entra por Tailscale.
 
-## Safety notes
+## Precauciones
 
-- **Run `make dry-run` first.** Hardening changes SSH and the firewall; make sure
-  you have Tailscale or console access before locking down remote SSH.
-- **`.vault_pass` and `vault.yml` are gitignored.** Never commit decrypted secrets.
-- **Router port-forwarding**: only 80/443 → server are needed, and only if you
-  want the projects reachable from the public internet. Everything else stays
-  private over Tailscale.
-- Losing `vault_borg_passphrase` means losing the backups — store it in a
-  password manager.
-- **Fresh 26.04**: if the Docker or Tailscale apt repo 404s because the vendor
-  hasn't published the new codename yet, set `apt_repo_release: "noble"` in
-  `main.yml` to pin to the previous LTS until they catch up.
+- **Primero `make dry-run`.** El endurecimiento cambia SSH y el firewall:
+  asegurate de tener Tailscale o acceso a la consola antes de cerrar el SSH remoto.
+- **`.vault_pass` y `vault.yml` están en `.gitignore`.** Nunca subas secretos
+  descifrados.
+- **Redirección de puertos en el router:** solo 80/443 → servidor, y solo si
+  querés los proyectos accesibles desde internet. Hoy no está configurada: todo va
+  por Tailscale, y las placas por Funnel.
+- Perder `vault_borg_passphrase` es perder las copias de seguridad: guardala en un
+  gestor de contraseñas.
+- **La red local puede cambiar** (el servidor ya se mudó tres veces). Si cambia,
+  actualizá `lan_cidr` y aplicá `make firewall`; mientras tanto se entra por
+  Tailscale.
+- **Ubuntu 26.04 recién salido:** si el repositorio de Docker o de Tailscale da
+  404 porque todavía no publicaron la versión nueva, poné
+  `apt_repo_release: "noble"` en `main.yml` hasta que la publiquen.
 
-## Common operations
+## Operaciones comunes
 
-| Task | Command |
+| Tarea | Comando |
 |---|---|
-| Apply only security controls | `make harden` |
-| Re-deploy containers | `make monitoring` |
-| Edit secrets | `make vault-edit` |
-| Run a backup now | `make backups` |
+| Aplicar solo la seguridad | `make harden` |
+| Aplicar solo el firewall | `make firewall` |
+| Redesplegar monitoreo y proxy | `make monitoring` |
+| Aplicar todo el aula (alumnos, broker, Grafana del aula) | `cd ansible && ansible-playbook site.yml --tags classroom -K` |
+| Editar secretos | `make vault-edit` |
+| Correr una copia de seguridad ya | `make backups` |
+| ¿Cómo entro al servidor ahora? | `make como-conectar` |
+| Logs en vivo (se apagan solos) | `make logs-on` |
 | Lint | `make lint` |
 
-More in [docs/runbook.md](docs/runbook.md).
+Más en [docs/runbook.md](docs/runbook.md).

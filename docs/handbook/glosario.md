@@ -92,6 +92,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** SDLC (*Software Development Life Cycle*): etapas iterativas de desarrollo y operación de un sistema.
 - **Dónde:** [cap. 15](15-ciclo-de-vida-y-madurez.md).
 
+### Commit
+- **Simple:** una "foto" de los cambios de un proyecto, con un mensaje que explica por qué se hicieron.
+- **Técnica:** registro atómico en la historia de Git (cambios + autor + fecha + mensaje).
+- **Dónde:** cada cambio de este repositorio. Ver [cap. 8](08-pipeline.md).
+
 ### Compose (Docker Compose)
 - **Simple:** describir contenedores en un archivo y prenderlos juntos.
 - **Técnica:** herramienta para definir apps multi-contenedor en YAML.
@@ -107,6 +112,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** especificación de la interfaz entre productores y consumidores (estructura de topics, formato y semántica del payload).
 - **Dónde:** `equipo-NN/dispositivo/magnitud`. Ver [cap. 12](12-conectar-a-grafana.md#las-3-reglas).
 
+### CPU (Central Processing Unit)
+- **Simple:** el "cocinero" de la computadora: el que hace las cuentas y sigue las instrucciones.
+- **Técnica:** unidad central de procesamiento; cada núcleo ejecuta instrucciones en paralelo.
+- **Dónde:** el servidor tiene 4 núcleos. Ver [cap. 2](02-fundamentos.md).
+
 ### Daemon
 - **Simple:** un servicio que corre de fondo, permanente.
 - **Técnica:** proceso en segundo plano (suele terminar en `d`).
@@ -121,6 +131,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** mantener un dominio apuntando a tu casa aunque cambie tu IP.
 - **Técnica:** DNS dinámico; DuckDNS es un proveedor gratuito.
 - **Dónde:** rol `ddns`, con un timer que actualiza la IP.
+
+### Defensa en profundidad
+- **Simple:** varias medidas de seguridad independientes, para que romper una no alcance (como en un boliche: puerta, patovica, pulsera, cámaras).
+- **Técnica:** estrategia de seguridad en capas con controles redundantes e independientes.
+- **Dónde:** las 9 capas del [cap. 7](07-seguridad.md).
 
 ### Deuda técnica
 - **Simple:** lo que se hizo rápido "para salir del paso" y algún día hay que rehacer bien.
@@ -142,6 +157,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** plataforma de contenedores (engine + CLI + formatos).
 - **Dónde:** el corazón del plano de servicios y de aula. Ver [cap. 3](03-docker.md).
 
+### Drift (deriva)
+- **Simple:** cuando el servidor real ya no es lo que dicen los archivos, porque alguien cambió algo a mano.
+- **Técnica:** divergencia entre el estado declarado (IaC) y el estado real de la infraestructura.
+- **Dónde:** el broker del aula existió unos días solo en el servidor. Ver [cap. 4](04-ansible-iac.md).
+
 ### ESP32
 - **Simple:** una placa chiquita y barata, con WiFi, que se programa para leer sensores y manejar actuadores.
 - **Técnica:** microcontrolador de Espressif con WiFi/Bluetooth, doble núcleo, programable en C++ (Arduino) o MicroPython.
@@ -152,6 +172,11 @@ en este proyecto. Ordenado alfabéticamente.
   entiende.
 - **Técnica:** endpoint HTTP que expone métricas en formato Prometheus.
 - **Dónde:** `node-exporter` (host), `cAdvisor` (contenedores).
+
+### Fail2ban
+- **Simple:** el que echa por un rato a quien prueba contraseñas una y otra vez.
+- **Técnica:** servicio que analiza logs y bloquea IPs con demasiados intentos fallidos.
+- **Dónde:** 4 intentos en 10 min → bloqueo de 1 h. Ver [cap. 7](07-seguridad.md).
 
 ### Filesystem
 - **Simple:** cómo se organizan los archivos en el disco.
@@ -168,6 +193,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** servicio de Tailscale que publica un puerto local en internet (443, 8443 o 10000) mediante una conexión saliente, con TLS.
 - **Dónde:** `homelab-01.tail4eda13.ts.net:10000` → `mqtt-aula`; `:8443` → API del pañol.
 
+### Git
+- **Simple:** el programa que guarda la historia de un proyecto: cada cambio, quién, cuándo y por qué.
+- **Técnica:** sistema de control de versiones distribuido.
+- **Dónde:** todo el repositorio. Ver [cap. 8](08-pipeline.md).
+
 ### GPIO (General Purpose Input/Output)
 - **Simple:** las patitas de la placa: cada una puede **leer** si hay corriente o **dar** corriente.
 - **Técnica:** pines digitales de entrada/salida de propósito general de un microcontrolador.
@@ -177,6 +207,16 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** la app que muestra los gráficos de las métricas.
 - **Técnica:** plataforma de visualización de series temporales.
 - **Dónde:** stack `monitoring`, detrás de Authelia.
+
+### Handler (Ansible)
+- **Simple:** una tarea que corre solo si otra avisó que algo cambió ("si cambió la config, reiniciá").
+- **Técnica:** tarea notificada que se ejecuta al final si hubo cambios.
+- **Dónde:** reiniciar Caddy si cambió el Caddyfile. Ver [cap. 4](04-ansible-iac.md).
+
+### Hardening (endurecimiento)
+- **Simple:** sacar o ajustar todo lo que un sistema trae "por si acaso" y no hace falta.
+- **Técnica:** reducción de la superficie de ataque mediante configuración segura (p. ej., guía CIS).
+- **Dónde:** rol `hardening`. Ver [cap. 7](07-seguridad.md).
 
 ### HTTPS / TLS
 - **Simple:** la web con candado (cifrada).
@@ -203,6 +243,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** estructura del filesystem con metadatos y punteros a los datos.
 - **Dónde:** el bug del Caddyfile (bind mount al inode viejo). Ver [cap. 10](10-casos-practicos.md).
 
+### Inventario (Ansible)
+- **Simple:** la lista de a qué servidores se aplica la configuración y con qué datos propios.
+- **Técnica:** definición de hosts y variables por grupo/entorno.
+- **Dónde:** `inventories/production` y `staging`. Ver [cap. 4](04-ansible-iac.md).
+
 ### IoT (Internet of Things)
 - **Simple:** Internet de las Cosas: objetos físicos conectados a una red que miden o hacen algo.
 - **Técnica:** red de dispositivos físicos con sensores/actuadores y conectividad que intercambian datos con otros sistemas.
@@ -228,10 +273,20 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** mensaje que el cliente MQTT registra al conectarse y el broker publica si la conexión se pierde sin desconexión limpia.
 - **Dónde:** `equipo-NN/<placa>/conexion` = `offline`. Ver [cap. 12](12-conectar-a-grafana.md).
 
+### Lint
+- **Simple:** revisar el código buscando errores de estilo o cosas sospechosas, sin ejecutarlo (como sacarle la pelusa a la ropa).
+- **Técnica:** análisis estático de código o configuración.
+- **Dónde:** yamllint y ansible-lint en el CI. Ver [cap. 8](08-pipeline.md).
+
 ### Log (registro)
 - **Simple:** el cuaderno donde un programa anota lo que va pasando.
 - **Técnica:** flujo de eventos con marca de tiempo emitido por un proceso, usado para diagnóstico y auditoría.
 - **Dónde:** `docker logs mqtt-aula` (quién se conectó y si lo rechazó). Ver [cap. 10](10-casos-practicos.md).
+
+### Loki
+- **Simple:** el archivo de logs: guarda los registros de todos los contenedores para buscarlos desde Grafana.
+- **Técnica:** sistema de agregación de logs de Grafana Labs, indexado por etiquetas.
+- **Dónde:** stack `logs`, prendido a pedido (`make logs-on`).
 
 ### Madurez
 - **Simple:** qué tan confiable y cuidada está una parte del sistema, del 0 (idea) al 5 (mejora sola).
@@ -253,10 +308,20 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** implementación de Python 3 para microcontroladores.
 - **Dónde:** las placas de Mijael y Jessi (versión 1.29).
 
+### Mínimo privilegio
+- **Simple:** darle a cada persona o programa solo el permiso que necesita, y nada más.
+- **Técnica:** principio de seguridad de asignar los permisos mínimos necesarios.
+- **Dónde:** Telegraf solo lee; los alumnos sin sudo. Ver [cap. 7](07-seguridad.md).
+
 ### MQTT
 - **Simple:** un idioma liviano para que aparatos chicos se manden mensajes cortos, tipo grupo de WhatsApp.
 - **Técnica:** *Message Queuing Telemetry Transport*: protocolo publicar/suscribir sobre TCP, pensado para dispositivos con pocos recursos.
 - **Dónde:** todo el aula habla MQTT con `mqtt-aula`. Ver [cap. 11](11-arquitectura-iot.md).
+
+### Namespace
+- **Simple:** las "anteojeras" de un contenedor: deciden qué puede ver (sus archivos, sus procesos, su red).
+- **Técnica:** mecanismo del kernel Linux que aísla la vista de recursos de un grupo de procesos.
+- **Dónde:** base del aislamiento de Docker. Ver [cap. 3](03-docker.md).
 
 ### NAT
 - **Simple:** el router comparte una IP pública entre muchos dispositivos.
@@ -323,10 +388,30 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** número (0-65535) que identifica un endpoint TCP/UDP.
 - **Dónde:** 443 (Caddy), 22 (SSH), 5432 (Postgres), 9090 (Prometheus)…
 
+### Pull request (PR)
+- **Simple:** pedir formalmente "sumen mis cambios a la versión principal", para que se revisen antes.
+- **Técnica:** solicitud de merge de una rama, con revisión y pruebas automáticas.
+- **Dónde:** flujo de cambios del repositorio. Ver [cap. 8](08-pipeline.md).
+
+### Pull y push (métricas)
+- **Simple:** **pull:** alguien pasa a buscar los datos (como leer el medidor de luz). **Push:** cada uno avisa cuando pasa algo.
+- **Técnica:** modelos de recolección: el colector consulta al origen (pull) o el origen envía al colector (push).
+- **Dónde:** Prometheus hace pull; las placas hacen push por MQTT. Ver [cap. 6](06-observabilidad.md).
+
 ### QoS (Quality of Service)
 - **Simple:** cuánto esfuerzo pone MQTT en que un mensaje llegue (como el doble tilde).
 - **Técnica:** nivel de garantía de entrega MQTT: 0 (como mucho una vez), 1 (al menos una vez), 2 (exactamente una vez).
 - **Dónde:** Telegraf usa QoS 0; las órdenes de Node-RED, QoS 1.
+
+### RAM (Random Access Memory)
+- **Simple:** la "mesada" de la computadora: donde está lo que se usa ahora. Es rápida, chica y se vacía al apagar.
+- **Técnica:** memoria principal volátil de acceso aleatorio.
+- **Dónde:** el servidor tiene 15 GiB. Ver [cap. 2](02-fundamentos.md).
+
+### Rama (branch)
+- **Simple:** una línea de trabajo aparte, para probar cambios sin tocar lo que funciona.
+- **Técnica:** puntero a una línea de commits en Git.
+- **Dónde:** `feat/aula-iot`, `main`. Ver [cap. 8](08-pipeline.md).
 
 ### Relé
 - **Simple:** un interruptor que se acciona con una señal eléctrica chiquita y puede prender o cortar un aparato grande.
@@ -348,6 +433,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** superusuario, UID 0.
 - **Dónde:** se evita; los servicios usan cuentas sin privilegios.
 
+### Scrape
+- **Simple:** cuando Prometheus pasa a "leer el medidor" de un servicio.
+- **Técnica:** consulta periódica HTTP de Prometheus al endpoint `/metrics` de un target.
+- **Dónde:** cada 15 s a node-exporter y cAdvisor. Ver [cap. 6](06-observabilidad.md).
+
 ### Sensor
 - **Simple:** la parte que **mide** algo del mundo físico (los "sentidos").
 - **Técnica:** transductor que convierte una magnitud física en una señal eléctrica legible.
@@ -358,15 +448,45 @@ en este proyecto. Ordenado alfabéticamente.
 - **Técnica:** secuencia de muestras (timestamp, valor) identificada por un nombre y etiquetas.
 - **Dónde:** `mqtt_valor{equipo, dispositivo, magnitud}` en VictoriaMetrics.
 
+### Shift-left
+- **Simple:** buscar los errores lo antes posible, cuando arreglarlos es más barato.
+- **Técnica:** práctica de mover las pruebas y controles a etapas tempranas del ciclo de desarrollo.
+- **Dónde:** tests en la compu y en el CI antes del servidor. Ver [cap. 8](08-pipeline.md).
+
+### Socket
+- **Simple:** un "enchufe" para que dos programas se hablen; en la misma máquina es un archivo especial.
+- **Técnica:** extremo de comunicación entre procesos (Unix domain socket o de red).
+- **Dónde:** `/run/labctld.sock` entre `labctl` y `labctld`. Ver [cap. 9](09-plataforma-aula.md).
+
+### Split DNS
+- **Simple:** el mismo nombre responde una dirección distinta según desde dónde preguntes.
+- **Técnica:** resolución DNS condicionada a la red de origen.
+- **Dónde:** `*.lucasland.duckdns.org` → IP de Tailscale dentro del tailnet. Ver [cap. 5](05-servicios.md).
+
 ### SSH
 - **Simple:** entrar a la terminal de otra máquina de forma segura.
 - **Técnica:** *Secure Shell*; acceso remoto cifrado, normalmente con claves.
 - **Dónde:** administración del server (rol `users_ssh`).
 
+### SSO (Single Sign-On)
+- **Simple:** loguearte una sola vez y entrar a todo lo que tenés permitido.
+- **Técnica:** inicio de sesión único federado entre aplicaciones.
+- **Dónde:** Authelia. Ver [cap. 7](07-seguridad.md).
+
 ### Stack
 - **Simple:** el conjunto de tecnologías con que está hecho un sistema, una arriba de otra.
 - **Técnica:** pila tecnológica: lenguajes, servicios, bases de datos y plataformas que componen una solución.
 - **Dónde:** [cap. 15](15-ciclo-de-vida-y-madurez.md#los-stacks-con-que-esta-hecho).
+
+### Staging
+- **Simple:** un servidor de ensayo, para probar antes del "estreno" en el servidor real.
+- **Técnica:** entorno de preproducción que replica producción.
+- **Dónde:** `inventories/staging`. Ver [cap. 8](08-pipeline.md).
+
+### Superficie de ataque
+- **Simple:** todo lo que alguien de afuera podría intentar atacar.
+- **Técnica:** conjunto de puntos de entrada expuestos de un sistema.
+- **Dónde:** se achica sin SSH público (solo Tailscale). Ver [cap. 7](07-seguridad.md).
 
 ### systemd
 - **Simple:** el que prende y cuida los servicios del sistema.
@@ -387,6 +507,16 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** el "traductor y escribano": lee los mensajes, los pasa a números y los anota con la hora.
 - **Técnica:** agente de recolección de métricas (InfluxData) con entradas, procesadores y salidas configurables.
 - **Dónde:** `aula-telegraf`: de `mqtt-aula` a VictoriaMetrics.
+
+### Template (Ansible)
+- **Simple:** un archivo de configuración con "huecos" que se completan solos.
+- **Técnica:** plantilla Jinja2 (`.j2`) renderizada con variables.
+- **Dónde:** `telegraf.conf.j2` arma un topic por equipo. Ver [cap. 4](04-ansible-iac.md).
+
+### Test (prueba)
+- **Simple:** un programita que comprueba que otro hace lo que debe.
+- **Técnica:** verificación automatizada del comportamiento de un componente.
+- **Dónde:** `tests/`, corridos por el CI. Ver [cap. 8](08-pipeline.md).
 
 ### Topic
 - **Simple:** el "nombre del grupo" al que se manda un mensaje MQTT. Se escribe como una ruta: `equipo-04/enchufe/estado`.
@@ -412,6 +542,11 @@ en este proyecto. Ordenado alfabéticamente.
 - **Simple:** una conexión que queda **abierta** para que los datos lleguen solos, como una llamada en vez de cartas.
 - **Técnica:** protocolo de comunicación bidireccional y persistente sobre una conexión HTTP.
 - **Dónde:** `/ws/led`: la página de Mijael ve el LED en vivo.
+
+### WireGuard
+- **Simple:** el sistema de túneles cifrados que usa Tailscale por adentro.
+- **Técnica:** protocolo VPN moderno basado en criptografía de curva elíptica.
+- **Dónde:** debajo de Tailscale.
 
 ### YAML
 - **Simple:** un formato de texto para configuraciones, sensible a la sangría.

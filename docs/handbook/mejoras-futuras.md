@@ -10,18 +10,19 @@ Mantenerlo al día evita "documentación fantasma".
 - Guía del equipo: puertos por equipo, Tailscale, broker del aula.
 - Créditos y autoría.
 
-## Capítulos por completar
-- **Pasada de lenguaje en los capítulos 2, 3 y 9:** explicar cada sigla desde cero
-  y partir de lo cercano, como en la Parte III.
-- **Documentos de operación en inglés** (`README`, `architecture`,
-  `deployment-guide`, `runbook`): traducirlos al español.
-- **Cap. 4 (Ansible/IaC):** desarrollar con ejemplos reales de roles del repo.
-- **Cap. 5 (Servicios):** completar la ficha de cada servicio.
-- **Cap. 6 (Observabilidad):** ejemplos de PromQL y lectura de los 3 dashboards.
-- **Cap. 7 (Seguridad):** desarrollar cada capa con referencias al código.
-- **Cap. 8 (Pipeline):** recorrer un PR real de punta a punta.
-- **Cap. 10 (Casos prácticos):** sumar los casos listados (disco lleno,
-  Prometheus caído, unhealthy, DuckDNS, sin Internet).
+## Hecho en la segunda tanda (octubre 2026)
+- Capítulos 4 a 8 completos (Ansible, servicios, observabilidad, seguridad, pipeline).
+- Pasada de lenguaje en los capítulos 2, 3 y 9: cada sigla explicada, partiendo de lo cercano.
+- Documentos de operación traducidos al español y actualizados (`README`,
+  `architecture`, `deployment-guide`, `runbook`).
+- El CI ahora corre también los tests de `shared-data` y `aula-iot`.
+
+## Pendiente
+- **Anclas en GitHub:** los enlaces a secciones (`#...`) del manual siguen el
+  formato de MkDocs (sin acentos). En el sitio funcionan; leyendo el `.md` directo
+  en GitHub, los de títulos con acentos o rayas no saltan a la sección.
+- **Capítulo 10:** sumar los casos listados (disco lleno, Prometheus caído,
+  contenedor `unhealthy`, DuckDNS, servidor sin internet) a medida que pasen.
 
 ## Diagramas por agregar
 - Flujo de despliegue de Ansible (paso a paso).

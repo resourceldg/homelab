@@ -1,494 +1,534 @@
-# Deployment Guide — Homelab Server
+# Guía de despliegue — servidor homelab
 
-> **Read this first if you're coming back after a while.** This guide captures
-> the *why* behind every decision and the non-obvious gotchas discovered while
-> actually deploying this server — the things that are easy to forget in six
-> months. It is meant to be read top-to-bottom the first time, then used as a
-> reference.
+> **Leé esto primero si volvés después de un tiempo.** Esta guía guarda el
+> **porqué** de cada decisión y las trampas que no son obvias y que se
+> descubrieron desplegando este servidor de verdad: lo que es fácil de olvidar en
+> seis meses. La primera vez se lee de arriba abajo; después, se usa de consulta.
 
-**Audience:** the operator (you) and anyone learning infrastructure-as-code from
-this repo as a pedagogical example.
-
----
-
-## Table of contents
-
-1. [What this server is](#1-what-this-server-is)
-2. [The access model (read this before touching SSH)](#2-the-access-model)
-3. [Repository layout & variable layering](#3-repository-layout--variable-layering)
-4. [Where everything lives on the box](#4-where-everything-lives-on-the-box)
-5. [Deploying from scratch — the safe procedure](#5-deploying-from-scratch)
-6. [The SSH anti-lockout design](#6-the-ssh-anti-lockout-design)
-7. [Gotchas & lessons (the "future you" section)](#7-gotchas--lessons)
-8. [Day-2 operations](#8-day-2-operations)
-9. [Backups (deferred setup)](#9-backups)
-10. [Verification & health checks](#10-verification--health-checks)
-11. [Troubleshooting](#11-troubleshooting)
-12. [Break-glass recovery](#12-break-glass-recovery)
-13. [Accessing services (dashboard, web & Tailscale)](#13-accessing-services)
+**Para quién:** el operador, y quien quiera aprender infraestructura como código
+usando este repositorio como ejemplo. La explicación para principiantes está en el
+[manual](handbook/index.md).
 
 ---
 
-## 1. What this server is
+## Índice
 
-A single Ubuntu **24.04 LTS** box (hostname `homelab-01`) that is both a **home
-server** and a **hosting platform for educational projects**. It is managed
-entirely as code, in two planes:
-
-- **Host plane → Ansible.** OS config, users/SSH, firewall, Fail2ban, AppArmor,
-  kernel hardening, unattended-upgrades, Lynis/AIDE auditing, Tailscale, DuckDNS,
-  Docker install.
-- **Service plane → Docker Compose.** Caddy reverse proxy (auto-HTTPS via the
-  DuckDNS DNS-01 challenge), Prometheus + Grafana monitoring with node-exporter
-  and cAdvisor, and your project containers.
-
-**Not using Ubuntu Pro.** The CIS/USG tooling stays off (`usg_enabled: false`);
-all the *complementary* hardening (sysctl, pwquality, AppArmor, Fail2ban, module
-blacklists, login hardening) still applies without a Pro token. Target is 24.04
-today, with an eventual move to 26.04 (the `apt_repo_release` escape hatch exists
-for when vendor repos lag on a fresh release).
+1. [Qué es este servidor](#1-qué-es-este-servidor)
+2. [El modelo de acceso (leelo antes de tocar SSH)](#2-el-modelo-de-acceso)
+3. [Estructura del repositorio y capas de variables](#3-estructura-del-repositorio-y-capas-de-variables)
+4. [Dónde vive cada cosa en el servidor](#4-dónde-vive-cada-cosa-en-el-servidor)
+5. [Desplegar desde cero: el procedimiento seguro](#5-desplegar-desde-cero)
+6. [El diseño anti-bloqueo de SSH](#6-el-diseño-anti-bloqueo-de-ssh)
+7. [Trampas y lecciones (la sección para "vos del futuro")](#7-trampas-y-lecciones)
+8. [Operación del día a día](#8-operación-del-día-a-día)
+9. [Copias de seguridad (pendientes)](#9-copias-de-seguridad)
+10. [Verificación y chequeos de salud](#10-verificación-y-chequeos-de-salud)
+11. [Diagnóstico de problemas](#11-diagnóstico-de-problemas)
+12. [Recuperación de emergencia](#12-recuperación-de-emergencia)
+13. [Cómo se llega a los servicios](#13-cómo-se-llega-a-los-servicios)
 
 ---
 
-## 2. The access model
+## 1. Qué es este servidor
 
-**This is the single most important section. Internalise it before running any
-SSH-related task, because it's what keeps you from locking yourself out.**
+Una sola máquina con Ubuntu **24.04 LTS** (nombre `homelab-01`) que es a la vez
+**servidor de la casa** y **plataforma para proyectos educativos** (el aula y el
+aula IoT). Se maneja completamente como código, en dos planos:
 
-There are **three ways in**, and they are independent:
+- **Plano del host → Ansible.** Sistema operativo, usuarios y SSH, firewall,
+  Fail2ban, AppArmor, endurecimiento del kernel, actualizaciones automáticas,
+  auditoría Lynis/AIDE, Tailscale, DuckDNS, instalación de Docker.
+- **Plano de servicios → Docker Compose.** Caddy como proxy inverso (HTTPS
+  automático con el desafío DNS-01 de DuckDNS), login único (Authelia),
+  monitoreo (Prometheus + Grafana con node-exporter y cAdvisor), los servicios
+  del aula y los proyectos.
 
-| Path | User | Auth mechanism | Affected by OpenSSH hardening? |
+**Sin Ubuntu Pro.** La herramienta CIS/USG queda apagada (`usg_enabled: false`);
+todo el endurecimiento **complementario** (sysctl, pwquality, AppArmor, Fail2ban,
+módulos bloqueados, login) se aplica igual sin token de Pro. El objetivo hoy es
+24.04, con un pase futuro a 26.04 (para cuando los repositorios de los
+proveedores tarden en publicar la versión nueva existe la salida
+`apt_repo_release`).
+
+---
+
+## 2. El modelo de acceso
+
+**Esta es la sección más importante. Entendela antes de correr cualquier tarea
+de SSH: es lo que evita que te quedes afuera.**
+
+Hay **tres formas de entrar**, y son independientes:
+
+| Camino | Usuario | Cómo se autentica | ¿Lo afecta el endurecimiento de OpenSSH? |
 |---|---|---|---|
-| **Local console** (physical / desktop) | `homelab` | desktop login | **No** — always works |
-| **Tailscale SSH** | `ansible` (from your notebook) | Tailscale identity/ACL | **No** — bypasses system `sshd` |
-| **Direct OpenSSH** (LAN or WAN) | `ansible`, `homelab` | SSH public key | **Yes** |
+| **Consola local** (física / escritorio) | `homelab` | login del escritorio | **No**: siempre funciona |
+| **Tailscale SSH** | `ansible` (desde la notebook) | identidad y ACL de Tailscale | **No**: no pasa por el `sshd` del sistema |
+| **OpenSSH directo** (LAN o tailnet) | `ansible`, `homelab` (llave); alumnos (contraseña, solo LAN/tailnet) | llave pública / contraseña | **Sí** |
 
-### Why this matters
+### Por qué importa
 
-The Ansible SSH hardening (`PasswordAuthentication no`, `AllowUsers`, strong
-crypto) only governs the **system OpenSSH daemon** — i.e. the *Direct OpenSSH*
-row. **Tailscale SSH is served by `tailscaled`, not `sshd`**, so it authenticates
-over the tailnet regardless of `/etc/ssh/sshd_config`. That's why you can harden
-OpenSSH aggressively without losing your day-to-day Tailscale access — and why,
-in the worst case, you still have the console and Tailscale SSH as safety nets.
+El endurecimiento de SSH de Ansible (`PasswordAuthentication no`, `AllowUsers`,
+cifrado fuerte) solo gobierna al **daemon OpenSSH del sistema**: la fila de
+*OpenSSH directo*. **Tailscale SSH lo sirve `tailscaled`, no `sshd`**, así que
+autentica por el tailnet sin importar `/etc/ssh/sshd_config`. Por eso se puede
+endurecer OpenSSH a fondo sin perder el acceso diario por Tailscale, y por eso,
+en el peor caso, siguen quedando la consola y Tailscale SSH como redes de
+seguridad.
 
-### The accounts
+### Las cuentas
 
-- **`ansible`** — the automation account. **Passwordless sudo** (a
-  `/etc/sudoers.d` NOPASSWD drop-in) because Ansible needs unattended privilege
-  escalation. This is the identity you use for Tailscale SSH from the notebook.
-- **`homelab`** — your personal / desktop account. **sudo WITH a password** (in
-  the `sudo` group, no NOPASSWD). This is who you log in as at the console, and
-  who owns the git checkout. In `AllowUsers` so it can also SSH directly with a
-  key.
-- **`familia`** — (optional, not created yet) a daily-use account for family:
-  no sudo, `ssh: false`, so it can log in at the desktop but never over SSH.
+- **`ansible`:** la cuenta de automatización. **`sudo` sin contraseña** (un
+  archivo NOPASSWD en `/etc/sudoers.d`) porque Ansible necesita escalar
+  privilegios sin intervención. Es la identidad para Tailscale SSH desde la
+  notebook.
+- **`homelab`:** tu cuenta personal / de escritorio. **`sudo` CON contraseña**
+  (en el grupo `sudo`, sin NOPASSWD). Con ella entrás a la consola, y es la dueña
+  del repositorio clonado. Está en `AllowUsers`, así que también entra por SSH con
+  llave.
+- **Alumnos** (`jessi`, `mijael`, `jorge`…): sin `sudo` ni Docker; entran por SSH
+  **con contraseña** solo desde la LAN o el tailnet (bloque `Match Group
+  classroom`), y solo pueden abrir túneles locales (`-L`).
+- **`familia`:** (opcional, sin crear) cuenta de uso diario: sin `sudo`,
+  `ssh: false`; entra al escritorio pero nunca por SSH.
 
-### The keys
+### Las llaves
 
-Your **notebook** (`zen-precision-3561`, user `zen`) holds an ed25519 **private**
-key. Its **public** key is committed in the production group_vars and installed
-by Ansible into `authorized_keys` for both `ansible` and `homelab`. Public keys
-are safe to commit; the private key never leaves the notebook.
+La **notebook** del operador (`zen-precision-3561`, usuario `zen`) tiene una
+llave **privada** ed25519. Su llave **pública** está en los group_vars de
+producción y Ansible la instala en `authorized_keys` de `ansible` y `homelab`. Las
+llaves públicas se pueden subir al repositorio sin problema; la privada nunca sale
+de la notebook.
 
-> Tailscale SSH does **not** use `authorized_keys` at all — the traditional key
-> is your **fallback** for direct OpenSSH (e.g. if Tailscale is ever down).
+> Tailscale SSH **no** usa `authorized_keys`: la llave tradicional es el **plan
+> B** para OpenSSH directo (por ejemplo, si Tailscale se cae).
 
 ---
 
-## 3. Repository layout & variable layering
+## 3. Estructura del repositorio y capas de variables
 
-Configuration resolves in **three precedence layers** (lowest → highest):
+La configuración se resuelve en **tres capas de precedencia** (de menor a mayor):
 
 ```
-roles/<role>/defaults/main.yml         # 1. role-owned tunables (sane defaults)
-group_vars/all/main.yml                # 2. cross-role constants, same everywhere
-inventories/<env>/group_vars/all/      # 3. per-environment identity/net/secrets
+roles/<rol>/defaults/main.yml          # 1. ajustes del rol (valores razonables)
+group_vars/all/main.yml                # 2. constantes comunes, iguales en todos lados
+inventories/<entorno>/group_vars/all/  # 3. identidad, red y secretos del entorno
 ```
 
-- A role ships working defaults, so it's self-contained and reusable.
-- `group_vars/all` holds only what several roles share and never changes between
-  environments (`admin_user`, `ssh_port`, `apt_repo_release`, `stacks_root`).
-- `inventories/production/` and `inventories/staging/` each carry their own
-  `hosts.ini`, a `group_vars/all/main.yml` (identity, network, domain), and an
-  encrypted `vault.yml` (secrets). Select one with `-i inventories/<env>` or
-  `make <target> ENV=staging`.
+- Cada rol trae valores que funcionan, así es autocontenido y reutilizable.
+- `group_vars/all` solo tiene lo que comparten varios roles y nunca cambia entre
+  entornos (`admin_user`, `ssh_port`, `apt_repo_release`, `stacks_root`).
+- `inventories/production/` e `inventories/staging/` traen cada uno su
+  `hosts.ini`, un `group_vars/all/main.yml` (identidad, red, dominio), el roster
+  del aula (`classroom.yml`, en producción) y un `vault.yml` cifrado (secretos). Se
+  elige con `-i inventories/<entorno>` o `make <target> ENV=staging`.
 
 ```
 ansible/
-├── site.yml                     # orchestrator (roles tagged by plane)
-├── ansible.cfg                  # defaults to inventories/production
-├── group_vars/all/main.yml      # shared constants
+├── site.yml                     # orquestador (roles con tags por plano)
+├── ansible.cfg                  # por defecto usa inventories/production
+├── group_vars/all/main.yml      # constantes comunes
 ├── inventories/
-│   ├── production/{hosts.ini, group_vars/all/{main,vault}.yml}
+│   ├── production/{hosts.ini, group_vars/all/{main,classroom,vault}.yml}
 │   └── staging/{hosts.ini, group_vars/all/{main,vault}.yml}
-└── roles/                       # each role owns defaults/ tasks/ meta/ [templates/ molecule/]
+└── roles/                       # cada rol: defaults/ tasks/ meta/ [templates/ handlers/ molecule/]
 ```
 
 ---
 
-## 4. Where everything lives on the box
+## 4. Dónde vive cada cosa en el servidor
 
-**These paths bit us during deployment — write them into memory.**
+**Estas rutas nos complicaron durante el despliegue: anotalas.**
 
-| Thing | Location | Note |
+| Qué | Dónde | Nota |
 |---|---|---|
-| Git checkout | `/home/homelab/homelab` | inside the `homelab` **user's home**, not `/home/homelab` |
-| Python venv w/ Ansible | `/home/homelab/homelab/.venv` | created by `make deps` |
-| `ansible-playbook` binary | `~/homelab/.venv/bin/ansible-playbook` | **not on `$PATH`** — call it by full path or activate the venv |
-| Vault password file | `~/.vault_pass` (i.e. `/home/homelab/.vault_pass`) | `ansible.cfg` points at `~/.vault_pass`; per-user |
-| Encrypted vault | `ansible/inventories/production/group_vars/all/vault.yml` | moved here from the old `ansible/group_vars/all/vault.yml` |
-| Compose stacks (deployed) | `/opt/homelab/stacks` | `stacks_root` |
-| Borg backup repo | `/mnt/backup/borg-repo` | needs a **mounted** drive (see §9) |
+| Repositorio clonado | `/home/homelab/homelab` | dentro del **home del usuario `homelab`**, no en `/home/homelab` |
+| Entorno Python con Ansible | `/home/homelab/homelab/.venv` | lo crea `make deps` |
+| Programa `ansible-playbook` | `~/homelab/.venv/bin/ansible-playbook` | **no está en el `$PATH`**: llamalo por la ruta completa o activá el venv |
+| Clave del vault | `~/.vault_pass` (o sea `/home/homelab/.vault_pass`) | `ansible.cfg` apunta ahí; es por usuario |
+| Vault cifrado | `ansible/inventories/production/group_vars/all/vault.yml` | se movió acá desde el viejo `ansible/group_vars/all/vault.yml` |
+| Stacks de Compose (desplegados) | `/opt/homelab/stacks` | `stacks_root` |
+| Proyectos de los equipos | `/srv/classroom/equipo-NN` | uno por equipo, con cuota |
+| Secretos generados en el host | `/etc/classroom/secrets/`, `/etc/panol/secrets/` | solo `root` |
+| Repositorio de Borg | `/mnt/backup/borg-repo` | necesita un disco **montado** (ver §9) |
 
-**Run Ansible as the `homelab` user**, from the checkout, using the venv binary.
-Because `homelab` has **password sudo**, you must pass `-K` (`--ask-become-pass`)
-so Ansible can escalate — `ansible.cfg` sets `become_ask_pass = False`, so
-without `-K` a run fails with "sudo: a password is required". (The `ansible`
-account has passwordless sudo, but the repo lives in `homelab`'s home, so
-`homelab` + `-K` is the practical way.)
+**Corré Ansible como el usuario `homelab`**, desde el repositorio clonado, con el
+binario del venv. Como `homelab` tiene **`sudo` con contraseña**, tenés que pasar
+`-K` (`--ask-become-pass`) para que Ansible pueda escalar: `ansible.cfg` tiene
+`become_ask_pass = False`, así que sin `-K` la corrida falla con "sudo: a password
+is required". (La cuenta `ansible` tiene `sudo` sin contraseña, pero el repositorio
+vive en el home de `homelab`, así que lo práctico es `homelab` + `-K`.)
 
 ---
 
-## 5. Deploying from scratch
+## 5. Desplegar desde cero
 
-The golden rule: **never harden SSH before you've proven you can still get in.**
-Keep a **console session open** the whole time as the ultimate fallback.
+La regla de oro: **nunca endurezcas SSH antes de haber probado que podés seguir
+entrando.** Dejá **una sesión de consola abierta** todo el tiempo como último
+recurso.
 
-### 5.0 Prerequisites
-- Ubuntu 24.04, the `homelab` user with sudo, Tailscale installed & authed.
-- Your notebook's ed25519 **public** key (generate with `ssh-keygen -t ed25519`
-  if you don't have one; the private key stays on the notebook).
+### 5.0 Requisitos
 
-### 5.1 Get the code up to date
+- Ubuntu 24.04, el usuario `homelab` con `sudo`, Tailscale instalado y autenticado.
+- La llave **pública** ed25519 de tu notebook (generala con
+  `ssh-keygen -t ed25519` si no tenés; la privada queda en la notebook).
+
+### 5.1 Traer el código al día
+
 ```bash
 cd ~/homelab            # /home/homelab/homelab
-git status              # expect "clean" (the untracked vault.yml is fine — see 5.2)
+git status              # tiene que decir "clean" (el vault.yml sin trackear está bien, ver 5.2)
 git pull
 ```
 
-### 5.2 Migrate the vault (one-time, old layout → per-env)
-The encrypted vault used to live at `ansible/group_vars/all/vault.yml`; the new
-layout expects it per-environment. It's gitignored at the new path, so move it:
+### 5.2 Mover el vault (una vez, solo si venís de la estructura vieja)
+
+El vault cifrado antes vivía en `ansible/group_vars/all/vault.yml`; la estructura
+nueva lo espera por entorno. En la ruta nueva está en `.gitignore`, así que se mueve:
+
 ```bash
 mv ansible/group_vars/all/vault.yml \
    ansible/inventories/production/group_vars/all/vault.yml
 ```
-> After `git pull` the old-path vault shows as **untracked** (the new `.gitignore`
-> only ignores the per-env path). Don't `git add` it — just move it.
 
-### 5.3 Set the REAL values in production group_vars
-Edit `ansible/inventories/production/group_vars/all/main.yml`:
-- `lan_cidr` — **your actual LAN subnet** (find it with `hostname -I`). Getting
-  this wrong silently firewalls you off your own LAN (see §7).
-- `admin_ssh_authorized_keys` — the notebook's real public key (for `ansible`).
-- `extra_users` — your account (`homelab`, `ssh: true`, in `sudo`, real key).
-- `server_timezone` / `server_locale` — e.g. `America/Argentina/Buenos_Aires`,
-  `es_AR.UTF-8`.
+> Después de `git pull`, el vault en la ruta vieja aparece **sin trackear** (el
+> `.gitignore` nuevo solo ignora la ruta por entorno). No lo agregues con
+> `git add`: solo movelo.
 
-No `REPLACE_ME` may remain in any `ssh: true` account, or the safety gate aborts.
+### 5.3 Cargar los valores REALES en los group_vars de producción
 
-### 5.4 Ensure tooling is present
+Editá `ansible/inventories/production/group_vars/all/main.yml`:
+
+- `lan_cidr` — **la red real de la casa** (averiguala con `hostname -I`). Si está
+  mal, el firewall te bloquea en tu propia red sin avisar (ver §7).
+- `admin_ssh_authorized_keys` — la llave pública real de la notebook (para `ansible`).
+- `extra_users` — tu cuenta (`homelab`, `ssh: true`, en `sudo`, llave real).
+- `server_timezone` / `server_locale` — por ejemplo
+  `America/Argentina/Buenos_Aires`, `es_AR.UTF-8`.
+
+No puede quedar ningún `REPLACE_ME` en una cuenta con `ssh: true`, o la guarda de
+seguridad corta el play.
+
+### 5.4 Asegurar las herramientas
+
 ```bash
-make deps               # creates .venv, installs ansible-core + collections + tools
+make deps               # crea .venv e instala ansible-core + colecciones + herramientas
 ```
 
-### 5.5 SSH — phase 1: create users + keys, WITHOUT locking down
+### 5.5 SSH — fase 1: usuarios y llaves, SIN cerrar nada
+
 ```bash
 cd ~/homelab/ansible
 ~/homelab/.venv/bin/ansible-playbook site.yml -i inventories/production \
     --tags ssh --skip-tags ssh-lockdown -K
 ```
-This creates/ensures the accounts and installs keys but leaves `sshd` untouched.
 
-### 5.6 Fix the firewall so your real LAN is allowed
-If the box was previously provisioned with a wrong `lan_cidr`, UFW is still
-blocking your LAN. Apply the firewall role to add the correct rule **before**
-testing direct SSH:
+Crea o asegura las cuentas e instala las llaves, pero no toca `sshd`.
+
+### 5.6 Arreglar el firewall para que tu red real esté permitida
+
+Si la máquina se configuró antes con un `lan_cidr` equivocado, UFW sigue
+bloqueando tu red. Aplicá el rol del firewall para agregar la regla correcta
+**antes** de probar el SSH directo:
+
 ```bash
 ~/homelab/.venv/bin/ansible-playbook site.yml -i inventories/production \
     --tags firewall -K
 ```
 
-### 5.7 PROVE access before hardening (do not skip)
-From the **notebook**, over the LAN (hits OpenSSH, not Tailscale SSH):
-```bash
-ssh homelab@<server-LAN-ip>      # e.g. ssh homelab@192.168.100.48
-ssh ansible@<server-LAN-ip>
-```
-Both must succeed with the key. If a user gets `Permission denied (publickey)`
-but you *reach* the banner, it's an `AllowUsers` issue in the **currently live**
-`sshd_config`, fixed by the next step (§5.8). A **timeout** instead means the
-firewall is still blocking your LAN — recheck `lan_cidr` and re-run §5.6.
+### 5.7 PROBAR el acceso antes de endurecer (no te lo saltees)
 
-### 5.8 SSH — phase 2: apply the hardened config
+Desde la **notebook**, por la LAN (así pega en OpenSSH y no en Tailscale SSH):
+
+```bash
+ssh homelab@<IP-LAN-del-server>      # hostname -I en el server
+ssh ansible@<IP-LAN-del-server>
+```
+
+Las dos tienen que entrar con la llave. Si un usuario recibe
+`Permission denied (publickey)` pero **llegás** al cartel de bienvenida, es un
+problema de `AllowUsers` en el `sshd_config` **que está corriendo**, y lo arregla
+el paso siguiente (§5.8). Si en cambio da **timeout**, el firewall sigue
+bloqueando tu red: revisá `lan_cidr` y repetí §5.6.
+
+### 5.8 SSH — fase 2: aplicar la configuración endurecida
+
 ```bash
 ~/homelab/.venv/bin/ansible-playbook site.yml -i inventories/production \
     --tags ssh -K
 ```
-The safety gates run first (real key present, no placeholder, key file on disk),
-then the hardened `sshd_config` is written (validated with `sshd -t`) and `sshd`
-is restarted. **Existing sessions are not dropped.** Re-test §5.7 — the account
-that was denied should now work.
 
-### 5.9 Full converge (everything else)
-No backup drive yet? Skip backups (the mount guard would correctly abort):
+Primero corren las guardas (llave real presente, sin marcador, archivo en disco);
+después se escribe el `sshd_config` endurecido (validado con `sshd -t`) y se
+reinicia `sshd`. **Las sesiones abiertas no se cortan.** Repetí §5.7: la cuenta que
+antes era rechazada ahora tiene que entrar.
+
+### 5.9 Aplicar todo lo demás
+
+¿Todavía no hay disco para copias? Salteá `backups` (la guarda de montaje cortaría,
+y estaría bien que lo haga):
+
 ```bash
 ~/homelab/.venv/bin/ansible-playbook site.yml -i inventories/production \
     --skip-tags backups -K
 ```
-This applies hardening, Fail2ban, AppArmor, audit (AIDE db init — **can take
-several minutes**), auto-updates, Docker, and redeploys the monitoring/proxy
-stacks. Set `operator`'s login password so password-sudo works: `sudo passwd homelab`.
 
-### 5.10 Tailscale & verification
+Aplica el endurecimiento, Fail2ban, AppArmor, la auditoría (la base de AIDE se
+inicializa y **puede tardar varios minutos**), las actualizaciones, Docker, los
+stacks de servicios y el aula. Poné una contraseña a `homelab` para que funcione el
+`sudo` con contraseña: `sudo passwd homelab`.
+
+### 5.10 Tailscale y verificación
+
 ```bash
-sudo tailscale up --ssh --accept-routes    # if not already up
-make verify && make test                   # posture asserts + testinfra smoke tests
+sudo tailscale up --ssh --accept-routes    # si no está levantado
+make verify && make test                   # chequeos de postura + pruebas testinfra
 ```
 
 ---
 
-## 6. The SSH anti-lockout design
+## 6. El diseño anti-bloqueo de SSH
 
-The `users_ssh` role is split into two stages so a first run can't lock you out:
+El rol `users_ssh` está partido en dos etapas para que una primera corrida no te
+deje afuera:
 
-- **Stage 1 (bootstrap, tags `ssh`,`bootstrap`)** — create the admin/automation
-  account, create `extra_users`, install every key, configure sudo. **Never
-  restricts login.** Always safe to run.
-- **Stage 2 (lockdown, tag `ssh-lockdown`)** — write the restrictive
-  `sshd_config` and restart `sshd`. Guarded by:
-  - `ssh_lockdown_enabled` (default true; set false to defer hardening entirely),
-  - a **safety gate** that asserts `admin_ssh_authorized_keys` is a real key (no
-    `REPLACE_ME`) and that `/home/<admin>/.ssh/authorized_keys` exists non-empty,
-  - a second gate asserting every `ssh: true` entry in `extra_users` has a real,
-    non-placeholder key — so you can never add an unreachable account to
-    `AllowUsers`.
+- **Etapa 1 (arranque, tags `ssh`,`bootstrap`):** crea la cuenta de
+  administración/automatización, las `extra_users`, instala todas las llaves y
+  configura `sudo`. **Nunca restringe el login.** Siempre es seguro correrla.
+- **Etapa 2 (cierre, tag `ssh-lockdown`):** escribe el `sshd_config` restrictivo y
+  reinicia `sshd`. La protegen:
+  - `ssh_lockdown_enabled` (por defecto `true`; en `false` posterga todo el cierre),
+  - una **guarda** que verifica que `admin_ssh_authorized_keys` sea una llave real
+    (sin `REPLACE_ME`) y que `/home/<admin>/.ssh/authorized_keys` exista y no esté
+    vacío,
+  - una segunda guarda que verifica que cada `extra_users` con `ssh: true` tenga
+    una llave real, así nunca se agrega a `AllowUsers` una cuenta a la que no se
+    puede entrar.
 
-`AllowUsers` is **computed**: `admin_user` plus every `extra_users` entry with
-`ssh: true`. Skip the whole lockdown on a risky first run with
-`--skip-tags ssh-lockdown`.
-
----
-
-## 7. Gotchas & lessons
-
-**The five things that cost us time — check these first when something's weird.**
-
-1. **`lan_cidr` must match your real LAN.** The default was `192.168.1.0/24` but
-   the actual LAN is `192.168.100.0/24`. A mismatch makes UFW drop SSH from your
-   own laptop → **connection *timeout*** (not "refused"). It also narrows the
-   `sshd` `Match Address` block. Confirm with `hostname -I`.
-2. **Tailscale SSH ≠ OpenSSH.** Hardening `sshd_config` does **not** affect
-   Tailscale SSH (served by `tailscaled`). This is why the automation account
-   stayed reachable throughout, and why it's a reliable safety net. Corollary:
-   testing the *OpenSSH key* path requires connecting to the **LAN IP**, not the
-   tailnet `100.x` IP (which would be intercepted by Tailscale SSH).
-3. **`AllowUsers` denies before keys are even tried.** A correct key + correct
-   permissions still yields `Permission denied (publickey)` if the user isn't in
-   the live `sshd_config`'s `AllowUsers`. A previously-applied (stale) config can
-   list only `ansible`; re-applying the current config fixes it.
-4. **Run as `homelab` with `-K`.** `ansible-playbook` isn't on `$PATH` (it's in
-   `~/homelab/.venv/bin`), and `homelab` has password sudo, so every run needs
-   `-K`. The `ansible` account is passwordless but can't read the checkout in
-   `homelab`'s home.
-5. **The vault moved.** It's now per-environment at
-   `inventories/production/group_vars/all/vault.yml`. After a `git pull` on an
-   old checkout, move it there once (§5.2). It's gitignored at the new path.
-
-Non-blocking notes:
-- `DEPRECATION WARNING: INJECT_FACTS_AS_VARS` appears on every run — harmless
-  (ansible-core deprecating top-level `ansible_distribution`). Cleanup someday.
-- "connection is not using a post-quantum key exchange" is an OpenSSH client
-  notice, not an error.
+`AllowUsers` se **calcula**: `admin_user` más cada `extra_users` con `ssh: true`
+(y los alumnos, que entran por el bloque `Match Group classroom`). Para saltear
+todo el cierre en una primera corrida riesgosa: `--skip-tags ssh-lockdown`.
 
 ---
 
-## 8. Day-2 operations
+## 7. Trampas y lecciones
 
-Everything runs through tags on `site.yml`. As the `homelab` user, prefix with
-the venv path and add `-K`; the `make` targets assume the venv is on `PATH`
-(via `make`), so they also need a passwordless context or an edited invocation.
+**Lo que nos costó tiempo: revisá esto primero cuando algo está raro.**
 
-| Task | Command |
+1. **`lan_cidr` tiene que coincidir con la red real.** El valor por defecto era
+   `192.168.1.0/24`, la red real era `192.168.100.0/24`, y después el servidor se
+   mudó a `192.168.0.x` y a `192.168.8.x`. Si no coincide, UFW descarta el SSH
+   desde tu propia notebook → **timeout** (no "refused"). También achica el bloque
+   `Match Address` de `sshd`. Confirmalo con `hostname -I`.
+2. **Tailscale SSH ≠ OpenSSH.** Endurecer `sshd_config` **no** afecta a Tailscale
+   SSH (lo sirve `tailscaled`). Por eso la cuenta de automatización siguió
+   accesible todo el tiempo, y por eso es una red de seguridad confiable.
+   Consecuencia: para probar el camino de **llave de OpenSSH** hay que conectarse
+   a la **IP de la LAN**, no a la `100.x` del tailnet (que la intercepta Tailscale
+   SSH).
+3. **`AllowUsers` rechaza antes de probar la llave.** Una llave correcta con
+   permisos correctos igual da `Permission denied (publickey)` si el usuario no
+   está en el `AllowUsers` del `sshd_config` que está corriendo. Una config vieja
+   puede listar solo `ansible`; volver a aplicar la actual lo arregla.
+4. **Correr como `homelab` con `-K`.** `ansible-playbook` no está en el `$PATH`
+   (está en `~/homelab/.venv/bin`), y `homelab` tiene `sudo` con contraseña, así
+   que cada corrida necesita `-K`. La cuenta `ansible` no pide contraseña pero no
+   puede leer el repositorio en el home de `homelab`.
+5. **El vault se movió.** Ahora está por entorno en
+   `inventories/production/group_vars/all/vault.yml`. Después de un `git pull` en
+   un clon viejo, movelo una vez (§5.2).
+6. **Lo hecho a mano es provisorio.** Cuando algo se levanta a mano en el servidor
+   (pasó con el broker del aula), hay que pasarlo al repositorio y verificar que
+   coincidan: si no, la próxima corrida de Ansible lo deshace (*drift*, ver el
+   capítulo 4 del manual).
+
+Notas que no bloquean:
+
+- `DEPRECATION WARNING: INJECT_FACTS_AS_VARS` sale en cada corrida: es inofensivo
+  (ansible-core deja de recomendar `ansible_distribution` suelto). Limpiar algún día.
+- "connection is not using a post-quantum key exchange" es un aviso del cliente
+  OpenSSH, no un error.
+
+---
+
+## 8. Operación del día a día
+
+Todo pasa por los tags de `site.yml`. Como usuario `homelab`, con la ruta del venv
+y `-K`:
+
+| Tarea | Comando |
 |---|---|
-| Preview all changes | `ansible-playbook site.yml -i inventories/production --check --diff -K` |
-| Apply only security plane | `... --tags security -K` |
-| Apply only the firewall | `... --tags firewall -K` |
-| Re-deploy monitoring + proxy | `... --tags "services,docker" -K` |
-| Re-apply SSH (bootstrap+lockdown) | `... --tags ssh -K` |
-| Edit secrets | `ansible-vault edit inventories/production/group_vars/all/vault.yml` |
-| Prove idempotence | run the full converge twice; second run = `changed=0` |
+| Ver qué cambiaría | `ansible-playbook site.yml -i inventories/production --check --diff -K` |
+| Solo el plano de seguridad | `... --tags security -K` |
+| Solo el firewall | `... --tags firewall -K` |
+| Redesplegar monitoreo + proxy | `... --tags "services,docker" -K` |
+| Todo el aula (alumnos, broker, Grafana del aula) | `... --tags classroom -K` |
+| Solo la capa de Grafana del aula | `... --tags aula-iot -K` |
+| El pañol | `... --tags panol -K` |
+| Volver a aplicar SSH (arranque + cierre) | `... --tags ssh -K` |
+| Editar secretos | `ansible-vault edit inventories/production/group_vars/all/vault.yml` |
+| Probar idempotencia | correr todo dos veces; la segunda = `changed=0` |
 
-Tags available: `base, bootstrap, ssh, ssh-lockdown, users, network, tailscale,
-ddns, security, firewall, fail2ban, apparmor, hardening, cis, updates, audit,
-docker, services, monitoring, backups`.
+Tags disponibles: `base, bootstrap, ssh, ssh-lockdown, users, network, tailscale,
+dns, ddns, security, firewall, fail2ban, apparmor, hardening, cis, updates, audit,
+docker, services, auth, monitoring, backups, panol, iot, classroom,
+shared-services, aula-iot, labctl, publish`.
 
 ---
 
-## 9. Backups
+## 9. Copias de seguridad
 
-Backups are **deferred** until a dedicated drive is mounted. The `backups` role
-**refuses to run** unless `/mnt/backup` is its own mounted filesystem
-(`borg_require_mounted: true`) — this prevents silently writing "backups" onto
-the root disk with no real off-disk copy.
+Las copias están **postergadas** hasta que haya un disco dedicado montado. El rol
+`backups` **se niega a correr** si `/mnt/backup` no es un filesystem montado
+propio (`borg_require_mounted: true`): así no se escriben "copias" en el mismo
+disco del sistema sin una copia real fuera de él.
 
-To enable later:
-1. Attach the external drive / NAS and mount it at `/mnt/backup` (add an
-   `/etc/fstab` entry so it persists across reboots).
-2. Confirm: `mountpoint -q /mnt/backup && echo OK`.
-3. Run just the backups role:
+> ⚠️ Hoy (octubre 2026) **no hay copias de seguridad**. Es lo más urgente de la
+> hoja de ruta (capítulo 15 del manual).
+
+Para activarlas:
+
+1. Conectar el disco externo / NAS y montarlo en `/mnt/backup` (con una entrada en
+   `/etc/fstab` para que sobreviva a los reinicios).
+2. Confirmar: `mountpoint -q /mnt/backup && echo OK`.
+3. Correr solo el rol de copias:
    ```bash
    ~/homelab/.venv/bin/ansible-playbook site.yml -i inventories/production --tags backups -K
    ```
-4. `borgmatic` initialises the repo and installs a systemd timer.
-   **Store `vault_borg_passphrase` in a password manager — losing it loses the
-   backups.**
+4. `borgmatic` inicializa el repositorio e instala un timer de systemd.
+   **Guardá `vault_borg_passphrase` en un gestor de contraseñas: perderla es
+   perder las copias.**
 
 ---
 
-## 10. Verification & health checks
+## 10. Verificación y chequeos de salud
 
 ```bash
-# Ansible posture asserts + testinfra smoke tests
+# Chequeos de postura de Ansible + pruebas testinfra
 make verify
 make test
 
-# Manual spot checks
-sudo ufw status verbose                    # active, deny incoming, your LAN allowed
+# Revisiones a mano
+sudo ufw status verbose                    # activo, deny entrante, tu red permitida
 sudo grep -E '^AllowUsers|^Match' /etc/ssh/sshd_config
-docker ps --format '{{.Names}}'            # caddy prometheus grafana node-exporter cadvisor
+docker ps --format '{{.Names}}'            # caddy, prometheus, grafana, mqtt-aula, grafana-aula…
 sudo fail2ban-client status sshd
-sudo aa-status | tail -1                   # profiles in enforce mode
+sudo aa-status | tail -1                   # perfiles en modo enforce
 tailscale status
+sudo tailscale funnel status               # :8443 (pañol) y :10000 (broker del aula)
 ```
 
-testinfra also verifies the **Docker/UFW bypass is closed** (ufw-docker block
-present, internal ports loopback-only, no container binding `0.0.0.0` except
-Caddy).
+testinfra también verifica que **el atajo Docker/UFW esté cerrado** (bloque de
+`ufw-docker` presente, puertos internos solo en loopback, ningún contenedor en
+`0.0.0.0` salvo Caddy).
 
 ---
 
-## 11. Troubleshooting
+## 11. Diagnóstico de problemas
 
-| Symptom | Likely cause | Fix |
+| Síntoma | Causa probable | Solución |
 |---|---|---|
-| `ssh user@lan-ip` **times out** | UFW blocking your LAN (`lan_cidr` wrong/stale) | Fix `lan_cidr`, re-run `--tags firewall -K` |
-| `Permission denied (publickey)` but banner shows | User not in live `sshd_config` `AllowUsers` | Re-run `--tags ssh -K` |
-| `sudo: a password is required` mid-run | Ran as `homelab` without `-K` | Add `-K` |
-| `Command 'ansible-playbook' not found` | venv not on `$PATH` | Use `~/homelab/.venv/bin/ansible-playbook` |
-| Play aborts at "Safety gate … usable admin key" | `REPLACE_ME` still in a key | Put the real key in group_vars |
-| Play aborts at "backup target must be … mounted" | `/mnt/backup` not mounted | Mount the drive, or `--skip-tags backups` |
-| `Error … vault password file … not found` | `~/.vault_pass` missing | `echo <pw> > ~/.vault_pass && chmod 600 ~/.vault_pass` |
-| Vault won't decrypt | Wrong `~/.vault_pass`, or vault at old path | Fix password; ensure vault at per-env path |
+| `ssh usuario@ip-lan` da **timeout** | UFW bloquea tu red (`lan_cidr` mal o viejo) | Corregir `lan_cidr`, `--tags firewall -K` |
+| `Permission denied (publickey)` pero aparece el cartel | el usuario no está en el `AllowUsers` vivo | `--tags ssh -K` |
+| `sudo: a password is required` en medio de la corrida | se corrió como `homelab` sin `-K` | agregar `-K` |
+| `Command 'ansible-playbook' not found` | el venv no está en el `$PATH` | usar `~/homelab/.venv/bin/ansible-playbook` |
+| `Ansible could not initialize the preferred locale` | SSH pasa el idioma de tu compu y el server no lo tiene | anteponer `env LC_ALL=C.UTF-8 LANG=C.UTF-8` |
+| El play corta en "Safety gate … usable admin key" | queda un `REPLACE_ME` en una llave | poner la llave real en group_vars |
+| El play corta en "backup target must be … mounted" | `/mnt/backup` no está montado | montar el disco, o `--skip-tags backups` |
+| `Error … vault password file … not found` | falta `~/.vault_pass` | `echo <clave> > ~/.vault_pass && chmod 600 ~/.vault_pass` |
+| El vault no se descifra | `~/.vault_pass` equivocada, o vault en la ruta vieja | corregir la clave; vault en la ruta por entorno |
+| El servidor no aparece en Tailscale (`rx 0`) | se cayó la red del servidor (WiFi USB) | consola física: `nmcli device status`; ver `make uplink` |
 
 ---
 
-## 12. Break-glass recovery
+## 12. Recuperación de emergencia
 
-If you ever can't SSH in at all:
+Si en algún momento no podés entrar por SSH de ninguna forma:
 
-1. **Console.** Sit at the machine (or use its hypervisor/IPMI console). The
-   `homelab` desktop login always works — OpenSSH hardening never affects it.
-2. **Tailscale SSH.** From any tailnet device: `ssh ansible@homelab-01` (or the
-   `100.x` IP). Unaffected by `sshd` hardening as long as `tailscaled` is up.
-3. From either, undo a bad SSH change:
+1. **Consola.** Sentate frente a la máquina. El login de escritorio de `homelab`
+   siempre funciona: el endurecimiento de OpenSSH nunca lo afecta.
+2. **Tailscale SSH.** Desde cualquier equipo del tailnet: `ssh ansible@homelab-01`
+   (o la IP `100.x`). No lo afecta el endurecimiento de `sshd` mientras
+   `tailscaled` esté arriba.
+3. Desde cualquiera de las dos, deshacer un cambio de SSH malo:
    ```bash
    sudo cp /etc/ssh/sshd_config /root/sshd_config.bak
    sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
    sudo sshd -t && sudo systemctl restart ssh
    ```
-   or re-run the playbook with `-e ssh_lockdown_enabled=false` to back the
-   hardening out cleanly, then re-converge once fixed.
-4. If Tailscale itself is the problem: `sudo tailscale up --ssh --accept-routes`.
+   o volver a correr el playbook con `-e ssh_lockdown_enabled=false` para sacar el
+   endurecimiento prolijamente, y aplicar de nuevo cuando esté arreglado.
+4. Si el problema es Tailscale: `sudo tailscale up --ssh --accept-routes`.
+5. Si el problema es la **red** del servidor (cambió de WiFi o se colgó el
+   adaptador): desde la consola, `nmcli device status`, y para sumar una red sin
+   perder la anterior, `sudo ~/homelab/scripts/agregar-wifi.sh "Nombre-de-la-red"`.
 
-> The design goal is that **no single change can lock you out**: console +
-> Tailscale SSH + a key-based OpenSSH fallback are three independent doors.
+> El objetivo del diseño es que **ningún cambio solo te deje afuera**: consola,
+> Tailscale SSH y OpenSSH con llave son tres puertas independientes.
 
 ---
 
-## 13. Accessing services
+## 13. Cómo se llega a los servicios
 
-Everything sits behind the Caddy reverse proxy at `https://*.<domain>`, with a
-**Homepage** dashboard at the root as a launchpad linking them all:
+Todo está detrás del proxy Caddy en `https://*.<dominio>`, con una página de
+inicio (**Homepage**) en la raíz que enlaza a todo:
 
-| Service | URL | Exposure |
+| Servicio | URL | Quién entra (Authelia) |
 |---|---|---|
-| Dashboard (Homepage) | `https://<domain>` | public + private |
-| Grafana | `https://grafana.<domain>` | public + private |
-| Demo app | `https://demo.<domain>` | public + private |
-| Prometheus | `https://prometheus.<domain>` | **private by topology** (see below) |
-| cAdvisor | `https://cadvisor.<domain>` | **private by topology** (see below) |
+| Página de inicio (Homepage) | `https://<dominio>` | operadores y alumnos |
+| Grafana de operación | `https://grafana.<dominio>` | **solo operadores** (tiene la auditoría del pañol) |
+| Grafana del aula | `https://grafana-aula.<dominio>` | operadores y alumnos (cada uno, su equipo) |
+| Tablero del pañol | `https://panol.<dominio>` | solo operadores |
+| Prometheus | `https://prometheus.<dominio>` | solo operadores |
+| cAdvisor | `https://cadvisor.<dominio>` | solo operadores |
+| App de ejemplo | `https://demo.<dominio>` | pública (sin login) |
 
-### From the web (any browser, anywhere)
-Forward **TCP 443** (and 80) on the router to the server's LAN IP; DuckDNS keeps
-the public A record updated. The public URLs then work from anywhere. Prometheus
-and cAdvisor return **403** to the public internet by design.
+### Por el tailnet (como se usa hoy)
 
-### From your notebook (private, via Tailscale) — recommended
+El rol `dns` levanta un **dnsmasq** en la IP de Tailscale del servidor que
+responde **todos** los `*.<dominio>` con esa IP, y Tailscale lo usa como DNS para
+el dominio (**Split DNS**). Resultado: desde cualquier equipo del tailnet, los
+nombres llevan a Caddy por Tailscale, con HTTPS válido (el certificado se emite
+por DNS-01, así que es confiable en cualquier red) y **sin redirección de
+puertos**.
 
-Point the domains at the server's **tailnet IP** in `/etc/hosts`. You hit Caddy
-over Tailscale with valid HTTPS (the cert is issued via DNS-01, so it's trusted
-on any network) and **no port-forwarding required**:
+Cuando la notebook y el servidor están en la misma red, Tailscale arma una
+**conexión directa por la LAN** (sin relé), así que en casa anda a velocidad de LAN
+y sigue funcionando igual afuera. Lo único que hace falta es tener Tailscale
+prendido.
 
-```bash
-echo "<server-tailnet-ip>  <domain> grafana.<domain> demo.<domain> prometheus.<domain> cadvisor.<domain>" \
-  | sudo tee -a /etc/hosts
-```
-
-**Use the tailnet IP even if you're mostly on the same LAN.** When your laptop
-and the server are on the same network, Tailscale makes a **direct connection
-over the LAN** (no relay, no cloud hop), so you get LAN speed at home *and* it
-keeps working unchanged when you leave. The only requirement is that Tailscale is
-running on the laptop.
-
-> Alternative: the server's **LAN IP** (`<server-lan-ip>`) also works and doesn't
-> need Tailscale running — but only while you're at home, and the domains stop
-> resolving elsewhere. Prefer the tailnet IP unless you routinely run with
-> Tailscale off.
-
-Both the LAN and the tailnet reach Caddy directly; the metrics backends stay
-private by topology (see below), not by an IP filter.
-
-### Future: your own DNS (no per-device edits)
-
-`/etc/hosts` is per-device (and awkward on phones). To resolve these names across
-your whole network without editing each machine, set up one of:
-
-- **Tailscale → DNS → Split DNS / MagicDNS** — send `<domain>` to a resolver that
-  returns the tailnet IP; works on every tailnet device automatically.
-- **A local DNS resolver** (e.g. Pi-hole / the router's DNS) mapping the domains
-  to the server's LAN or tailnet IP for all LAN devices.
-
-Deferred for now — the tailnet-IP `/etc/hosts` line above is enough for the
-laptop.
-
-### How the metrics backends stay private
-Prometheus and cAdvisor have **no authentication of their own**, so they must not
-be reachable from the internet. They're kept private **by topology**: the router
-does **not** forward 443, so the only route to Caddy is the LAN / tailnet. From
-the notebook you reach them via the tailnet-IP `/etc/hosts` entry above.
-
-> A Caddy `remote_ip` allow-list does **not** work here: Docker masquerades the
-> client IP to the bridge gateway, so Caddy sees `172.x`, not the real source
-> (confirmed in Caddy's access log: `"client_ip":"172.18.0.1"`). An IP gate would
-> therefore 403 everyone, including legitimate tailnet clients.
->
-> **Before forwarding 443 for public access**, protect the metrics backends with
-> HTTP basic auth so they're safe on the internet. Generate a hash with
-> `docker exec caddy caddy hash-password --plaintext '<password>'`, then wrap the
-> two sites:
+> Si un equipo no toma el Split DNS (pasa en algunos teléfonos), se puede apuntar
+> a mano en `/etc/hosts`:
+> ```bash
+> echo "<IP-tailnet-del-server>  <dominio> grafana.<dominio> grafana-aula.<dominio>" \
+>   | sudo tee -a /etc/hosts
 > ```
-> prometheus.{$CADDY_BASE_DOMAIN} {
->     basic_auth { <user> <bcrypt-hash> }
->     reverse_proxy prometheus:9090
-> }
-> ```
-> Grafana keeps its own login, so it's safe to expose as-is.
 
-### Enabling / disabling
-The dashboard is controlled by `dashboard_enabled` (default true) in the
-`monitoring` role. Re-deploy after changes with:
+### Desde internet (hoy no está configurado)
+
+Habría que redirigir **TCP 443** (y 80) en el router a la IP LAN del servidor;
+DuckDNS mantiene el registro público al día. Todo lo protegido sigue pidiendo login
+(Authelia), así que Prometheus y cAdvisor quedan solo para operadores aunque se
+expongan.
+
+> Un filtro por IP en Caddy (`remote_ip`) **no** sirve acá: Docker reemplaza la IP
+> del cliente por la del gateway del bridge, y Caddy ve `172.x` en vez del origen
+> real (comprobado en el log de acceso de Caddy: `"client_ip":"172.18.0.1"`). Un
+> filtro por IP rechazaría a todos, incluidos los clientes legítimos del tailnet.
+> Por eso la protección es **por login**, no por IP.
+
+### Placas y nodos (Tailscale Funnel)
+
+Los dispositivos no usan Caddy: entran por **Funnel** (`sudo tailscale funnel
+status`):
+
+- `:10000` → broker MQTT del aula (`mqtt-aula`), TLS + usuario por equipo + ACL.
+- `:8443` → API del pañol, con token.
+
+### Prender / apagar
+
+La página de inicio se controla con `dashboard_enabled` (por defecto `true`) en el
+rol `monitoring`. Para redesplegar después de un cambio:
+
 ```bash
 ansible-playbook site.yml -i inventories/production --tags "services,docker" -K
 ```
