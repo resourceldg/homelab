@@ -75,14 +75,16 @@ fi
 if nmcli -t -f NAME connection show | grep -Fxq "$SSID"; then
   say "Ya existía un perfil \"$SSID\": actualizo la clave"
   nmcli connection modify "$SSID" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$CLAVE" \
-    connection.autoconnect yes connection.autoconnect-priority 20
+    connection.autoconnect yes connection.autoconnect-priority 20 \
+    connection.autoconnect-retries 0
 else
   say "Guardando el perfil \"$SSID\""
   nmcli connection add type wifi ifname "$PLACA" con-name "$SSID" ssid "$SSID" \
     wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$CLAVE" \
-    connection.autoconnect yes connection.autoconnect-priority 20 >/dev/null
+    connection.autoconnect yes connection.autoconnect-priority 20 \
+    connection.autoconnect-retries 0 >/dev/null
 fi
-ok "Guardado (autoconexión sí, prioridad 20)"
+ok "Guardado (autoconexión sí, prioridad 20, reintenta para siempre)"
 
 if [[ $SOLO_GUARDAR -eq 1 ]]; then
   ok "No la activo ahora; se va a conectar sola cuando esté al alcance"

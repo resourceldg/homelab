@@ -13,7 +13,8 @@
 #   - hay internet pero Tailscale no anda -> reinicia tailscaled.
 #
 # Escalera, por minutos SEGUIDOS sin router (ajustable en /etc/default/vigia-red):
-#   PASO1  reconectar el WiFi                         (nmcli device reconnect)
+#   PASO1  reconectar el WiFi; si quedó sin conexión (típico al arrancar), buscar
+#          redes y conectar a la mejor guardada  (nmcli device connect)
 #   PASO2  reiniciar NetworkManager
 #   PASO3  "desenchufar y enchufar" el USB del adaptador (por software)
 #   PASO4  probar las otras redes WiFi guardadas que estén al alcance
@@ -28,7 +29,7 @@ set -uo pipefail
 export LC_ALL=C
 
 [[ -r /etc/default/vigia-red ]] && . /etc/default/vigia-red
-PASO1="${VIGIA_PASO1:-3}"
+PASO1="${VIGIA_PASO1:-2}"
 PASO2="${VIGIA_PASO2:-6}"
 PASO3="${VIGIA_PASO3:-10}"
 PASO4="${VIGIA_PASO4:-14}"
@@ -46,6 +47,7 @@ SYSTEMCTL="${VIGIA_SYSTEMCTL:-systemctl}"
 TAILSCALE="${VIGIA_TAILSCALE:-tailscale}"
 SYSFS="${VIGIA_SYSFS:-/sys}"
 UPTIME_F="${VIGIA_UPTIME:-/proc/uptime}"
+ESPERA="${VIGIA_ESPERA:-5}"   # segundos entre buscar redes y conectar (0 en las pruebas)
 
 mkdir -p "$ESTADO_DIR" "$(dirname "$LOG")"
 F_FALLAS="$ESTADO_DIR/minutos-sin-router"
@@ -142,8 +144,18 @@ fi
 
 # --- Escalera ------------------------------------------------------------------------
 if [[ "$paso" -eq "$PASO1" && -n "$PLACA" ]]; then
-  anotar "PASO 1 (${fallas} min): reconectar el WiFi ($PLACA)."
-  $NMCLI device reconnect "$PLACA" >/dev/null 2>&1 || anotar "  no se pudo reconectar $PLACA"
+  estado_placa="$($NMCLI -t -f DEVICE,STATE device 2>/dev/null | awk -F: -v d="$PLACA" '$1==d{print $2}')"
+  if [[ "$estado_placa" == "connected" ]]; then
+    anotar "PASO 1 (${fallas} min): el WiFi dice 'connected' pero el router no responde: reconectar ($PLACA)."
+    $NMCLI device reconnect "$PLACA" >/dev/null 2>&1 || anotar "  no se pudo reconectar $PLACA"
+  else
+    # Sin conexión activa (típico al arrancar, si el router tardó más que el
+    # servidor): buscar redes de nuevo y dejar que NM elija la mejor guardada.
+    anotar "PASO 1 (${fallas} min): el WiFi está '${estado_placa:-?}': busco redes y conecto a la mejor guardada ($PLACA)."
+    $NMCLI device wifi rescan ifname "$PLACA" >/dev/null 2>&1 || true
+    sleep "$ESPERA"
+    $NMCLI device connect "$PLACA" >/dev/null 2>&1 || anotar "  todavía no hay ninguna red guardada al alcance"
+  fi
 
 elif [[ "$paso" -eq "$PASO2" ]]; then
   anotar "PASO 2 (${fallas} min): reiniciar NetworkManager."
@@ -155,7 +167,7 @@ elif [[ "$paso" -eq "$PASO3" ]]; then
     usbdir="$(dirname "$(readlink -f "$SYSFS/class/net/$PLACA/device")")"
     if [[ -w "$usbdir/authorized" ]]; then
       anotar "PASO 3 (${fallas} min): desenchufar y enchufar por software el USB del adaptador ($(basename "$usbdir"))."
-      echo 0 > "$usbdir/authorized"; sleep 3; echo 1 > "$usbdir/authorized"
+      echo 0 > "$usbdir/authorized"; sleep "$ESPERA"; echo 1 > "$usbdir/authorized"
     else
       anotar "PASO 3 (${fallas} min): $PLACA no es un USB reseteable; reinicio NetworkManager."
       $SYSTEMCTL restart NetworkManager || true

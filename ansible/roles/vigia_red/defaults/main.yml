@@ -14,7 +14,7 @@ vigia_red_watchdog_modulo: "iTCO_wdt"
 vigia_red_wifi_powersave_off: true
 
 # --- Escalera (minutos SEGUIDOS sin router) ----------------------------------------
-vigia_red_paso_reconectar: 3
+vigia_red_paso_reconectar: 2
 vigia_red_paso_reiniciar_nm: 6
 vigia_red_paso_reset_usb: 10
 vigia_red_paso_otras_redes: 14

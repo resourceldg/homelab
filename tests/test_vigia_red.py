@@ -50,7 +50,8 @@ def entorno(tmp_path):
     def correr(veces=1):
         env = dict(os.environ, PATH=f"{bin_}:{os.environ['PATH']}",
                    VIGIA_ESTADO_DIR=str(estado), VIGIA_LOG=str(tmp_path / "vigia.log"),
-                   VIGIA_SYSFS=str(tmp_path / "sys"), VIGIA_UPTIME=str(uptime))
+                   VIGIA_SYSFS=str(tmp_path / "sys"), VIGIA_UPTIME=str(uptime),
+                   VIGIA_ESPERA="0")
         for _ in range(veces):
             subprocess.run(["bash", SCRIPT], env=env, check=True, timeout=30)
         return llamadas.read_text() if llamadas.exists() else ""
@@ -78,14 +79,15 @@ def test_internet_caido_afuera_no_toca_nuestro_enlace(entorno):
 
 def test_escalera_en_el_minuto_correcto(entorno):
     entorno["alcanzables"].write_text("")                # ni el router responde
-    llamadas = entorno["correr"](2)
-    assert "reconnect" not in llamadas                    # todavía no: espera 3 min
-    llamadas = entorno["correr"](1)                       # minuto 3
-    assert "device reconnect wlx0" in llamadas
-    llamadas = entorno["correr"](3)                       # minuto 6
+    llamadas = entorno["correr"](1)
+    assert "device connect" not in llamadas               # todavía no: espera 2 min
+    llamadas = entorno["correr"](1)                       # minuto 2
+    # La placa está 'disconnected' (como al arrancar): busca redes y conecta a la mejor.
+    assert "device wifi rescan ifname wlx0" in llamadas and "device connect wlx0" in llamadas
+    llamadas = entorno["correr"](4)                       # minuto 6
     assert "systemctl restart NetworkManager" in llamadas
     log = entorno["log"]()
-    assert "PASO 1 (3 min)" in log and "PASO 2 (6 min)" in log
+    assert "PASO 1 (2 min)" in log and "PASO 2 (6 min)" in log
 
 
 def test_reinicio_ultimo_recurso_con_limites(entorno):
@@ -125,3 +127,13 @@ def test_tailscale_caido_con_internet_se_reinicia(entorno):
     assert llamadas.count("restart tailscaled") == 1
     llamadas = entorno["correr"](5)                       # no lo martilla cada minuto
     assert llamadas.count("restart tailscaled") == 1
+
+
+def test_conectado_pero_sin_router_reconecta(entorno, tmp_path):
+    """Si NM dice 'connected' pero el router no responde, se reconecta (no se busca otra red)."""
+    entorno["alcanzables"].write_text("")
+    nm = tmp_path / "bin" / "nmcli"
+    nm.write_text(nm.read_text().replace('echo "wlx0:disconnected"', 'echo "wlx0:connected"'))
+    llamadas = entorno["correr"](2)
+    assert "device reconnect wlx0" in llamadas and "device connect wlx0" not in llamadas
+

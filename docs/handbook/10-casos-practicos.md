@@ -9,7 +9,7 @@ recorridos paso a paso. Es el capítulo "de taller".
 
 🧩 **Prerequisitos:** todos los anteriores (se usan como referencia).
 
-> 📝 **Capítulo en crecimiento.** Tiene diez casos reales: cuatro del servidor y
+> 📝 **Capítulo en crecimiento.** Tiene once casos reales: cinco del servidor y
 > seis de las placas de los equipos. Se suman más a medida que pasan.
 
 ## Método general de diagnóstico
@@ -297,6 +297,41 @@ siquiera un guardián. Hace falta algo **debajo** del sistema operativo.
 **Lección:** una herramienta automática **también se equivoca**. Antes de creerle
 a una conclusión, mirá las **pistas crudas** que la sostienen. Y si algo puede
 congelarse, la protección tiene que estar **por debajo** de lo que se congela.
+
+---
+
+## Caso 11 — Se reinicia, pero no vuelve a la red
+
+**Síntoma:** después de un corte de luz el servidor arranca (el BIOS lo prende
+solo), pero **no aparece** en Tailscale: a veces vuelve a los minutos, a veces a la
+media hora, y una vez **tres horas y media** después.
+
+**Diagnóstico:** los registros de NetworkManager (el programa que maneja la red)
+de los arranques lentos muestran esto:
+
+```
+14:03:10  association took too long … ssid-not-found
+14:04:37  association took too long … ssid-not-found
+          (y después… nada durante un buen rato)
+```
+
+`ssid-not-found` quiere decir "**no encuentro la red**". ¿Por qué no la
+encontraba, si la red existe? Porque después de un corte de luz se prenden **los
+dos a la vez**: el servidor y el router. El servidor está listo en un minuto; el
+WiFi del router tarda más. NetworkManager prueba, no ve la red, prueba de nuevo…
+y **después de 4 intentos fallidos se rinde por un rato** (es su configuración de
+fábrica). Cuando el router ya está listo, nadie está intentando.
+
+**Solución:**
+
+1. Cada red guardada **reintenta para siempre** (`autoconnect-retries 0`).
+2. El guardián de red, al minuto 2 sin router, **busca redes de nuevo y conecta**
+   a la mejor guardada.
+
+**Lección:** un sistema no falla solo "por dentro": también falla por **cómo se
+relaciona con otros**. Acá nadie estaba roto: el problema era el **orden** en que
+arrancan dos aparatos. Diseñar para eso es pensar en **arquitectura**, no solo en
+código ([cap. 11, decisión 5](11-arquitectura-iot.md#decision-5-la-red-falla-disenar-para-reconectar)).
 
 ---
 

@@ -74,15 +74,54 @@
     - not (vigia_wdt_dev.stat.exists | default(false))
 
 # --- Capa 2: enlace -------------------------------------------------------------------
+# El nombre empieza con "zz-" a propósito: NM lee conf.d en orden alfabético y gana
+# el último. Ubuntu trae "default-wifi-powersave-on.conf" (powersave = 3), que con
+# un nombre "50-…" se leía DESPUÉS y lo pisaba (pasó: quedaba prendido).
+- name: Remove the old, overridden power-save file
+  ansible.builtin.file:
+    path: /etc/NetworkManager/conf.d/50-vigia-wifi-powersave.conf
+    state: absent
+  when: vigia_red_enabled | bool and vigia_red_wifi_powersave_off | bool
+
 - name: Disable WiFi power saving (NetworkManager)
   ansible.builtin.copy:
     src: nm-wifi-powersave.conf
-    dest: /etc/NetworkManager/conf.d/50-vigia-wifi-powersave.conf
+    dest: /etc/NetworkManager/conf.d/zz-vigia-wifi-powersave.conf
     owner: root
     group: root
     mode: "0644"
   notify: Reload NetworkManager config
   when: vigia_red_enabled | bool and vigia_red_wifi_powersave_off | bool
+
+# NM NUNCA deja de intentar conectarse a una red guardada. Por qué: tras un corte
+# de luz el servidor arranca antes que el router; NM prueba 4 veces, no encuentra
+# la red y se queda sin intentar (2026-09-23: 37 min; 2026-09-22: más de 3 h).
+# Esta versión de NM no acepta autoconnect-retries como valor GLOBAL (unknown key):
+# se fija en cada red guardada (y agregar-wifi.sh lo fija en las nuevas).
+- name: Remove the global autoconnect-retries attempt (unsupported key)
+  ansible.builtin.file:
+    path: /etc/NetworkManager/conf.d/50-vigia-autoconnect.conf
+    state: absent
+  notify: Reload NetworkManager config
+  when: vigia_red_enabled | bool
+
+- name: Every saved WiFi network retries forever (autoconnect-retries 0)
+  ansible.builtin.shell:
+    cmd: |
+      set -uo pipefail
+      cambio=0
+      while IFS=: read -r uuid tipo; do
+        [ "$tipo" = "802-11-wireless" ] || continue
+        if [ "$(nmcli -g connection.autoconnect-retries connection show "$uuid")" != "0" ]; then
+          nmcli connection modify "$uuid" connection.autoconnect-retries 0 && cambio=1
+        fi
+      done < <(nmcli -t -f UUID,TYPE connection show)
+      echo "cambio=$cambio"
+  args:
+    executable: /bin/bash
+  register: vigia_retries
+  changed_when: "'cambio=1' in vigia_retries.stdout"
+  when: vigia_red_enabled | bool
 
 - name: Install iw (to turn WiFi power saving off without reconnecting)
   ansible.builtin.apt:
