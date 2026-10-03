@@ -71,7 +71,8 @@ la política rechaza montar rutas de afuera. **Guardá todo acá.**
   ```
   PGHOST=postgres   PGUSER=equipo_01   PGPASSWORD=…   PGDATABASE=db_equipo_01
   REDIS_URL=redis://redis:6379/2
-  MQTT_HOST=mosquitto  MQTT_USER=equipo_01  MQTT_PASSWORD=…
+  MQTT_HOST=mqtt-aula  MQTT_USER=equipo_01  MQTT_PASSWORD=…  MQTT_TOPIC_PREFIX=equipo-01/
+  MQTT_DEVICE_HOST=homelab-01.tail4eda13.ts.net  MQTT_DEVICE_PORT=10000
   ```
 
 ---
@@ -148,6 +149,23 @@ persistence_location /mosquitto/data/
 
 Tu equipo ya tiene credenciales MQTT en `.shared-services.env` por si querés activar
 autenticación (lo provisiona el operador; ver [`ejemplos/nodered-mqtt/mosquitto.conf`](ejemplos/nodered-mqtt/mosquitto.conf)).
+
+### 3.3.1 Broker del aula (`mqtt-aula`) — para conectar una ESP32
+
+Tu Mosquitto propio solo se alcanza por túnel SSH, y una ESP32 no puede abrir un
+túnel. Para hardware usá el **broker del aula**, que el operador publica por
+internet con TLS. Es **cerrado**: entrás con `MQTT_USER` / `MQTT_PASSWORD` de tu
+`.shared-services.env`, y **solo podés usar topics que empiecen con el nombre de
+tu equipo** (`equipo-01/led`, `equipo-01/sensor/…`). Un topic de otro equipo se
+descarta sin aviso.
+
+| Desde | Host | Puerto | TLS |
+|---|---|---|---|
+| Tu Node-RED (en el server) | `mqtt-aula` | `1883` | no |
+| La ESP32 (cualquier red) | `homelab-01.tail4eda13.ts.net` | `10000` | **sí** |
+
+En Node-RED, el nodo *mqtt-broker* va a `mqtt-aula:1883` con usuario y clave.
+`labctl up` conecta `mqtt-aula` a la red de tu proyecto.
 
 ### 3.4 Comandos (`labctl`)
 

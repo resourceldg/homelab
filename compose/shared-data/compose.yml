@@ -56,6 +56,32 @@ services:
           cpus: "0.25"
           memory: 128M
 
+  # Broker MQTT del aula. A diferencia del Mosquitto que cada equipo puede
+  # levantar en su proyecto (loopback, solo por túnel), este es el que ven los
+  # dispositivos (ESP32): un único punto de entrada para todos los equipos, que
+  # el operador publica por Tailscale Funnel. Por eso va CERRADO: usuario por
+  # equipo y ACL que deja a cada uno solo en su árbol `<equipo>/#`.
+  mqtt-aula:
+    image: eclipse-mosquitto:2.0.20
+    container_name: mqtt-aula
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      # passwd y acl los genera el rol shared_services (no están en el repo).
+      - ./mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - mqtt_data:/mosquitto/data
+    networks: [shared]
+    # Loopback: la salida a internet es Tailscale Funnel (TLS) hacia este puerto.
+    ports:
+      - "127.0.0.1:18830:1883"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
 networks:
   shared:
     name: classroom-shared
@@ -64,3 +90,4 @@ networks:
 
 volumes:
   postgres_data:
+  mqtt_data:

@@ -29,6 +29,106 @@
     state: present
   when: shared_services_enabled | bool and (classroom_teams | length > 0)
 
+- name: Ensure per-team DB password store exists (root only)
+  ansible.builtin.file:
+    path: "{{ shared_services_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+# MQTT credential per team, generated once and stored root-only (same pattern as
+# the DB password). It is the team's login on the classroom broker (mqtt-aula) and
+# lands in .shared-services.env, so adding a team never touches the vault.
+- name: Generate an MQTT password per team (once)
+  ansible.builtin.shell:
+    cmd: "printf %s \"$(openssl rand -hex 16)\" > {{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+    creates: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+  args:
+    executable: /bin/bash
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: shared_services_enabled | bool
+
+- name: Read per-team MQTT passwords
+  ansible.builtin.slurp:
+    src: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+  loop: "{{ classroom_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: team_mqttpass
+  no_log: true
+  when: shared_services_enabled | bool
+
+# --- Broker MQTT del aula (mqtt-aula) ---------------------------------------
+# passwd y acl tienen que existir ANTES de levantar el stack: si falta el archivo
+# de un bind mount, Docker crea un directorio en su lugar y Mosquitto no arranca.
+- name: Ensure the mqtt-aula config dir exists
+  ansible.builtin.file:
+    path: "{{ stacks_root }}/shared-data/mosquitto"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0750"
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Render the mqtt-aula ACL (each team confined to <team>/#)
+  ansible.builtin.template:
+    src: mqtt-aula-acl.j2
+    dest: "{{ stacks_root }}/shared-data/mosquitto/acl"
+    owner: "1883"
+    group: "1883"
+    mode: "0640"
+  notify: Reload mqtt-aula
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Write the mqtt-aula user list (root only)
+  ansible.builtin.copy:
+    content: |
+      {% for r in team_mqttpass.results %}
+      {{ r.item.name | replace('-', '_') }}	{{ r.content | b64decode }}
+      {% endfor %}
+    dest: "{{ shared_services_secrets_dir }}/mqtt-aula-users.tsv"
+    owner: root
+    group: root
+    mode: "0600"
+  register: shared_mqtt_userlist
+  no_log: true
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+- name: Check whether the mqtt-aula password file exists
+  ansible.builtin.stat:
+    path: "{{ stacks_root }}/shared-data/mosquitto/passwd"
+  register: shared_mqtt_passwd_file
+  when: shared_services_enabled | bool and (classroom_teams | length > 0)
+
+# mosquitto_passwd hashea con salt aleatorio: se reconstruye solo si cambió la
+# lista de equipos/claves o falta el archivo, para no romper la idempotencia.
+- name: Build the mqtt-aula password file (hashed with mosquitto_passwd)
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      work="$(mktemp -d -p {{ shared_services_secrets_dir }})"
+      trap 'rm -rf "$work"' EXIT
+      : > "$work/passwd"
+      while IFS=$'\t' read -r usuario clave; do
+        [ -n "$usuario" ] || continue
+        docker run --rm --user 0:0 --entrypoint mosquitto_passwd \
+          -v "$work":/work {{ shared_mqtt_image }} \
+          -b /work/passwd "$usuario" "$clave"
+      done < {{ shared_services_secrets_dir }}/mqtt-aula-users.tsv
+      install -o 1883 -g 1883 -m 0640 "$work/passwd" {{ stacks_root }}/shared-data/mosquitto/passwd
+  args:
+    executable: /bin/bash
+  when:
+    - shared_services_enabled | bool and (classroom_teams | length > 0)
+    - shared_mqtt_userlist is changed or not (shared_mqtt_passwd_file.stat.exists | default(false))
+  changed_when: true
+  no_log: true
+  notify: Reload mqtt-aula
+
 - name: Bring up the shared-data stack
   community.docker.docker_compose_v2:
     project_src: "{{ stacks_root }}/shared-data"
@@ -41,15 +141,6 @@
     host: 127.0.0.1
     port: 5432
     timeout: 90
-  when: shared_services_enabled | bool and (classroom_teams | length > 0)
-
-- name: Ensure per-team DB password store exists (root only)
-  ansible.builtin.file:
-    path: "{{ shared_services_secrets_dir }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0700"
   when: shared_services_enabled | bool and (classroom_teams | length > 0)
 
 # Generated on the host (as root) so the secret store stays root-only; the
@@ -72,31 +163,6 @@
   loop_control:
     label: "{{ item.name }}"
   register: team_pgpass
-  no_log: true
-  when: shared_services_enabled | bool
-
-# MQTT credential per team, generated once and stored root-only (same pattern as
-# the DB password). The broker ships anonymous by default; these creds are dropped
-# in .shared-services.env so a team can opt into Mosquitto auth without touching
-# the vault (see the nodered-mqtt handbook example).
-- name: Generate an MQTT password per team (once)
-  ansible.builtin.shell:
-    cmd: "printf %s \"$(openssl rand -hex 16)\" > {{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
-    creates: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
-  args:
-    executable: /bin/bash
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: shared_services_enabled | bool
-
-- name: Read per-team MQTT passwords
-  ansible.builtin.slurp:
-    src: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: team_mqttpass
   no_log: true
   when: shared_services_enabled | bool
 
@@ -139,3 +205,26 @@
     index_var: team_index
   no_log: true
   when: shared_services_enabled | bool
+
+# --- Funnel: los dispositivos llegan a mqtt-aula desde cualquier red ----------
+# TLS lo termina Tailscale; el broker exige usuario/clave igual. Se chequea el
+# puerto puntual (no solo "Funnel on"): el 8443 del pañol ya lo tiene prendido.
+- name: Check Tailscale Funnel status (mqtt-aula)
+  ansible.builtin.command: tailscale funnel status
+  register: shared_mqtt_funnel_status
+  changed_when: false
+  failed_when: false
+  when: shared_services_enabled | bool and shared_mqtt_funnel_enabled | bool
+
+- name: Publish mqtt-aula through Funnel (TLS-terminated TCP)
+  ansible.builtin.command: >-
+    tailscale funnel --bg --tls-terminated-tcp={{ shared_mqtt_funnel_port }}
+    tcp://127.0.0.1:{{ shared_mqtt_host_port }}
+  register: shared_mqtt_funnel_enable
+  changed_when: shared_mqtt_funnel_enable.rc == 0
+  failed_when:
+    - shared_mqtt_funnel_enable.rc != 0
+    - "'not enabled on your tailnet' not in (shared_mqtt_funnel_enable.stderr | default(''))"
+  when:
+    - shared_services_enabled | bool and shared_mqtt_funnel_enabled | bool
+    - ("127.0.0.1:" ~ shared_mqtt_host_port) not in (shared_mqtt_funnel_status.stdout | default(''))

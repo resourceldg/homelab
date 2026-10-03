@@ -40,7 +40,7 @@ ALLOWED = {"validate", "up", "down", "restart", "ps", "logs", "usage", "status"}
 # Infrastructure containers attached to each team's private network at `up` so
 # teams can reach shared data services and be published via Caddy — without
 # being able to see one another (each team has its own network).
-INFRA_CONTAINERS = ("postgres", "redis", "mailpit", "caddy")
+INFRA_CONTAINERS = ("postgres", "redis", "mailpit", "mqtt-aula", "caddy")
 TIMEOUT = 180
 
 

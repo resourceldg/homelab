@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LED equipo-NN</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f2f4f7; margin: 0;
+           display: grid; place-items: center; min-height: 100vh; }
+    .tarjeta { background: #fff; padding: 2rem; border-radius: 12px;
+               box-shadow: 0 2px 10px #0002; text-align: center; min-width: 260px; }
+    .foco { width: 90px; height: 90px; border-radius: 50%; margin: 1rem auto;
+            background: #444; transition: .2s; }
+    .foco.on { background: #ffd43b; box-shadow: 0 0 40px #ffd43b; }
+    button { font-size: 1rem; padding: .6rem 1.2rem; margin: .3rem; border: 0;
+             border-radius: 8px; cursor: pointer; color: #fff; }
+    .prender { background: #2b8a3e; } .apagar { background: #c92a2a; }
+    #conexion { font-size: .85rem; color: #868e96; }
+  </style>
+</head>
+<body>
+  <div class="tarjeta">
+    <h1>LED de la ESP32</h1>
+    <div id="foco" class="foco"></div>
+    <p id="estado">Esperando a la ESP32…</p>
+    <button class="prender" onclick="mandar(1)">Prender</button>
+    <button class="apagar" onclick="mandar(0)">Apagar</button>
+    <p id="conexion">conectando…</p>
+  </div>
+
+  <script>
+    // Manda la orden a Node-RED (POST /api/led). Node-RED la publica por MQTT
+    // en equipo-NN/led y la ESP32 la recibe.
+    function mandar(valor) {
+      fetch("/api/led", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: valor })
+      });
+    }
+
+    // Muestra lo que la ESP32 CONFIRMA (equipo-NN/led/estado), en vivo.
+    function mostrar(valor) {
+      const on = String(valor) === "1";
+      document.getElementById("foco").className = on ? "foco on" : "foco";
+      document.getElementById("estado").textContent = on ? "PRENDIDO" : "apagado";
+    }
+
+    // Estado actual al abrir la página
+    fetch("/api/led").then(r => r.json()).then(d => { if (d.estado !== null) mostrar(d.estado); });
+
+    // Cambios en vivo por WebSocket (se reconecta solo si se corta)
+    function conectar() {
+      const ws = new WebSocket(`ws://${location.host}/ws/led`);
+      ws.onopen = () => document.getElementById("conexion").textContent = "en vivo ✔";
+      ws.onmessage = (e) => mostrar(e.data);
+      ws.onclose = () => {
+        document.getElementById("conexion").textContent = "reconectando…";
+        setTimeout(conectar, 2000);
+      };
+    }
+    conectar();
+  </script>
+</body>
+</html>

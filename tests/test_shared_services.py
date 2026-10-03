@@ -2,14 +2,14 @@
 
     py.test -v --hosts=local:// tests/test_shared_services.py
 
-Verifies Postgres/Redis/Mailpit are up and each team got a credentials file.
+Verifies Postgres/Redis/Mailpit/mqtt-aula are up and each team got a credentials file.
 """
 import pytest
 
 TEAMS = ["equipo-01", "equipo-02", "equipo-03", "equipo-04", "equipo-05"]
 
 
-@pytest.mark.parametrize("name", ["postgres", "redis", "mailpit"])
+@pytest.mark.parametrize("name", ["postgres", "redis", "mailpit", "mqtt-aula"])
 def test_shared_service_running(host, name):
     ps = host.run(f"docker ps --filter name=^/{name}$ --format '{{{{.Status}}}}'")
     assert "Up" in ps.stdout, f"{name} not running: {ps.stdout!r}"
