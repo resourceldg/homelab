@@ -35,9 +35,14 @@ access_control:
     - domain: '{{ panol_subdomain | default("panol") }}.{{ caddy_base_domain }}'
       policy: one_factor
       subject: ['group:operators']
-    # Grafana + the launchpad: operators and students.
+    # Grafana de operación: infra + auditoría del pañol (quién entró y cuándo).
+    # Solo operadores. Los alumnos tienen el suyo en grafana-aula.
+    - domain: 'grafana.{{ caddy_base_domain }}'
+      policy: one_factor
+      subject: ['group:operators']
+    # Grafana del aula + el launchpad: operadores y alumnos.
     - domain:
-        - 'grafana.{{ caddy_base_domain }}'
+        - 'grafana-aula.{{ caddy_base_domain }}'
         - '{{ caddy_base_domain }}'
       policy: one_factor
       subject: ['group:operators', 'group:students']

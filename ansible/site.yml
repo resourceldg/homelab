@@ -56,5 +56,6 @@
     # --- Classroom plane (multi-user Docker Compose lab) -------------------
     - { role: classroom, tags: ["classroom"] }
     - { role: shared_services, tags: ["classroom", "shared-services"] }
+    - { role: aula_iot, tags: ["classroom", "aula-iot"] }
     - { role: labctl, tags: ["classroom", "labctl"] }
     - { role: classroom_publish, tags: ["classroom", "publish"] }

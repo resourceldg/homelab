@@ -62,6 +62,29 @@
   no_log: true
   when: shared_services_enabled | bool
 
+# Usuarios de servicio del broker (no son equipos): la capa de visualización
+# (rol aula_iot) los usa para leer. Misma receta que las claves de equipo.
+- name: Generate a password per MQTT service user (once)
+  ansible.builtin.shell:
+    cmd: "printf %s \"$(openssl rand -hex 16)\" > {{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+    creates: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+  args:
+    executable: /bin/bash
+  loop: "{{ shared_mqtt_service_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: shared_services_enabled | bool
+
+- name: Read MQTT service user passwords
+  ansible.builtin.slurp:
+    src: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
+  loop: "{{ shared_mqtt_service_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: service_mqttpass
+  no_log: true
+  when: shared_services_enabled | bool
+
 # --- Broker MQTT del aula (mqtt-aula) ---------------------------------------
 # passwd y acl tienen que existir ANTES de levantar el stack: si falta el archivo
 # de un bind mount, Docker crea un directorio en su lugar y Mosquitto no arranca.
@@ -89,6 +112,9 @@
     content: |
       {% for r in team_mqttpass.results %}
       {{ r.item.name | replace('-', '_') }}	{{ r.content | b64decode }}
+      {% endfor %}
+      {% for r in service_mqttpass.results %}
+      {{ r.item.name }}	{{ r.content | b64decode }}
       {% endfor %}
     dest: "{{ shared_services_secrets_dir }}/mqtt-aula-users.tsv"
     owner: root

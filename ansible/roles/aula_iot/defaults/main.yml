@@ -1,0 +1,20 @@
+---
+# aula_iot — capa de visualización MQTT del aula (VictoriaMetrics + Telegraf +
+# exporter del broker + Grafana del aula). Depende de shared_services
+# (mqtt-aula y sus usuarios de servicio) y del roster (classroom_teams).
+aula_iot_enabled: true
+aula_iot_dir: "{{ stacks_root }}/aula-iot"
+
+# Historial de los sensores. Pasado esto, VictoriaMetrics borra solo.
+aula_iot_retention: "15d"
+
+aula_iot_grafana_domain: "grafana-aula.{{ caddy_base_domain }}"
+# Debe coincidir con el usuario operador de Authelia: con auth proxy, quien
+# entra como ese usuario ES el admin de Grafana.
+aula_iot_grafana_admin: "operator"
+aula_iot_grafana_api: "http://127.0.0.1:3001"
+
+# Red caddy <-> grafana-aula. Rango FIJO porque Grafana confía en el header de
+# usuario solo si viene de acá (GF_AUTH_PROXY_WHITELIST). La crea el rol docker.
+aula_iot_proxy_network: "grafana-aula-proxy"
+aula_iot_proxy_subnet: "172.31.250.0/24"

@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+# Telegraf del aula: lee mqtt-aula (solo lectura, usuario aula-telegraf) y
+# guarda cada valor en VictoriaMetrics. La conversión mensaje -> métrica está
+# en mqtt.star (contrato de topics y payloads: docs/handbook/11-conectar-a-grafana.md).
+[agent]
+  interval = "10s"
+  flush_interval = "5s"
+  omit_hostname = true
+  # Un alumno puede publicar en ráfaga: buffer acotado, se pierde lo viejo.
+  metric_buffer_limit = 20000
+
+[[inputs.mqtt_consumer]]
+  servers = ["tcp://mqtt-aula:1883"]
+  # Un topic por equipo del roster. El broker además lo limita por ACL.
+  topics = [
+{% for team in classroom_teams %}
+    "{{ team.name }}/#",
+{% endfor %}
+  ]
+  qos = 0
+  client_id = "aula-telegraf"
+  username = "aula-telegraf"
+  password = "${AULA_TELEGRAF_MQTT_PASS}"
+  persistent_session = false
+  data_format = "value"
+  data_type = "string"
+  topic_tag = "topic"
+
+[[processors.starlark]]
+  script = "/etc/telegraf/mqtt.star"
+
+[[outputs.influxdb]]
+  # VictoriaMetrics acepta el protocolo de Influx: mqtt + valor -> mqtt_valor
+  urls = ["http://aula-victoriametrics:8428"]
+  skip_database_creation = true
+  database = "aula"

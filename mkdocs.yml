@@ -41,5 +41,7 @@ nav:
   - 8. El pipeline (Git, CI, tests): 08-pipeline.md
   - 9. La plataforma de aula: 09-plataforma-aula.md
   - 10. Casos prácticos: 10-casos-practicos.md
+  - 11. Conectar tus sensores a Grafana: 11-conectar-a-grafana.md
+  - 12. Usar Grafana: 12-usar-grafana.md
   - Glosario: glosario.md
   - Mejoras futuras: mejoras-futuras.md

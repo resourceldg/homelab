@@ -1,0 +1,37 @@
+# {{ ansible_managed }}
+apiVersion: 1
+
+# Borra datasources que ya no están en el roster (equipo dado de baja).
+deleteDatasources:
+{% for ds in aula_iot_datasources_removed | default([]) %}
+  - name: "{{ ds }}"
+    orgId: 1
+{% endfor %}
+
+datasources:
+  # Todos los equipos: lo usa el dashboard general del operador.
+  - name: "MQTT — Aula (todos)"
+    uid: mqtt-aula
+    type: prometheus
+    access: proxy
+    url: http://aula-victoriametrics:8428
+    isDefault: false
+    editable: false
+    jsonData:
+      timeInterval: "10s"
+
+{% for team in classroom_teams %}
+  # {{ team.name }}: VictoriaMetrics filtra SIEMPRE por equipo (extra_label),
+  # así las consultas del equipo solo ven sus propios datos sin escribir el filtro.
+  - name: "MQTT — {{ team.name }}"
+    uid: mqtt-{{ team.name }}
+    type: prometheus
+    access: proxy
+    url: http://aula-victoriametrics:8428
+    isDefault: false
+    editable: false
+    jsonData:
+      timeInterval: "10s"
+      customQueryParameters: "extra_label=equipo={{ team.name }}"
+
+{% endfor %}

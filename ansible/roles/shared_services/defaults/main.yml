@@ -16,3 +16,13 @@ shared_mqtt_funnel_enabled: false
 shared_mqtt_funnel_port: 10000
 # Nombre público que usa el dispositivo (va a .shared-services.env).
 shared_mqtt_public_host: "{{ ansible_facts.hostname }}.ts.net"
+
+# Usuarios de servicio del broker (lectura). `acl` es la lista de reglas de
+# Mosquitto; `{teams}` se expande a una regla por equipo del roster.
+#   aula-telegraf  -> lee lo que publican los equipos y lo guarda (aula_iot)
+#   aula-exporter  -> lee las estadísticas del broker ($SYS) para Grafana
+shared_mqtt_service_users:
+  - name: aula-telegraf
+    acl: ["topic read {teams}/#"]
+  - name: aula-exporter
+    acl: ["topic read $SYS/#"]

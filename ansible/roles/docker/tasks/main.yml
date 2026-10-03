@@ -74,3 +74,14 @@
   community.docker.docker_network:
     name: panol
     state: present
+
+# Red SOLO entre Caddy y el Grafana del aula, con rango fijo: Grafana confía en
+# el usuario que le pasa Authelia (header Remote-User) únicamente si el pedido
+# viene de este rango. Si fuera `edge`, cualquier contenedor de ahí podría
+# hacerse pasar por cualquier alumno o por el operador.
+- name: Create the caddy <-> grafana-aula network (fixed subnet)
+  community.docker.docker_network:
+    name: grafana-aula-proxy
+    ipam_config:
+      - subnet: "172.31.250.0/24"
+    state: present
