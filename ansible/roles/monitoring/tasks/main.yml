@@ -44,6 +44,17 @@
     group: "{{ admin_user }}"
   when: dashboard_enabled | bool
 
+# Caddy declara grafana-aula-proxy como red externa. La crea el rol docker,
+# pero si se corre solo `--tags monitoring` ese rol no corre y Caddy no
+# arrancaría: se perdería TODA la web. Se asegura acá también (idempotente,
+# mismo rango que en el rol docker y en la whitelist del Grafana del aula).
+- name: Ensure the caddy <-> grafana-aula network exists
+  community.docker.docker_network:
+    name: grafana-aula-proxy
+    ipam_config:
+      - subnet: "172.31.250.0/24"
+    state: present
+
 - name: Bring up the proxy stack
   community.docker.docker_compose_v2:
     project_src: "{{ stacks_root }}/proxy"

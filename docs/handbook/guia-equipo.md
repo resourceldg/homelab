@@ -202,7 +202,8 @@ es el programa que los reparte (lo explica, desde cero, el
    internet y cifrado. Un broker dentro de tu proyecto solo se alcanza por túnel
    SSH, y una placa no puede abrir un túnel.
 2. **Lo que publicás se guarda y aparece en Grafana** solo
-   ([capítulo 12](12-conectar-a-grafana.md)).
+   ([capítulo 12](12-conectar-a-grafana.md); el Grafana del aula se está
+   poniendo en marcha).
 3. **Es cerrado:** entrás con el usuario y la clave de tu equipo, y **solo podés
    usar topics que empiecen con el nombre de tu equipo** (`equipo-04/...`). Un
    mensaje con otro nombre se descarta sin aviso.

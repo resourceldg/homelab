@@ -1,5 +1,10 @@
 # Capa de visualización IoT del aula (`aula-iot`)
 
+> **Estado (octubre 2026):** código listo y con tests en CI; **sin desplegar**
+> (`aula_iot_enabled: false` en producción) porque el servidor se cayó antes del
+> despliegue. Para activarlo: poner `true`, aplicar `--tags docker,monitoring,auth,aula-iot`
+> y verificar con las placas de los equipos.
+
 Lo que las placas de los equipos publican en `mqtt-aula` se guarda 15 días y se
 ve en un **Grafana del aula** propio, con un folder por equipo que solo ese equipo
 ve y edita, y un dashboard general del operador.

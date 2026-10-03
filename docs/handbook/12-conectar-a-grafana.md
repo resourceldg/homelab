@@ -3,6 +3,11 @@
 🎯 **Objetivo:** que lo que mide o hace tu ESP32 aparezca **solo** en el Grafana
 del aula, en el dashboard de tu equipo, con historial de los últimos **15 días**.
 
+> 🚧 **Estado (octubre 2026): el Grafana del aula se está poniendo en marcha.**
+> Todavía no está disponible: el profe avisa cuando lo esté. Mientras tanto ya
+> podés **preparar tu placa** siguiendo las reglas de este capítulo: lo que
+> publiques bien desde ahora va a aparecer solo cuando se active.
+
 🧩 **Prerequisitos:** [capítulo 11 (Arquitectura IoT)](11-arquitectura-iot.md),
 para entender las piezas. Los datos de tu equipo están en la
 [guía del equipo](guia-equipo.md#33-mqtt-usa-el-broker-del-aula-mqtt-aula).
