@@ -165,6 +165,12 @@ systemctl status panol-reset-prueba.timer       # reset del modo prueba (tempora
   te dice cuál anda y por qué los otros no.
 - `make uplink` — mide la calidad real de cada conexión del servidor (WiFi,
   cable) y muestra cuál conviene. No cambia nada.
+- **Si el servidor se cae y no estás cerca:** `scripts/diagnosticar-caida.sh`
+  corre en **tu** compu (por cron, cada 5 minutos). Cuando el servidor vuelve, lee
+  sus registros y deja un informe con la causa más probable en
+  `~/homelab-reportes/caida-<fecha>.md`, con una notificación en el escritorio.
+  Instalación: `crontab -e` y agregar
+  `*/5 * * * * /home/zen/homelab/scripts/diagnosticar-caida.sh --cron`.
 - `sudo ufw status verbose` — reglas actuales del firewall.
 - ¿Te quedaste afuera del SSH? Usá la consola física o Tailscale SSH
   (`ssh ansible@homelab-01`, que no pasa por el sshd endurecido).
