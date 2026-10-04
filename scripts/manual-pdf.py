@@ -70,14 +70,40 @@ def dibujar_mermaid(codigo):
     return svg
 
 
+# Letra de los diagramas en papel: se dibujan con 22 px y después se achican al
+# ancho de la hoja. Si en una hoja vertical la letra queda por debajo de este
+# mínimo, el diagrama va solo en una hoja apaisada (50 % más de ancho).
+LETRA_MINIMA_PT = 7.5
+MM_POR_PT = 0.3528
+
+
+def letra_pt(svg, ancho_mm, alto_mm):
+    with open(svg, encoding="utf-8") as fh:
+        m = re.search(r'viewBox="[\d.\-]+ [\d.\-]+ ([\d.]+) ([\d.]+)"', fh.read())
+    w, h = float(m.group(1)), float(m.group(2))
+    return 22 * min(ancho_mm / w, alto_mm / h) / MM_POR_PT
+
+
+# Lo que se lee en la hoja vertical antes de una apaisada: sin esto, el título de
+# la sección queda solo al pie de una hoja casi vacía.
+AVISO_APAISADA = '<p class="aviso-apaisada">→ El diagrama sigue en la página siguiente (hoja apaisada).</p>'
+
+
+def bloque_diagrama(svg):
+    vertical, apaisada = letra_pt(svg, 178, 200), letra_pt(svg, 273, 180)
+    # Apaisada solo si la vertical no alcanza el mínimo Y la apaisada mejora: un
+    # diagrama alto se lee PEOR apaisado (lo limita la altura de la hoja).
+    clase = "apaisada" if vertical < LETRA_MINIMA_PT and apaisada > vertical else "diagrama"
+    aviso = AVISO_APAISADA if clase == "apaisada" else ""
+    return f'\n{aviso}<div class="{clase}"><img src="file://{svg}" alt="diagrama"></div>\n'
+
+
 def capitulo_html(archivo, ids_paginas):
     slug_pag = os.path.splitext(archivo)[0]
     with open(os.path.join(DOCS, archivo), encoding="utf-8") as fh:
         texto = fh.read()
     # Mermaid -> imagen ya dibujada
-    texto = re.sub(r"```mermaid\n(.*?)```",
-                   lambda m: f'\n<div class="diagrama"><img src="file://{dibujar_mermaid(m.group(1))}" alt="diagrama"></div>\n',
-                   texto, flags=re.S)
+    texto = re.sub(r"```mermaid\n(.*?)```", lambda m: bloque_diagrama(dibujar_mermaid(m.group(1))), texto, flags=re.S)
     cuerpo = markdown.markdown(texto, extensions=[
         "tables", "toc", "attr_list", "admonition", "pymdownx.superfences", "pymdownx.details", "sane_lists"])
     # ids únicos por capítulo y enlaces internos
@@ -99,9 +125,20 @@ def capitulo_html(archivo, ids_paginas):
         return f'href="https://github.com/resourceldg/homelab/blob/main/{ruta}{("#" + ancla) if ancla else ""}"'
     cuerpo = re.sub(r'href="([^"]+)"', enlace, cuerpo)
     cuerpo = re.sub(r'src="img/([^"]+)"', lambda m: f'src="file://{os.path.join(DOCS, "img", m.group(1))}"', cuerpo)
-    # Las imágenes muy anchas no se leen en una hoja vertical: van solas, apaisadas.
-    cuerpo = re.sub(r'<p>(<img [^>]*src="[^"]*(?:ciclo-completo|dos-caminos)\.svg"[^>]*>)</p>',
-                    r'<div class="apaisada">\1</div>', cuerpo)
+    # Imágenes propias: misma regla que los diagramas (la orientación que deje la
+    # letra más grande), medida con su letra más chica.
+    def img_propia(m):
+        ruta = m.group(2)
+        with open(ruta, encoding="utf-8") as fh:
+            t = fh.read()
+        w, h = map(float, re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', t).groups())
+        chica = min(float(x) for x in re.findall(r'font-size="([\d.]+)"', t))
+        vertical = chica * min(178 / w, 200 / h) / MM_POR_PT
+        apaisada = chica * min(273 / w, 180 / h) / MM_POR_PT
+        if vertical < LETRA_MINIMA_PT and apaisada > vertical:
+            return AVISO_APAISADA + f'<div class="apaisada">{m.group(1)}</div>'
+        return f'<p>{m.group(1)}</p>'
+    cuerpo = re.sub(r'<p>(<img [^>]*src="file://([^"]+\.svg)"[^>]*>)</p>', img_propia, cuerpo)
     return f'<section class="capitulo" id="{slug_pag}">{cuerpo}</section>'
 
 
@@ -113,6 +150,7 @@ CSS = """
 @page apaisada { size: A4 landscape; margin: 12mm; }
 .apaisada { page: apaisada; break-before: page; break-after: page; display: flex; align-items: center; height: 180mm; }
 .apaisada img { width: 100%; max-height: 180mm; object-fit: contain; }
+.aviso-apaisada { color: #757575; font-style: italic; font-size: 9.5pt; }
 body { font-family: 'DejaVu Sans', 'Noto Sans', Arial, sans-serif; font-size: 10.5pt; line-height: 1.5; color: #212121; }
 .portada { page: portada; height: 250mm; display: flex; flex-direction: column; justify-content: center; text-align: center; }
 .portada h1 { font-size: 30pt; color: #00796b; margin: 0 0 6mm; }

@@ -192,7 +192,9 @@ adentro del firmware.
 
 `equipo-04/enchufe/estado` = `ON` → se guarda como **1**; `OFF` → **0**. Aparece
 en el panel **Actuadores y estados** como barras verdes y grises en el tiempo: se
-ve exactamente cuándo estuvo prendido el aparato.
+ve exactamente cuándo **la placa** lo prendió. (Que el aparato de verdad
+consumiera corriente es otra cosa: para eso habría que **medirlo**; ver el
+[estado medido](11-arquitectura-iot.md#decision-3-separar-la-orden-del-estado-confirmado).)
 
 ---
 

@@ -26,42 +26,7 @@ es lo que permite saber qué se rompe cuando algo se cae.
 
 ## El mapa completo
 
-```mermaid
-flowchart TB
-  subgraph ENTRADA["Puertas de entrada"]
-    ts["Tailscale (red privada)"]
-    fun["Funnel (entrada por internet)"]
-    caddy["Caddy (puerta web, HTTPS)"]
-    auth["Authelia (login único)"]
-  end
-  subgraph OPERACION["Para el operador"]
-    home["Homepage (página de inicio)"]
-    graf["Grafana de operación"]
-    prom["Prometheus"]
-    ne["node-exporter"]
-    cad["cAdvisor"]
-    loki["Loki + Alloy (logs, a pedido)"]
-  end
-  subgraph AULA["Para el aula"]
-    pg["PostgreSQL"]
-    redis["Redis"]
-    mail["Mailpit"]
-    mqtt["mqtt-aula (broker MQTT)"]
-    tel["Telegraf"]
-    vm["VictoriaMetrics"]
-    grafa["Grafana del aula"]
-    labctld["labctld"]
-    eq["stacks de los equipos<br/>(Node-RED, nginx)"]
-  end
-  ts --> caddy --> auth
-  caddy --> home & graf & grafa
-  fun --> mqtt
-  prom --> ne & cad
-  graf --> prom & loki
-  mqtt --> tel --> vm --> grafa
-  labctld --> eq
-  eq --> pg & redis & mail & mqtt
-```
+![Mapa de servicios: puertas de entrada, servicios del aula y del operador, y quién depende de quién](img/mapa-servicios.svg)
 
 ---
 

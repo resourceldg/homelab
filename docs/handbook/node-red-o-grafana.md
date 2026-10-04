@@ -142,7 +142,7 @@ El topic nuevo tiene que respetar el [contrato](12-conectar-a-grafana.md#las-3-r
 |---|:-:|:-:|:-:|---|
 | ver la temperatura de las últimas horas | | ✅ | | historial: lo guarda Telegraf, lo muestra Grafana |
 | un botón que prenda el LED | ✅ | | | es una **orden**: Grafana no manda órdenes |
-| ver cuándo estuvo prendido el enchufe | | ✅ | | el estado confirmado ya llega por MQTT |
+| ver cuándo la placa prendió el enchufe | | ✅ | | el estado confirmado ya llega por MQTT (para saber si **de verdad** consumió, hay que medirlo) |
 | apagar algo si pasa una condición | ✅ | | | es una **regla** que reacciona a cada mensaje |
 | graficar un valor **calculado** | | | ✅ | Node-RED calcula y republica; Grafana lo muestra |
 | convertir unidades antes de guardar | | | ✅ | o mejor: que la placa ya mande la unidad correcta |

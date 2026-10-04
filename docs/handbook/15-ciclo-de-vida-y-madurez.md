@@ -234,7 +234,7 @@ una escala simple, como los niveles de un videojuego:
 | Grafana del aula (este manual) | 2→3 | 🟩🟩🟨⬜⬜ | está escrito en el repositorio; falta **desplegarlo y probarlo** |
 | Proyectos de los equipos (Node-RED, páginas) | 2 | 🟩🟩⬜⬜⬜ | se armaron a mano: pasarlos al repositorio |
 | Firmware de las placas | 1–2 | 🟩🟨⬜⬜⬜ | guardarlo en git, versiones, contrato de topics |
-| Robustez ante caídas (watchdog, guardián de red) | 3 | 🟩🟩🟩⬜⬜ | armado y probado (oct 2026); falta el cable de red, el BIOS "encender al volver la luz" y alertas |
+| Robustez ante caídas (watchdog, guardián de red) | 3 | 🟩🟩🟩⬜⬜ | armado y probado (oct 2026), BIOS configurado; falta el cable de red, una UPS y alertas |
 | Red del servidor (WiFi USB) | 2 | 🟩🟩⬜⬜⬜ | adaptador de 15 años (RTL8187B): cable de red o un adaptador nuevo |
 | **Copias de seguridad** | **1** | 🟩⬜⬜⬜⬜ | están diseñadas pero **no corren**: falta el disco |
 | Documentación | 2–3 | 🟩🟩🟨⬜⬜ | capítulos 4 a 8 incompletos |
@@ -252,16 +252,16 @@ quadrantChart
   quadrant-2 URGENTE
   quadrant-3 Mas adelante
   quadrant-4 Esta bien
-  Copias de seguridad: [0.12, 0.95]
-  Red del servidor: [0.38, 0.85]
-  Firmware de placas: [0.28, 0.6]
-  Proyectos de equipos: [0.4, 0.55]
-  Grafana del aula: [0.48, 0.5]
-  Broker del aula: [0.62, 0.82]
-  Servidor y seguridad: [0.68, 0.9]
-  Plataforma de aula: [0.66, 0.75]
-  Monitoreo: [0.6, 0.45]
-  Documentacion: [0.45, 0.4]
+  Copias de seguridad: [0.14, 0.92]
+  Red del servidor: [0.40, 0.84]
+  Firmware de placas: [0.13, 0.71]
+  Proyectos de equipos: [0.26, 0.58]
+  Grafana del aula: [0.40, 0.66]
+  Broker del aula: [0.58, 0.82]
+  Servidor y seguridad: [0.72, 0.91]
+  Plataforma de aula: [0.78, 0.73]
+  Monitoreo: [0.64, 0.34]
+  Documentacion: [0.36, 0.30]
 ```
 
 > **Deuda técnica:** cuando algo se hace "rápido y a mano" para salir del paso
@@ -278,22 +278,24 @@ Una **hoja de ruta** es el plan de qué se hace primero. Se ordena por el mapa d
 arriba: primero lo urgente.
 
 ```mermaid
-flowchart LR
-  subgraph AHORA["Ahora"]
-    a1["Desplegar Grafana del aula"]
-    a2["Firewall con la red nueva"]
-    a3["Disco para copias de seguridad"]
-    a4["BIOS: encender al volver la luz"]
+flowchart TB
+  subgraph AHORA["1 · Ahora"]
+    direction LR
+    a1["Desplegar el<br/>Grafana del aula"]
+    a2["Firewall con<br/>la red nueva"]
+    a3["Disco para las<br/>copias de seguridad"]
   end
-  subgraph PRONTO["Pronto"]
-    p1["Red del servidor por cable"]
-    p2["Alertas: placa o broker caídos"]
-    p3["Firmware y flows de los equipos en git"]
+  subgraph PRONTO["2 · Pronto"]
+    direction LR
+    p1["Cable de red<br/>en el servidor"]
+    p2["UPS<br/>(batería)"]
+    p3["Alertas: placa<br/>o broker caídos"]
   end
-  subgraph DESPUES["Después"]
-    d1["Tablero público para la muestra"]
-    d2["Versiones fijas en todo"]
-    d3["Capítulos 4 a 8 del manual"]
+  subgraph DESPUES["3 · Después"]
+    direction LR
+    d1["Tablero público<br/>para la muestra"]
+    d2["Firmware y flows<br/>de los equipos en git"]
+    d3["Versiones fijas<br/>en todo"]
   end
   AHORA --> PRONTO --> DESPUES
 ```

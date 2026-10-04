@@ -396,6 +396,22 @@ existían**, **qué se eligió** y **qué pasaría si no**.
   confirmación.
 - **Si no:** el tablero diría "PRENDIDO" con la placa apagada. En un enchufe o en
   una cerradura, mentirle al usuario es peligroso.
+- **Ojo, un nivel más (estado medido):** la confirmación dice lo que **hizo la
+  placa** ("puse el pin en alto"), no lo que **pasó en el mundo**. Si el relé está
+  roto o el aparato desenchufado, la placa igual publica `ON`. Para saber si el
+  aparato **de verdad** prendió hace falta **medirlo** con un sensor (de
+  corriente, de luz, de temperatura) y publicar esa medición aparte, por ejemplo
+  en `equipo-04/enchufe/consumo`. Hay tres niveles, de menos a más confiable:
+
+  | Nivel | Qué sabés | Ejemplo |
+  |---|---|---|
+  | **Orden** | lo que **pediste** | `…/cmd = ON` |
+  | **Estado confirmado** | lo que la **placa hizo** | `…/estado = ON` (pin en alto) |
+  | **Estado medido** | lo que **pasó de verdad** | `…/consumo = 0.4` (el aparato consume) |
+
+  Para una muestra, el confirmado alcanza. En una cerradura o un sistema de
+  seguridad (como el del pañol), conviene el **medido**: por eso la puerta del pañol
+  tiene un sensor (reed) que dice si de verdad se abrió.
 
 ### Decisión 4 — Ver y actuar, separados
 
@@ -460,7 +476,9 @@ existían**, **qué se eligió** y **qué pasaría si no**.
 - **MQTT** funciona como un grupo de WhatsApp: se publica en un **topic** y le
   llega a quien esté suscripto, a través de un **broker**.
 - El **topic es un contrato**: `equipo/dispositivo/magnitud`.
-- **Orden** (`cmd`) y **estado confirmado** (`estado`) van separados.
+- **Orden** (`cmd`) y **estado confirmado** (`estado`) van separados; y la
+  confirmación dice lo que **hizo la placa**: para saber lo que **pasó de verdad**,
+  hay que **medirlo**.
 - **Grafana mira, Node-RED actúa.**
 - La red **va a fallar**: la placa tiene que reconectar sola.
 

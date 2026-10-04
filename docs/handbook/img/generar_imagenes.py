@@ -11,6 +11,12 @@ from xml.sax.saxutils import escape
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 FUENTE = "DejaVu Sans, Verdana, Arial, sans-serif"
+PROBLEMAS = []
+
+# El Grafana del aula todavía no está activo (oct 2026). Mientras sea False, las
+# imágenes lo marcan "en puesta en marcha". El día que se active: True y regenerar.
+GRAFANA_AULA_ACTIVO = False
+EN_MARCHA = "" if GRAFANA_AULA_ACTIVO else "(en puesta en marcha)"
 
 # Paleta: un color por "mundo", el mismo en todas las imágenes.
 C = {
@@ -33,9 +39,10 @@ class Svg:
     def add(self, s):
         self.partes.append(s)
 
-    def rect(self, x, y, w, h, tipo="gris", r=10, grosor=2, guiones=False):
+    def rect(self, x, y, w, h, tipo="gris", r=10, grosor=2, guiones=False, zona=False):
         f, s = C[tipo]
         d = ' stroke-dasharray="7 5"' if guiones else ""
+        d += ' data-zona="1"' if zona else ""
         self.add(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{f}" stroke="{s}" stroke-width="{grosor}"{d}/>')
 
     def texto(self, x, y, t, tam=14, peso="normal", color="#212121", ancla="middle", estilo="normal"):
@@ -45,7 +52,7 @@ class Svg:
     def texto_fondo(self, x, y, t, tam=14, ancla="start", **kw):
         ancho = len(t) * tam * 0.62 + 16
         x0 = x - 8 if ancla == "start" else x - ancho / 2
-        self.add(f'<rect x="{x0}" y="{y - tam - 4}" width="{ancho}" height="{tam + 12}" rx="6" fill="#ffffff"/>')
+        self.add(f'<rect data-fondo="1" x="{x0}" y="{y - tam - 4}" width="{ancho}" height="{tam + 12}" rx="6" fill="#ffffff"/>')
         self.texto(x, y, t, tam=tam, ancla=ancla, **kw)
 
     def lineas(self, x, y, lista, tam=13, sep=17, **kw):
@@ -54,7 +61,9 @@ class Svg:
 
     def caja(self, x, y, w, h, tipo, titulo, lineas=(), tam_t=15, tam=12.5, **kw):
         self.rect(x, y, w, h, tipo, **kw)
-        self.texto(x + w / 2, y + 24, titulo, tam=tam_t, peso="bold", color=C[tipo][1])
+        # sin texto debajo, el título va centrado en la caja
+        ty = y + 24 if any(lineas) else y + h / 2 + tam_t * 0.35
+        self.texto(x + w / 2, ty, titulo, tam=tam_t, peso="bold", color=C[tipo][1])
         self.lineas(x + w / 2, y + 44, lineas, tam=tam, sep=16)
 
     def flecha(self, x1, y1, x2, y2, color="#424242", grosor=2.5, guiones=False, etiqueta=None,
@@ -76,7 +85,8 @@ class Svg:
 
     def numero(self, x, y, n, color="#212121"):
         self.add(f'<circle cx="{x}" cy="{y}" r="13" fill="{color}"/>')
-        self.texto(x, y + 5, str(n), tam=13, peso="bold", color="#ffffff")
+        self.add(f'<text data-num="1" x="{x}" y="{y + 5}" font-family="{FUENTE}" font-size="13" font-weight="bold" '
+                 f'fill="#ffffff" text-anchor="middle">{escape(str(n))}</text>')
 
     def guardar(self, nombre):
         markers = [p for p in self.partes if p.startswith("<marker")]
@@ -87,7 +97,9 @@ class Svg:
                f'<rect width="100%" height="100%" fill="#ffffff"/>\n' + "\n".join(resto) + "\n</svg>\n")
         with open(os.path.join(AQUI, nombre), "w", encoding="utf-8") as fh:
             fh.write(svg)
-        print("escrito", nombre)
+        n = len(verificar(svg, nombre))
+        print("escrito", nombre, "· sin problemas" if n == 0 else f"· {n} problemas")
+        PROBLEMAS.append(n)
 
 
 # ======================================================================================
@@ -106,7 +118,7 @@ def ciclo_completo():
              (1060, 600, "server", "SERVIDOR homelab-01", "contenedores Docker"),
              (1740, 240, "vos", "VOS", "tu compu y tu navegador")]
     for x, w, tipo, t, sub in zonas:
-        s.rect(x, 90, w, 720, tipo, r=14, grosor=1.5, guiones=True)
+        s.rect(x, 90, w, 720, tipo, r=14, grosor=1.5, guiones=True, zona=True)
         s.texto(x + w / 2, 118, t, tam=15.5, peso="bold", color=C[tipo][1])
         s.texto(x + w / 2, 137, sub, tam=12, color="#616161")
 
@@ -134,7 +146,7 @@ def ciclo_completo():
     s.caja(1270, 190, 170, 90, "server", "Telegraf", ["texto \"24.7\"", "→ número 24.7"])
     s.numero(1270, 190, 5, "#e65100")
     s.caja(1270, 340, 170, 90, "server", "VictoriaMetrics", ["guarda 15 días", "(serie temporal)"])
-    s.caja(1480, 300, 160, 130, "server", "Grafana", ["consulta y dibuja", "el panel", "(PromQL)"])
+    s.caja(1480, 300, 160, 130, "server", "Grafana", ["consulta y dibuja", "el panel (PromQL)", EN_MARCHA])
     s.numero(1480, 300, 6, "#e65100")
     s.flecha(1230, 330, 1268, 260, color="#e65100"); s.texto(1222, 290, "MQTT", tam=11.5, peso="bold", color="#e65100", ancla="end")
     s.flecha(1355, 280, 1355, 338, color="#e65100"); s.texto(1365, 314, "escribe", tam=11.5, peso="bold", color="#e65100", ancla="start")
@@ -223,7 +235,7 @@ def dos_caminos():
     s.texto(750, 66, "El router de la casa no deja entrar a nadie de afuera. Cada uno llega por su propio camino privado.",
             tam=14, color="#616161")
     # router
-    s.rect(900, 100, 120, 560, "gris", r=12)
+    s.add('<rect data-atravesable="1" x="900" y="100" width="120" height="560" rx="12" fill="#f5f5f5" stroke="#616161" stroke-width="2"/>')
     s.texto(960, 500, "ROUTER", tam=15, peso="bold", color="#616161")
     s.texto(960, 520, "🚪 no deja", tam=12, color="#616161")
     s.texto(960, 536, "entrar", tam=12, color="#616161")
@@ -233,11 +245,11 @@ def dos_caminos():
     s.texto(1275, 132, "SERVIDOR homelab-01", tam=17, peso="bold", color=C["server"][1])
     s.caja(1110, 160, 330, 90, "server", "SSH (terminal)", ["pide tu contraseña del aula"], tam=12.5)
     s.caja(1110, 270, 330, 90, "server", "Node-RED de tu equipo", ["sin login: solo por túnel SSH"], tam=12.5)
-    s.caja(1110, 380, 330, 90, "server", "Caddy → Grafana del aula", ["HTTPS + login del aula"], tam=12.5)
+    s.caja(1110, 380, 330, 90, "server", "Caddy → Grafana del aula", ["HTTPS + login del aula", EN_MARCHA], tam=12.5)
     s.caja(1110, 520, 330, 110, "server", "mqtt-aula (broker)", ["usuario MQTT del equipo", "solo topics equipo-NN/…"], tam=12.5)
     # personas
     s.caja(40, 170, 260, 150, "vos", "Personas", ["tu compu, la del profe", "", "están en el TAILNET", "(red privada)"])
-    s.rect(330, 150, 760, 330, "nube", r=14, guiones=True, grosor=1.5)
+    s.rect(330, 150, 760, 330, "nube", r=14, guiones=True, grosor=1.5, zona=True)
     s.texto(590, 178, "TAILSCALE: red privada (VPN) que cruza el router", tam=14, peso="bold", color=C["nube"][1])
     s.flecha(300, 220, 1108, 205, color="#ad1457", etiqueta="1 · Tailscale + SSH (contraseña del aula)", dy=-10)
     s.flecha(300, 250, 1108, 315, color="#ad1457", etiqueta="2 · túnel SSH -L → localhost:1880", dy=24)
@@ -246,7 +258,9 @@ def dos_caminos():
     s.caja(40, 520, 260, 120, "placa", "Placas ESP32", ["no pueden estar en", "el tailnet (muy chicas)"])
     s.caja(420, 530, 300, 100, "nube", "Funnel: el portero", ["…ts.net : 10000", "deja pasar SOLO al broker"], tam=12.5)
     s.flecha(300, 580, 418, 580, color="#2e7d32", etiqueta="MQTT + TLS", dy=-10)
-    s.flecha(720, 580, 1108, 575, color="#2e7d32", etiqueta="usuario MQTT del equipo + ACL", dy=-10)
+    s.flecha(720, 580, 1108, 575, color="#2e7d32")
+    s.texto(810, 566, "usuario MQTT", tam=12, peso="bold", color="#2e7d32")
+    s.texto(810, 604, "del equipo + ACL", tam=12, peso="bold", color="#2e7d32")
     s.texto(750, 685, "Regla de diseño: lo que no tiene login no se publica; se llega por un túnel que sí tiene login.",
             tam=14, peso="bold", color="#424242")
     s.guardar("dos-caminos.svg")
@@ -278,7 +292,7 @@ def herramientas():
             ("mqtt-aula (Mosquitto)", "el broker de todas las placas"),
             ("Node-RED", "tus reglas y tus botones"),
             ("Telegraf + VictoriaMetrics", "traducen y guardan 15 días"),
-            ("Grafana del aula", "tus tableros con historia"),
+            ("Grafana del aula", "tus tableros con historia " + EN_MARCHA),
             ("Caddy + Authelia", "la puerta web con login"),
         ]),
     ]
@@ -309,8 +323,8 @@ def arbol_diagnostico():
         ("¿Publica sin error?", "print después del publish", "La conexión se corta", "volvé al paso 3"),
         ("¿El topic respeta el contrato?", "equipo-NN/dispositivo/magnitud", "Corregí el topic", "guion en el topic, guion bajo en el usuario"),
         ("¿Lo ves en MQTT Explorer?", "conectado con la clave de tu equipo", "El broker lo descartó", "prefijo de otro equipo, o placa en otro broker"),
-        ("¿Node-RED lo recibe?", "nodo debug · \"connected\" en verde", "Nodo mqtt-broker o topic mal", "mqtt-aula:1883 + usuario MQTT · probá equipo-NN/#"),
-        ("¿Aparece en \"Estado actual\"?", "Grafana: dispositivo, magnitud y \"Hace\"", "El mensaje no es número ni estado", "¿coma decimal? ¿unidad pegada?"),
+        ("¿Node-RED lo recibe? (opcional)", "si no usás Node-RED, seguí al 8", "Nodo mqtt-broker o topic mal", "mqtt-aula:1883 + usuario MQTT · probá equipo-NN/#"),
+        ("¿Aparece en \"Estado actual\"?", ("Grafana " + EN_MARCHA) if EN_MARCHA else "Grafana: dispositivo, magnitud y \"Hace\"", "El mensaje no es número ni estado", "¿coma decimal? ¿unidad pegada?"),
         ("¿Tu panel lo muestra?", "Grafana: tu dashboard", "Datasource, etiquetas o rango", "probá la consulta: mqtt_valor"),
     ]
     alto_fila = 98
@@ -325,7 +339,8 @@ def arbol_diagnostico():
     for i, (preg, como, falla, donde) in enumerate(pasos):
         y = y0 + i * alto_fila
         tipo = "placa" if i < 5 else ("nube" if i == 5 else "server")
-        s.caja(90, y, 330, 70, tipo, preg, [como], tam_t=14, tam=12)
+        opcional = i == 6   # Node-RED: para llegar a Grafana NO hace falta
+        s.caja(90, y, 330, 70, tipo, preg, [como], tam_t=14, tam=12, guiones=opcional)
         s.numero(90, y, i + 1, C[tipo][1])
         s.add(f'<rect x="760" y="{y}" width="440" height="70" rx="10" fill="#ffebee" stroke="#c62828" stroke-width="2"/>')
         s.texto(980, y + 27, falla, tam=14, peso="bold", color="#c62828")
@@ -348,9 +363,254 @@ def arbol_diagnostico():
     s.guardar("arbol-diagnostico.svg")
 
 
+# ======================================================================================
+# 6. Árbol de accesos: no puedo entrar
+# ======================================================================================
+def arbol_accesos():
+    s = Svg(1300, 760, "No puedo entrar: primero la red, después el camino según a qué querés entrar")
+    s.texto(650, 40, "No puedo entrar: ¿qué puerta está cerrada?", tam=26, peso="bold")
+    s.texto(650, 66, "Primero, siempre, la red. Después el camino se divide: la terminal y Node-RED pasan por SSH; Grafana no.",
+            tam=14, color="#616161")
+    s.texto(650, 86, "Flecha verde = sí · flecha roja = no / error", tam=12.5, peso="bold", color="#424242")
+
+    def falla(x, y, w, titulo, detalle):
+        s.add(f'<rect x="{x}" y="{y}" width="{w}" height="62" rx="10" fill="#ffebee" stroke="#c62828" stroke-width="2"/>')
+        s.texto(x + w / 2, y + 25, titulo, tam=13.5, peso="bold", color="#c62828")
+        s.texto(x + w / 2, y + 46, detalle, tam=11.5, color="#424242")
+
+    # 1 · red
+    s.caja(470, 100, 360, 72, "nube", "¿Aparece homelab-01?", ["tailscale status (en tu compu)"], tam_t=14.5, tam=12)
+    s.numero(470, 100, 1, C["nube"][1])
+    falla(930, 105, 340, "Tailscale apagado o sin aprobar", "o en tu propio tailnet: logout + up")
+    s.flecha(830, 136, 928, 136, color="#c62828"); s.texto_fondo(879, 129, "NO", tam=12.5, ancla="middle", peso="bold", color="#c62828")
+    # bifurcación
+    s.caja(500, 215, 300, 60, "gris", "¿A qué querés entrar?", [], tam_t=14.5)
+    s.flecha(650, 172, 650, 213, color="#2e7d32"); s.texto(662, 199, "sí", tam=12.5, peso="bold", color="#2e7d32", ancla="start")
+
+    # rama izquierda: terminal / Node-RED (SSH)
+    s.texto(30, 318, "TERMINAL o TU NODE-RED (con SSH)", tam=14, peso="bold", color=C["vos"][1], ancla="start")
+    s.flecha(560, 275, 300, 343, color="#424242")
+    s.caja(110, 345, 380, 72, "vos", "¿Entra el ssh?", ["ssh tu-usuario@100.110.123.76"], tam_t=14.5, tam=12)
+    s.numero(110, 345, 2, C["vos"][1])
+    falla(30, 450, 260, "timed out", "servidor caído: esperá y avisá")
+    falla(310, 450, 260, "Permission denied", "contraseña del aula equivocada")
+    s.flecha(220, 417, 160, 448, color="#c62828")
+    s.flecha(380, 417, 440, 448, color="#c62828")
+    s.caja(110, 560, 380, 72, "vos", "¿Abre localhost:1880?", ["con la ventana del túnel abierta"], tam_t=14.5, tam=12)
+    s.numero(110, 560, 3, C["vos"][1])
+    s.flecha(300, 417, 300, 558, color="#2e7d32"); s.texto(312, 540, "sí, entra", tam=12, peso="bold", color="#2e7d32", ancla="start")
+    falla(110, 670, 380, "Túnel con puertos de OTRO equipo", "o se cerró la ventana del SSH")
+    s.flecha(300, 632, 300, 668, color="#c62828")
+
+    # rama derecha: Grafana (sin SSH)
+    s.texto(1270, 318, "GRAFANA DEL AULA (sin SSH: navegador)", tam=14, peso="bold", color=C["server"][1], ancla="end")
+    s.flecha(740, 275, 1000, 343, color="#424242")
+    s.caja(810, 345, 380, 72, "server", "¿Abre grafana-aula… ?", ["en el navegador · " + (EN_MARCHA or "login del aula")], tam_t=14.5, tam=12)
+    s.numero(810, 345, 2, C["server"][1])
+    falla(700, 450, 290, "No carga", "en puesta en marcha, o sin Tailscale")
+    falla(1010, 450, 270, "Vuelve al login", "usuario/contraseña del aula")
+    s.flecha(920, 417, 845, 448, color="#c62828")
+    s.flecha(1080, 417, 1145, 448, color="#c62828")
+    falla(810, 560, 380, "Entra, pero no ves tu carpeta", "no estás en el roster del equipo: avisá")
+    s.flecha(1000, 417, 1000, 558, color="#c62828")
+    s.guardar("arbol-accesos.svg")
+
+
+# ======================================================================================
+# 7. Mapa de servicios (cap. 5): quién depende de quién
+# ======================================================================================
+def mapa_servicios():
+    s = Svg(1400, 860, "Mapa de servicios del servidor: quién depende de quién")
+    s.texto(700, 38, "El mapa de servicios: quién depende de quién", tam=25, peso="bold")
+    s.texto(700, 62, "Cada flecha va del que pide al que responde. Si se cae una caja, se rompe todo lo que le apunta.",
+            tam=14, color="#616161")
+    # zonas
+    s.rect(20, 85, 1360, 165, "nube", r=14, grosor=1.5, guiones=True, zona=True)
+    s.texto(40, 108, "PUERTAS DE ENTRADA", tam=14, peso="bold", color=C["nube"][1], ancla="start")
+    s.rect(20, 280, 840, 530, "placa", r=14, grosor=1.5, guiones=True, zona=True)
+    s.texto(40, 303, "PARA EL AULA", tam=14, peso="bold", color=C["placa"][1], ancla="start")
+    s.rect(880, 280, 500, 530, "server", r=14, grosor=1.5, guiones=True, zona=True)
+    s.texto(1360, 303, "PARA EL OPERADOR", tam=14, peso="bold", color=C["server"][1], ancla="end")
+    # puertas
+    s.caja(60, 130, 260, 80, "nube", "Funnel", ["entrada por internet", "(las placas)"], tam=12)
+    s.caja(420, 130, 220, 80, "nube", "Tailscale", ["red privada", "(las personas)"], tam=12)
+    s.caja(740, 130, 220, 80, "nube", "Caddy", ["puerta web", "con HTTPS"], tam=12)
+    s.caja(1060, 130, 280, 80, "nube", "Authelia", ["login único", "(¿quién sos?)"], tam=12)
+    s.flecha(640, 170, 738, 170, color="#5e35b1")
+    s.flecha(960, 170, 1058, 170, color="#5e35b1")
+    s.texto_fondo(1009, 160, "pregunta", tam=11.5, ancla="middle", peso="bold", color="#5e35b1")
+    # aula
+    s.caja(60, 330, 200, 80, "placa", "mqtt-aula", ["broker MQTT"], tam=12)
+    s.caja(320, 330, 180, 80, "placa", "Telegraf", ["traduce"], tam=12)
+    s.caja(560, 330, 220, 80, "placa", "VictoriaMetrics", ["guarda 15 días"], tam=12)
+    s.caja(560, 470, 240, 80, "placa", "Grafana del aula", [EN_MARCHA or "tableros por equipo"], tam=12)
+    s.flecha(318, 370, 262, 370, color="#2e7d32")      # Telegraf le pide al broker (lee)
+    s.texto_fondo(290, 360, "lee", tam=11.5, ancla="middle", peso="bold", color="#2e7d32")
+    s.flecha(500, 370, 558, 370, color="#2e7d32")      # y escribe en VictoriaMetrics
+    s.texto_fondo(529, 360, "escribe", tam=11.5, ancla="middle", peso="bold", color="#2e7d32")
+    s.flecha(670, 468, 670, 412, color="#2e7d32")
+    s.texto(682, 445, "consulta", tam=11.5, peso="bold", color="#2e7d32", ancla="start")
+    s.caja(60, 640, 200, 80, "placa", "labctld", ["levanta los stacks"], tam=12)
+    s.caja(320, 640, 200, 80, "placa", "Stacks de equipos", ["Node-RED, nginx"], tam=12)
+    s.flecha(260, 680, 318, 680, color="#2e7d32")
+    s.flecha(360, 638, 200, 412, color="#2e7d32")
+    s.texto(250, 540, "MQTT", tam=11.5, peso="bold", color="#2e7d32", ancla="end")
+    for i, (n, d) in enumerate([("PostgreSQL", "base de datos"), ("Redis", "memoria rápida"), ("Mailpit", "correo de prueba")]):
+        y = 600 + i * 68
+        s.caja(600, y, 220, 56, "placa", n, [], tam_t=13.5)
+        s.flecha(520, 680, 598, y + 28, color="#2e7d32", grosor=2)
+    # operador
+    s.caja(910, 330, 200, 80, "server", "Homepage", ["página de inicio"], tam=12)
+    s.caja(1150, 330, 210, 80, "server", "Grafana", ["de operación"], tam=12)
+    s.caja(1150, 470, 210, 70, "server", "Prometheus", ["lee los medidores"], tam=12)
+    s.caja(910, 470, 200, 70, "server", "Loki + Alloy", ["logs, a pedido"], tam=12)
+    s.caja(1080, 620, 135, 60, "server", "node-exporter", [], tam_t=12.5)
+    s.caja(1235, 620, 125, 60, "server", "cAdvisor", [], tam_t=12.5)
+    s.flecha(1255, 410, 1255, 468, color="#e65100")
+    s.flecha(1150, 400, 1080, 468, color="#e65100")
+    s.flecha(1200, 540, 1160, 618, color="#e65100")
+    s.flecha(1300, 540, 1300, 618, color="#e65100")
+    # cruces entre zonas
+    s.flecha(190, 210, 160, 328, color="#5e35b1")
+    s.texto(186, 268, "MQTT + TLS", tam=11.5, peso="bold", color="#5e35b1", ancla="start")
+    s.flecha(790, 210, 790, 468, color="#5e35b1")
+    s.flecha(880, 210, 990, 328, color="#5e35b1")
+    s.flecha(950, 210, 1240, 328, color="#5e35b1")
+    s.texto(700, 842, "Caddy reparte los pedidos web (después de preguntarle a Authelia); Funnel deja pasar solo al broker.",
+            tam=13, peso="bold", color="#424242")
+    s.guardar("mapa-servicios.svg")
+
+
+
+# ======================================================================================
+# Verificador: que ningún texto se salga de su caja ni pise a otro, y que las flechas
+# no atraviesen textos ni cajas ajenas. Mide con la fuente real (DejaVu), porque con
+# letra chica un desborde de 3 px no se ve a ojo pero sí impreso.
+# ======================================================================================
+import re as _re
+
+try:
+    from PIL import ImageFont as _IF
+    _FUENTES = {}
+
+    def _ancho(t, tam, negrita):
+        clave = (round(tam * 4), negrita)
+        if clave not in _FUENTES:
+            arch = "DejaVuSans-Bold.ttf" if negrita else "DejaVuSans.ttf"
+            _FUENTES[clave] = _IF.truetype("/usr/share/fonts/truetype/dejavu/" + arch, max(1, round(tam * 4)))
+        return _FUENTES[clave].getlength(t) / 4
+except ImportError:  # sin PIL: estimación gruesa
+    def _ancho(t, tam, negrita):
+        return len(t) * tam * (0.62 if negrita else 0.56)
+
+
+def _desescapar(t):
+    return t.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
+
+
+def verificar(svg_texto, nombre):
+    problemas = []
+    rects, textos, flechas = [], [], []
+    for m in _re.finditer(r'<rect (?!width="100%")([^>]*)/>', svg_texto):
+        a = dict(_re.findall(r'([\w-]+)="([^"]*)"', m.group(1)))
+        if "x" not in a:
+            continue
+        rects.append(dict(x=float(a["x"]), y=float(a["y"]), w=float(a["width"]), h=float(a["height"]),
+                          zona="data-zona" in a, fondo="data-fondo" in a,
+                          atravesable="data-atravesable" in a))
+    for m in _re.finditer(r'<text ([^>]*)>([^<]*)</text>', svg_texto):
+        a = dict(_re.findall(r'([\w-]+)="([^"]*)"', m.group(1)))
+        if "transform" in a or "data-num" in a:
+            continue
+        t, tam = _desescapar(m.group(2)), float(a["font-size"])
+        neg = a.get("font-weight") == "bold"
+        w = _ancho(t, tam, neg)
+        x, y = float(a["x"]), float(a["y"])
+        x0 = {"middle": x - w / 2, "end": x - w}.get(a.get("text-anchor", "start"), x)
+        textos.append(dict(t=t, x0=x0, x1=x0 + w, y0=y - tam * 0.78, y1=y + tam * 0.22))
+    for m in _re.finditer(r'<line ([^>]*marker-end[^>]*)/>', svg_texto):
+        a = dict(_re.findall(r'([\w-]+)="([^"]*)"', m.group(1)))
+        flechas.append(tuple(float(a[k]) for k in ("x1", "y1", "x2", "y2")))
+
+    cajas = [r for r in rects if not r["zona"] and not r["fondo"]]
+    W, H = map(float, _re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg_texto).groups())
+
+    for t in textos:
+        if t["x0"] < 2 or t["x1"] > W - 2 or t["y0"] < 0 or t["y1"] > H:
+            problemas.append(f'se sale de la imagen: "{t["t"]}"')
+        cx, cy = (t["x0"] + t["x1"]) / 2, (t["y0"] + t["y1"]) / 2
+        dentro = [r for r in cajas if r["x"] <= cx <= r["x"] + r["w"] and r["y"] <= cy <= r["y"] + r["h"]]
+        if dentro:
+            r = min(dentro, key=lambda r: r["w"] * r["h"])
+            margen = 5
+            if t["x0"] < r["x"] + margen - 0.5 or t["x1"] > r["x"] + r["w"] - margen + 0.5:
+                problemas.append(f'desborda su caja ({t["x1"] - t["x0"]:.0f} px en {r["w"]:.0f}): "{t["t"]}"')
+    # Texto que cruza el borde punteado de una zona: se lee mal, salvo que tenga
+    # un fondo blanco debajo (texto_fondo), puesto justamente para eso.
+    zonas = [r for r in rects if r["zona"]]
+    fondos = [r for r in rects if r["fondo"]]
+    for t in textos:
+        cx, cy = (t["x0"] + t["x1"]) / 2, (t["y0"] + t["y1"]) / 2
+        if any(f["x"] <= cx <= f["x"] + f["w"] and f["y"] <= cy <= f["y"] + f["h"] for f in fondos):
+            continue
+        for z in zonas:
+            if not (z["y"] < cy < z["y"] + z["h"]):
+                continue
+            for borde in (z["x"], z["x"] + z["w"]):
+                if t["x0"] + 1 < borde < t["x1"] - 1:
+                    problemas.append(f'cruza el borde de una zona: "{t["t"]}"')
+    for i, a in enumerate(textos):
+        for b in textos[i + 1:]:
+            if a["x0"] < b["x1"] - 1 and b["x0"] < a["x1"] - 1 and a["y0"] < b["y1"] - 1 and b["y0"] < a["y1"] - 1:
+                problemas.append(f'se pisan: "{a["t"]}" y "{b["t"]}"')
+
+    def corta(x1, y1, x2, y2, r, pad=0):
+        """¿El segmento atraviesa el rectángulo r (con margen pad)?"""
+        rx0, ry0, rx1, ry1 = r[0] - pad, r[1] - pad, r[2] + pad, r[3] + pad
+        for k in range(1, 40):
+            px, py = x1 + (x2 - x1) * k / 40, y1 + (y2 - y1) * k / 40
+            if rx0 < px < rx1 and ry0 < py < ry1:
+                return True
+        return False
+
+    def en_borde(px, py, r, tol=6):
+        x0, y0, x1, y1 = r["x"], r["y"], r["x"] + r["w"], r["y"] + r["h"]
+        cerca_x = x0 - tol <= px <= x1 + tol
+        cerca_y = y0 - tol <= py <= y1 + tol
+        return cerca_x and cerca_y and (min(abs(px - x0), abs(px - x1)) <= tol or min(abs(py - y0), abs(py - y1)) <= tol)
+
+    for (x1, y1, x2, y2) in flechas:
+        ini = [r for r in cajas if en_borde(x1, y1, r)]
+        fin = [r for r in cajas if en_borde(x2, y2, r)]
+        if not ini:
+            problemas.append(f"flecha que no sale de ninguna caja: ({x1:.0f},{y1:.0f})→({x2:.0f},{y2:.0f})")
+        if not fin:
+            problemas.append(f"flecha que no llega a ninguna caja: ({x1:.0f},{y1:.0f})→({x2:.0f},{y2:.0f})")
+        def contiene(r, px, py):
+            return r["x"] < px < r["x"] + r["w"] and r["y"] < py < r["y"] + r["h"]
+        for r in cajas:
+            # el origen, el destino, un recuadro que CONTIENE una punta (la flecha entra
+            # a buscar algo de adentro) y lo marcado como atravesable (el router que el
+            # túnel cruza) no cuentan
+            if r in ini or r in fin or r["atravesable"] or contiene(r, x1, y1) or contiene(r, x2, y2):
+                continue
+            if corta(x1, y1, x2, y2, (r["x"], r["y"], r["x"] + r["w"], r["y"] + r["h"])):
+                problemas.append(f"flecha ({x1:.0f},{y1:.0f})→({x2:.0f},{y2:.0f}) atraviesa una caja en ({r['x']:.0f},{r['y']:.0f})")
+        for t in textos:
+            if corta(x1, y1, x2, y2, (t["x0"], t["y0"], t["x1"], t["y1"]), pad=1):
+                problemas.append(f'flecha ({x1:.0f},{y1:.0f})→({x2:.0f},{y2:.0f}) tacha el texto "{t["t"]}"')
+    for p in problemas:
+        print(f"  ✗ {nombre}: {p}")
+    return problemas
+
+
 if __name__ == "__main__":
     ciclo_completo()
     pila_protocolos()
     dos_caminos()
     herramientas()
     arbol_diagnostico()
+    arbol_accesos()
+    mapa_servicios()
+    if sum(PROBLEMAS):
+        raise SystemExit(f"{sum(PROBLEMAS)} problemas de diseño: revisá la lista de arriba.")

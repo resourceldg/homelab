@@ -34,6 +34,9 @@ anda. **Grafana** es eso para tus placas.
 
 ## 1. Entrar
 
+> 🚧 Mientras el Grafana del aula esté en puesta en marcha, esta dirección todavía
+> no carga. Lo que sigue es cómo va a funcionar.
+
 1. Con **Tailscale conectado**, abrí en el navegador:
 
     ```

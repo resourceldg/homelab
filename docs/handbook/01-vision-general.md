@@ -52,7 +52,7 @@ flowchart TB
   subgraph IOT["Plano IoT (las placas)"]
     i1["ESP32 de los equipos"]
     i2["mqtt-aula (broker)"]
-    i3["Grafana del aula"]
+    i3["Grafana del aula<br/>(en puesta en marcha)"]
   end
   HOST --> SVC
   SVC --> CLASS

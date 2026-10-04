@@ -122,7 +122,8 @@ mandalo a Node-RED: Grafana grafica números.
 
 - **Sensores:** cada **5 a 60 segundos** está bien. Más rápido que 1 por
   segundo no sirve para ver y llena la base.
-- **Actuadores:** publicá el **estado confirmado** cada vez que cambia (como
+- **Actuadores:** publicá el **estado confirmado** (lo que la placa hizo) cada vez
+  que cambia (como
   `equipo-04/enchufe/estado`).
 - **Nunca** publiques dentro de un `while True` sin `sleep`: son miles de
   mensajes por segundo y el sistema te frena.

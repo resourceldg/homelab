@@ -199,20 +199,11 @@ flowchart LR
 ## No puedo entrar a algo
 
 Las cuatro puertas están explicadas en [Red y accesos](red-y-accesos.md#5-por-que-me-autentico-tantas-veces).
-Se revisan **en orden**: si falla una, las de abajo no tienen sentido todavía.
+Primero va siempre la **red** (Tailscale). Después, el camino se **divide**: la
+terminal y tu Node-RED pasan por **SSH**; Grafana **no**, alcanza con el navegador
+([por qué](red-y-accesos.md#por-que-grafana-no-necesita-tunel-y-node-red-si)).
 
-```mermaid
-flowchart TB
-  A{"1 · tailscale status<br/>¿aparece homelab-01?"} -->|no| A1["Tailscale apagado, máquina sin aprobar<br/>o estás en tu propio tailnet → logout + up"]
-  A -->|sí| B{"2 · ssh tu-usuario@100.110.123.76<br/>¿entra?"}
-  B -->|"timed out"| B1["Tailscale no conectado, o el servidor está caído:<br/>esperá unos minutos (se recupera solo) y avisá al profe"]
-  B -->|"Permission denied"| B2["Contraseña del aula equivocada"]
-  B -->|sí| C{"3 · Con el túnel abierto,<br/>¿abre localhost:1880?"}
-  C -->|no| C1["Puertos del túnel de OTRO equipo,<br/>o la ventana del SSH se cerró"]
-  C -->|sí| D{"4 · ¿Grafana del aula te deja entrar?"}
-  D -->|"vuelve al login"| D1["Usuario/contraseña del aula"]
-  D -->|"entra pero no ves tu carpeta"| D2["No estás en el roster del equipo: avisá al profe"]
-```
+![Árbol de accesos: primero la red; después, la terminal y Node-RED pasan por SSH y Grafana no](img/arbol-accesos.svg)
 
 | Mensaje | Qué puerta | Qué hacer |
 |---|---|---|

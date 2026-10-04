@@ -53,7 +53,7 @@
 <text x="980" y="406" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">traducen y guardan 15 días</text>
 <rect x="960" y="432" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
 <text x="980" y="458" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Grafana del aula</text>
-<text x="980" y="479" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">tus tableros con historia</text>
+<text x="980" y="479" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">tus tableros con historia (en puesta en marcha)</text>
 <rect x="960" y="505" width="380" height="62" rx="9" fill="#ffffff" stroke="#e65100" stroke-width="1.2"/>
 <text x="980" y="531" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#212121" text-anchor="start">Caddy + Authelia</text>
 <text x="980" y="552" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#616161" text-anchor="start">la puerta web con login</text>

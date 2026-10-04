@@ -62,7 +62,7 @@ flowchart LR
     mqtt --> tel["Telegraf"] --> vm["VictoriaMetrics"]
   end
   prom --> g1["Grafana de operación"]
-  vm --> g2["Grafana del aula"]
+  vm --> g2["Grafana del aula<br/>(en puesta en marcha)"]
 ```
 
 - **Pull ("ir a buscar"):** como el empleado que pasa a leer el medidor de luz de
@@ -145,7 +145,7 @@ haciendo una consulta. Hay dos Grafana, para dos públicos:
 | Grafana | Quién lo ve | Tableros |
 |---|---|---|
 | **De operación** (`grafana.`) | solo operadores | *Homelab Overview* (el servidor), *Classroom Overview / Team Detail / Capacity* (consumo de cada equipo), *Pañol IoT* (auditoría y logs) |
-| **Del aula** (`grafana-aula.`) | operadores y alumnos | *Aula — todos los equipos* (operador) y **un tablero por equipo** con sus placas |
+| **Del aula** (`grafana-aula.`) — 🚧 en puesta en marcha | operadores y alumnos | *Aula — todos los equipos* (operador) y **un tablero por equipo** con sus placas |
 
 Cómo leer el tablero de un equipo: [capítulo 13](13-usar-grafana.md).
 
