@@ -81,8 +81,12 @@ privilegios dan falsos negativos (que, de hecho, confirman el aislamiento).
 cd ~/homelab
 sudo ~/homelab/.venv/bin/py.test -v --hosts=local:// \
   tests/test_classroom.py tests/test_labctl.py \
-  tests/test_shared_services.py tests/test_classroom_publish.py
+  tests/test_shared_services.py tests/test_classroom_publish.py \
+  tests/test_access.py
 ```
+
+`test_access.py` cubre la capa de login: Authelia corriendo, Caddy con
+`forward_auth` y el DNS interno (dnsmasq).
 
 ## Auditoría y troubleshooting
 

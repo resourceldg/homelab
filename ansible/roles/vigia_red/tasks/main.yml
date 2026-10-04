@@ -162,6 +162,19 @@
     - { src: postmortem-arranque.sh, dest: postmortem-arranque }
   when: vigia_red_enabled | bool
 
+# El estado del link y el nivel de señal mienten: este server llegó a perder el
+# 60% de los paquetes con la señal WiFi en "excelente". `elegir-uplink` mide la
+# pérdida real por interfaz. Se instala pero NO se ejecuta solo: cambiar el
+# uplink de una máquina a la que se entra por red se hace a mano y mirando
+# (`make uplink`). Vive en scripts/ porque también se prueba fuera del rol.
+- name: Install the uplink chooser
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../scripts/elegir-uplink.sh"
+    dest: /usr/local/bin/elegir-uplink
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Guardian settings
   ansible.builtin.template:
     src: vigia-red.default.j2

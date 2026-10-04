@@ -51,7 +51,8 @@ se regenera con `python3 scripts/manual-pdf.py`.
   ([alumno](docs/student-guide.md), [operador](docs/operator-guide.md),
   [labctl](docs/labctl.md), [política](docs/docker-compose-policy.md),
   [recursos](docs/resource-model.md),
-  [servicios compartidos](docs/servicios-compartidos.md)).
+  [servicios compartidos](docs/servicios-compartidos.md),
+  [quién ve qué: login y grupos](docs/control-de-acceso.md)).
 - **Aula IoT:** cada equipo conecta sus ESP32 a un broker MQTT compartido y
   autenticado (`mqtt-aula`, publicado por Tailscale Funnel) y ve sus datos en su
   propio Grafana. Ver [docs/aula-iot.md](docs/aula-iot.md) y los capítulos 11 a 15

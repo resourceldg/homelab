@@ -162,7 +162,8 @@ systemctl status panol-reset-prueba.timer       # reset del modo prueba (tempora
 ## Red y conectividad
 
 - `make como-conectar` (en **tu** compu) — prueba todos los caminos al servidor y
-  te dice cuál anda y por qué los otros no.
+  te dice cuál anda y por qué los otros no. Con `USUARIO=jessi EQUIPO=01` arma el
+  comando `ssh` completo, con el túnel a Node-RED (y a la web) de ese equipo.
 - `make uplink` — mide la calidad real de cada conexión del servidor (WiFi,
   cable) y muestra cuál conviene. No cambia nada.
 - **Robustez ante caídas** (rol `vigia_red`): watchdog de hardware, guardián de

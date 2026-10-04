@@ -6,17 +6,22 @@ El acceso web está en **capas**, con un único login (Authelia) y **grupos**.
 
 | Grupo | Ve | Cómo |
 |---|---|---|
-| **operators** (vos) | Todo: dashboard, Grafana (Admin), Prometheus, cAdvisor | login SSO; en Grafana entrás como Admin |
-| **students** (alumnos) | El dashboard y Grafana (solo lectura) + su app publicada | login SSO; Grafana los ve como Viewer |
+| **operators** (vos) | Todo: dashboard, Grafana de operación (infra + auditoría del pañol), Grafana del aula, Prometheus, cAdvisor, panel del pañol | login SSO |
+| **students** (alumnos) | El dashboard y el **Grafana del aula** (cada equipo edita su carpeta) + su app publicada | login SSO |
 | **family / público** | Solo las apps de alumnos que vos publiques | sin login (públicas) |
 
 - **Authelia** es el portal de login (`auth.tudominio`). Protege con `forward_auth`
-  en Caddy: `grafana`, `prometheus`, `cadvisor` y el dashboard raíz.
-- **Prometheus/cAdvisor** → solo `operators`. **Grafana/dashboard** → `operators`
-  + `students`. Las **apps publicadas** de alumnos quedan públicas (sin login).
-- **Grafana** confía en Authelia: cualquiera que pase el login lo ve como
-  **Viewer** (sin cuenta de Grafana); vos elevás a **Admin** iniciando sesión con
-  el usuario admin de Grafana.
+  en Caddy cada subdominio según su regla (en
+  `ansible/roles/authelia/templates/configuration.yml.j2`).
+- **Solo `operators`:** Prometheus, cAdvisor, el panel del pañol (actúa sobre una
+  puerta real) y el **Grafana de operación** (`grafana.`), que muestra la auditoría
+  de quién entró al pañol.
+- **`operators` + `students`:** el dashboard raíz y el **Grafana del aula**
+  (`grafana-aula.`). Ese Grafana crea a cada alumno con el usuario que llega de
+  Authelia y lo pone en su equipo: ve y edita solo su carpeta (**en puesta en
+  marcha**: todavía no está activo en el servidor). Detalle en
+  [aula-iot.md](aula-iot.md).
+- Las **apps publicadas** de alumnos quedan públicas (sin login).
 
 ## Alta de usuarios SSO
 

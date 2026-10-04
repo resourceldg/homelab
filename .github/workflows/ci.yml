@@ -23,7 +23,7 @@ jobs:
           pytest -q
           tests/test_labctl_policy.py tests/test_dashboards.py tests/test_panol_stack.py
           tests/test_shared_services_stack.py tests/test_aula_iot_stack.py
-          tests/test_vigia_red.py
+          tests/test_vigia_red.py tests/test_como_conectar.py tests/test_elegir_uplink.py
 
   secrets:
     name: Secret scan (gitleaks)

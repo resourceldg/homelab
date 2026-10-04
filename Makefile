@@ -78,6 +78,12 @@ firewall: ## Apply only the firewall role
 monitoring: ## Redeploy the monitoring + proxy stacks
 	$(RUN) $(PLAY) --tags "services,docker"
 
+uplink: ## Medir los uplinks del server y ver cuál conviene (solo diagnostica)
+	ssh -t ansible@homelab-01 elegir-uplink
+
+como-conectar: ## ¿Cuál es la mejor forma de entrar al server ahora? (corre en TU compu; USUARIO=… EQUIPO=…)
+	@./scripts/como-conectar.sh $(USUARIO) $(if $(EQUIPO),--equipo $(EQUIPO))
+
 logs-on: ## Prender los logs en vivo (pregunta cada 5 min; se apagan solos)
 	ssh -t ansible@homelab-01 logs-en-vivo
 

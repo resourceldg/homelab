@@ -166,6 +166,11 @@ La regla de oro: **nunca endurezcas SSH antes de haber probado que podés seguir
 entrando.** Dejá **una sesión de consola abierta** todo el tiempo como último
 recurso.
 
+> **Atajo guiado:** `scripts/bootstrap-production.sh` recorre estos mismos pasos
+> en orden y frena a pedir confirmación antes de lo irreversible (el cierre de
+> SSH). Se puede volver a correr: cada fase se puede saltear si ya está hecha.
+> Esta sección explica qué hace cada paso y por qué.
+
 ### 5.0 Requisitos
 
 - Ubuntu 24.04, el usuario `homelab` con `sudo`, Tailscale instalado y autenticado.
