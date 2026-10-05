@@ -70,6 +70,17 @@
   notify: Restart aula-iot
   when: aula_iot_enabled | bool
 
+# Git no guarda carpetas vacías: esta solo tiene lo que se genera acá, así que
+# en un checkout limpio no existe (pasó en el primer despliegue).
+- name: Ensure the Grafana datasources dir exists
+  ansible.builtin.file:
+    path: "{{ aula_iot_dir }}/grafana/provisioning/datasources"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0755"
+  when: aula_iot_enabled | bool
+
 - name: Render Grafana datasources (one per team)
   ansible.builtin.template:
     src: datasources.yml.j2
