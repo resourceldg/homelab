@@ -62,4 +62,4 @@ shared_mqtt_public_host: "homelab-01.tail4eda13.ts.net"
 # está listo y testeado en CI, pero el despliegue quedó pendiente porque el
 # servidor se cayó (oct 2026). Prender (true) y aplicar `--tags aula-iot`
 # cuando se verifique; ver docs/aula-iot.md.
-aula_iot_enabled: false
+aula_iot_enabled: true
