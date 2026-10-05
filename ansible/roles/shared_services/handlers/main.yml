@@ -1,6 +1,11 @@
 ---
-# Mosquitto relee passwd y acl con SIGHUP: no corta a los clientes conectados.
+# Reinicio, no SIGHUP. passwd y acl se montan como archivos sueltos, y Ansible
+# los reemplaza (archivo nuevo, inodo nuevo): el contenedor seguía viendo el
+# viejo, y un HUP relee ese mismo archivo viejo. Pasó en el primer despliegue del
+# Grafana del aula: telegraf "not Authorized" con el usuario ya en el passwd del
+# host. Reiniciar vuelve a montar el archivo actual. Las placas se reconectan
+# solas en un par de segundos, y esto solo corre cuando cambian equipos o claves.
 - name: Reload mqtt-aula
-  ansible.builtin.command: docker kill --signal HUP mqtt-aula
+  ansible.builtin.command: docker restart mqtt-aula
   changed_when: true
   failed_when: false
