@@ -1,9 +1,9 @@
 # Capa de visualización IoT del aula (`aula-iot`)
 
-> **Estado (octubre 2026):** código listo y con tests en CI; **sin desplegar**
-> (`aula_iot_enabled: false` en producción) porque el servidor se cayó antes del
-> despliegue. Para activarlo: poner `true`, aplicar `--tags docker,monitoring,auth,aula-iot`
-> y verificar con las placas de los equipos.
+> **Estado:** en marcha desde el 2026-10-05 (`aula_iot_enabled: true`). Se
+> desplegó con `--tags docker,monitoring,auth,shared-services,aula-iot` y se
+> verificó de punta a punta: los datos de equipo-03 y equipo-04 llegan a
+> VictoriaMetrics.
 
 Lo que las placas de los equipos publican en `mqtt-aula` se guarda 15 días y se
 ve en un **Grafana del aula** propio, con un folder por equipo que solo ese equipo

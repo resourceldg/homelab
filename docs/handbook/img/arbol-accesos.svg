@@ -50,12 +50,12 @@
 <line x1="740" y1="275" x2="1000" y2="343" stroke="#424242" stroke-width="2.5" marker-end="url(#punta-424242)"/>
 <rect x="810" y="345" width="380" height="72" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
 <text x="1000.0" y="369" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14.5" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">¿Abre grafana-aula… ?</text>
-<text x="1000.0" y="389" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">en el navegador · (en puesta en marcha)</text>
+<text x="1000.0" y="389" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">en el navegador · login del aula</text>
 <circle cx="810" cy="345" r="13" fill="#e65100"/>
 <text data-num="1" x="810" y="350" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
 <rect x="700" y="450" width="290" height="62" rx="10" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
 <text x="845.0" y="475" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="bold" font-style="normal" fill="#c62828" text-anchor="middle">No carga</text>
-<text x="845.0" y="496" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#424242" text-anchor="middle">en puesta en marcha, o sin Tailscale</text>
+<text x="845.0" y="496" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#424242" text-anchor="middle">¿Tailscale prendido?</text>
 <rect x="1010" y="450" width="270" height="62" rx="10" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
 <text x="1145.0" y="475" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13.5" font-weight="bold" font-style="normal" fill="#c62828" text-anchor="middle">Vuelve al login</text>
 <text x="1145.0" y="496" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="11.5" font-weight="normal" font-style="normal" fill="#424242" text-anchor="middle">usuario/contraseña del aula</text>

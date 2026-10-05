@@ -3,11 +3,6 @@
 🎯 **Objetivo:** entrar al Grafana del aula, entender tu dashboard y
 **modificarlo**: agregar gráficos, cambiarlos y guardarlos.
 
-> 🚧 **Estado (octubre 2026): el Grafana del aula se está poniendo en marcha.**
-> Todavía no está disponible: el profe avisa cuando lo esté. Mientras tanto ya
-> podés **preparar tu placa** siguiendo las reglas de este capítulo: lo que
-> publiques bien desde ahora va a aparecer solo cuando se active.
-
 🧩 **Prerequisitos:** Tailscale conectado y tus datos llegando
 ([capítulo 12](12-conectar-a-grafana.md)).
 
@@ -33,9 +28,6 @@ anda. **Grafana** es eso para tus placas.
 ---
 
 ## 1. Entrar
-
-> 🚧 Mientras el Grafana del aula esté en puesta en marcha, esta dirección todavía
-> no carga. Lo que sigue es cómo va a funcionar.
 
 1. Con **Tailscale conectado**, abrí en el navegador:
 

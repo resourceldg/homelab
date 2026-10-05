@@ -18,8 +18,7 @@ El acceso web está en **capas**, con un único login (Authelia) y **grupos**.
   de quién entró al pañol.
 - **`operators` + `students`:** el dashboard raíz y el **Grafana del aula**
   (`grafana-aula.`). Ese Grafana crea a cada alumno con el usuario que llega de
-  Authelia y lo pone en su equipo: ve y edita solo su carpeta (**en puesta en
-  marcha**: todavía no está activo en el servidor). Detalle en
+  Authelia y lo pone en su equipo: ve y edita solo su carpeta. Detalle en
   [aula-iot.md](aula-iot.md).
 - Las **apps publicadas** de alumnos quedan públicas (sin login).
 

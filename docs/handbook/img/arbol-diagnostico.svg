@@ -99,7 +99,7 @@
 <text x="268" y="804" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="bold" font-style="normal" fill="#2e7d32" text-anchor="start">sí</text>
 <rect x="90" y="814" width="330" height="70" rx="10" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
 <text x="255.0" y="838" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="14" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">¿Aparece en "Estado actual"?</text>
-<text x="255.0" y="858" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">Grafana (en puesta en marcha)</text>
+<text x="255.0" y="858" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">Grafana: dispositivo, magnitud y "Hace"</text>
 <circle cx="90" cy="814" r="13" fill="#e65100"/>
 <text data-num="1" x="90" y="819" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">8</text>
 <rect x="760" y="814" width="440" height="70" rx="10" fill="#ffebee" stroke="#c62828" stroke-width="2"/>

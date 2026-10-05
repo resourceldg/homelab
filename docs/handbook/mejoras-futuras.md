@@ -38,8 +38,6 @@ Mantenerlo al día evita "documentación fantasma".
 
 ## Pendiente
 - **Índice del PDF con número de página** (hoy tiene enlaces, sin números).
-- **Cuando se active el Grafana del aula:** sacar los avisos "en puesta en
-  marcha" (caps. 9, 12, 13, guía, diagnóstico paso 8, node-red-o-grafana).
 - **Salida pública para la muestra** (que un visitante sin Tailscale vea un
   tablero): hoy no existe; hay que decidirla.
 - **Anclas en GitHub:** los enlaces a secciones (`#...`) del manual siguen el

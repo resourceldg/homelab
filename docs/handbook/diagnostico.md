@@ -146,9 +146,6 @@ hace falta** ([por qué](node-red-o-grafana.md#como-estan-conectados-hoy-en-el-a
 
 ### Paso 8 — ¿Llega al almacenamiento?
 
-> 🚧 El Grafana del aula se está poniendo en marcha. Mientras no esté activo, el
-> recorrido verificable termina en el paso 6 o 7.
-
 - **Qué compruebo:** que el valor se **guardó** (Telegraf lo tradujo y lo escribió).
 - **Cómo:** en Grafana, tu dashboard → tabla **Estado actual**.
 - **Qué debería pasar:** aparece tu **dispositivo** y tu **magnitud** con el

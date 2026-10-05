@@ -13,9 +13,9 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 FUENTE = "DejaVu Sans, Verdana, Arial, sans-serif"
 PROBLEMAS = []
 
-# El Grafana del aula todavía no está activo (oct 2026). Mientras sea False, las
-# imágenes lo marcan "en puesta en marcha". El día que se active: True y regenerar.
-GRAFANA_AULA_ACTIVO = False
+# El Grafana del aula está activo desde el 2026-10-05. Si se apagara: False y
+# regenerar, y las imágenes lo marcan "en puesta en marcha".
+GRAFANA_AULA_ACTIVO = True
 EN_MARCHA = "" if GRAFANA_AULA_ACTIVO else "(en puesta en marcha)"
 
 # Paleta: un color por "mundo", el mismo en todas las imágenes.
@@ -407,7 +407,7 @@ def arbol_accesos():
     s.flecha(740, 275, 1000, 343, color="#424242")
     s.caja(810, 345, 380, 72, "server", "¿Abre grafana-aula… ?", ["en el navegador · " + (EN_MARCHA or "login del aula")], tam_t=14.5, tam=12)
     s.numero(810, 345, 2, C["server"][1])
-    falla(700, 450, 290, "No carga", "en puesta en marcha, o sin Tailscale")
+    falla(700, 450, 290, "No carga", ("en puesta en marcha, o sin Tailscale" if EN_MARCHA else "¿Tailscale prendido?"))
     falla(1010, 450, 270, "Vuelve al login", "usuario/contraseña del aula")
     s.flecha(920, 417, 845, 448, color="#c62828")
     s.flecha(1080, 417, 1145, 448, color="#c62828")

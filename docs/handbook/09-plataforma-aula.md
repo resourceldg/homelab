@@ -101,7 +101,7 @@ equipo):
 | **Redis** | memoria rápida de "clave → valor" | caché, colas chicas |
 | **Mailpit** | un correo de prueba (atrapa los mails, no los manda) | probar envíos de mail |
 | **`mqtt-aula`** | el broker MQTT del aula | que sus **placas** manden y reciban mensajes (ver [cap. 11](11-arquitectura-iot.md)) |
-| **Grafana del aula** | tableros | **ver** los datos de sus placas (ver [cap. 13](13-usar-grafana.md); en puesta en marcha) |
+| **Grafana del aula** | tableros | **ver** los datos de sus placas (ver [cap. 13](13-usar-grafana.md)) |
 
 El broker de la plataforma (`labctld`) conecta esos servicios a la **red
 privada** de cada equipo cuando hace `labctl up`, así los alcanzan por nombre

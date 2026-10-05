@@ -87,7 +87,7 @@
 <text x="1560.0" y="324" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="15" font-weight="bold" font-style="normal" fill="#e65100" text-anchor="middle">Grafana</text>
 <text x="1560.0" y="344" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">consulta y dibuja</text>
 <text x="1560.0" y="360" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">el panel (PromQL)</text>
-<text x="1560.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle">(en puesta en marcha)</text>
+<text x="1560.0" y="376" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="12.5" font-weight="normal" font-style="normal" fill="#212121" text-anchor="middle"></text>
 <circle cx="1480" cy="300" r="13" fill="#e65100"/>
 <text data-num="1" x="1480" y="305" font-family="DejaVu Sans, Verdana, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">6</text>
 <line x1="1230" y1="330" x2="1268" y2="260" stroke="#e65100" stroke-width="2.5" marker-end="url(#punta-e65100)"/>
