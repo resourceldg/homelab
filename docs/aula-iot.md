@@ -80,8 +80,9 @@ equipo viejo de Grafana (la membresía se sincroniza con el roster).
 1. En `grafana-aula`, abrí el dashboard → **Share** → **Share externally** →
    aceptá → copiá el link (`/public-dashboards/<token>`).
 2. Ese link no pide login, pero **hoy solo se abre desde el tailnet**: el router
-   no reenvía el 443 y los tres puertos de Funnel están ocupados (443 Caddy,
-   8443 API del pañol, 10000 MQTT).
+   no reenvía el 443. De los tres puertos que admite Funnel, dos están en uso
+   (8443 API del pañol, 10000 MQTT); el 443 queda libre, pero publicarlo
+   expondría Caddy entero, no solo el dashboard.
 3. Para mostrarlo **en internet** falta una salida pública que solo deje pasar
    `/public-dashboards/`, `/public/` y `/api/public/` (y nada del resto de
    Grafana). Pendiente de decidir: ver "Mejoras" abajo.

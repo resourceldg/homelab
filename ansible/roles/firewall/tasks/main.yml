@@ -45,6 +45,21 @@
     comment: "{{ item.comment }}"
   loop: "{{ ufw_public_ports }}"
 
+# Caddy es un contenedor: su 80/443 lo publica Docker, así que el tráfico entra
+# por FORWARD y no por INPUT. Ni la regla de arriba ni "Trust tailnet" lo
+# alcanzan; con ufw-docker manda `ufw route`. Sin esto, desde el tailnet la web
+# (dashboard, Grafana, Authelia) no responde aunque Caddy esté sano: pasó el
+# 2026-10-05, y el log lo mostraba como "[UFW DOCKER BLOCK] ... DPT=443".
+- name: Let the tailnet reach the reverse proxy (Docker-published ports)
+  community.general.ufw:
+    rule: allow
+    route: true
+    src: "{{ tailscale_cidr }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment }} from tailnet"
+  loop: "{{ ufw_public_ports }}"
+
 - name: Enable UFW logging
   community.general.ufw:
     logging: "low"
