@@ -95,8 +95,8 @@ antes de cambiar el vault guarda una copia cifrada en `~/.claves-aula-respaldos/
 El login web bloquea 5 minutos a quien falla 5 veces en 2 minutos (Authelia).
 
 Esto crea el usuario Linux, lo suma a su equipo, le arma su usuario en el
-**Grafana del aula** dentro del equipo correcto y, si el equipo es nuevo, crea su
-folder, su datasource y su tablero inicial.
+**Grafana del aula** dentro de la organización de su equipo y, si el equipo es
+nuevo, crea esa organización con su fuente de datos y su tablero inicial.
 
 **Sumar a un alumno a Tailscale:** generar una *auth key* con **Pre-approved**
 (<https://login.tailscale.com/admin/settings/keys>) y que el alumno corra

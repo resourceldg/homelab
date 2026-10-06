@@ -22,7 +22,10 @@ anda. **Grafana** es eso para tus placas.
 > - **Consulta (*query*):** la pregunta que el panel le hace a la base de datos
 >   ("dame la temperatura de la sala de las últimas 3 horas").
 > - **Fuente de datos (*datasource*):** la base de datos a la que se le pregunta.
->   La de tu equipo se llama **MQTT — equipo-NN**.
+>   La de tu equipo se llama **MQTT — equipo-NN**, y es la única que tenés.
+> - **Organización:** cada equipo tiene su **propio Grafana** adentro del Grafana
+>   del aula, con sus datos y sus tableros. Lo de los otros equipos, para vos, no
+>   existe (ni lo tuyo para ellos).
 > - **PromQL:** el idioma en que se escriben esas consultas. No hace falta
 >   aprenderlo entero: abajo hay **ejemplos completos** y un **recetario** para
 >   copiar.
@@ -76,14 +79,14 @@ flowchart LR
 ## Paso 2 — Encontrar el tablero de tu equipo
 
 1. Menú de la izquierda → **Paneles de control**.
-2. Entrá a la carpeta **equipo-NN** (la de tu equipo).
-3. Abrí **equipo-NN — sensores y actuadores**.
+2. Abrí **equipo-NN — sensores y actuadores**.
 
-![La carpeta del equipo con su tablero](img/grafana/01-carpeta.png)
+![Los tableros de tu equipo](img/grafana/01-tableros.png)
 
-Ese tablero lo creó el sistema para tu equipo **y es de ustedes**: lo pueden
-cambiar, agregarle paneles y guardarlo. Las carpetas de los otros equipos no
-aparecen, y no podés modificar sus tableros (ni ellos el tuyo).
+Entraste directo al **Grafana de tu equipo**: todo lo que ves acá es de ustedes.
+Ese tablero lo creó el sistema **y es de ustedes**: lo pueden cambiar,
+agregarle paneles, crear tableros nuevos y guardarlos. Los otros equipos no ven
+nada de esto, y vos tampoco ves lo de ellos.
 
 ---
 
@@ -137,21 +140,17 @@ El editor tiene tres zonas:
 
 ---
 
-## Paso 5 — Elegir la fuente de datos (¡el paso que más se olvida!)
+## Paso 5 — Revisar la fuente de datos
 
-Un panel nuevo arranca con la fuente **-- Grafana --**, que **no son tus datos**:
-son números de prueba que Grafana inventa. Se ven así, una línea que sube y baja
-sola:
+Abajo, en **Fuente de datos**, tiene que decir **MQTT — equipo-NN** (la de tu
+equipo). Ya viene elegida: es la única fuente de datos que tiene tu equipo.
 
-![Datos de prueba: la fuente todavía es -- Grafana --](img/grafana/08-datos-de-prueba.png)
+![La fuente de tu equipo ya viene elegida](img/grafana/04-fuente-predeterminada.png)
 
-1. Abajo, en **Fuente de datos**, abrí la lista.
-2. Elegí **MQTT — equipo-NN**, la de **tu** equipo (podés escribir `equipo-03`
-   para encontrarla rápido).
-
-> **Siempre la de tu equipo.** Es la que filtra solo tus datos: con ella, tus
-> consultas no necesitan decir de qué equipo son. Las otras de la lista son de
-> los demás equipos y del profe: no son para tu tablero.
+> En la lista aparecen también **-- Grafana --**, **-- Mixed --** y
+> **-- Dashboard --**. Son de Grafana, no tus datos: **-- Grafana --**, por
+> ejemplo, inventa números de prueba (una línea que sube y baja sola). Si ves
+> eso, volvé a elegir **MQTT — equipo-NN**.
 
 ---
 
@@ -319,8 +318,8 @@ hora".
 |---|---|
 | "No se puede conectar" al abrir la dirección | prendé Tailscale; si sigue, avisale al profe ([paso 1](#paso-1-entrar)) |
 | Me pide la clave una y otra vez | usuario o clave mal escritos; tras varios intentos, esperá 5 minutos |
-| No veo la carpeta de mi equipo | entraste con otro usuario, o no estás en el equipo: avisale al profe |
-| El gráfico sube y baja solo, con números raros | la fuente es **-- Grafana --**: elegí **MQTT — equipo-NN** ([paso 5](#paso-5-elegir-la-fuente-de-datos-el-paso-que-mas-se-olvida)) |
+| No veo el tablero de mi equipo, o Grafana dice que no tengo acceso | todavía no estás en el roster del equipo: avisale al profe |
+| El gráfico sube y baja solo, con números raros | la fuente es **-- Grafana --**: elegí **MQTT — equipo-NN** ([paso 5](#paso-5-revisar-la-fuente-de-datos)) |
 | El panel dice **No data** | ampliá el rango a **Últimas 24 horas**; revisá el nombre del dispositivo en **Estado actual** ([paso 6](#paso-6-escribir-la-consulta)) |
 | Tu dato no aparece ni en **Estado actual** | el problema está antes de Grafana: [capítulo 12, "Si no aparece"](12-conectar-a-grafana.md#si-no-aparece) |
 | Hice cambios y desaparecieron | no guardaste ([paso 9](#paso-9-guardar)); si guardaste mal, volvé a una versión anterior |
@@ -332,8 +331,8 @@ hora".
 ## Ahora deberías entender
 
 - Qué es un **tablero**, un **panel**, una **consulta** y una **fuente de datos**.
-- Que siempre hay que elegir la fuente **MQTT — equipo-NN**: la que viene por
-  defecto son datos de prueba.
+- Que cada equipo tiene **su propio Grafana**: su fuente **MQTT — equipo-NN**
+  (que ya viene elegida) y sus tableros; lo de los otros equipos no existe para vos.
 - Que Grafana **consulta lo guardado** (no recibe los mensajes directo): por eso
   muestra historia aunque la placa esté apagada, y por eso no prende LEDs.
 

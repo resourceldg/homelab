@@ -199,7 +199,7 @@ flowchart TB
   C1["1 · RED<br/>¿podés llegar al servidor?<br/>Tailscale (personas) · Funnel + TLS (placas)"]
   C2["2 · SERVIDOR<br/>¿podés entrar a la terminal?<br/>SSH con tu usuario y contraseña del aula"]
   C3["3 · SERVICIO<br/>¿podés usar este programa?<br/>login web del aula (Grafana) · usuario MQTT del equipo (broker)"]
-  C4["4 · PERMISOS ADENTRO<br/>¿qué podés tocar?<br/>tu carpeta · tus topics · tu folder de Grafana"]
+  C4["4 · PERMISOS ADENTRO<br/>¿qué podés tocar?<br/>tu carpeta · tus topics · el Grafana de tu equipo"]
   C1 --> C2 --> C3 --> C4
 ```
 
@@ -208,7 +208,7 @@ flowchart TB
 | **1 · Red** | ¿podés llegar? | **Tailscale** (compus) · **Funnel + TLS** (placas) | que nadie de internet llegue a los servicios privados | `Connection timed out` → [diagnóstico](diagnostico.md#no-puedo-entrar-a-algo) |
 | **2 · Servidor** | ¿podés entrar a la terminal? | **SSH** con tu usuario del aula | la terminal, tus archivos, los túneles | `Permission denied` |
 | **3 · Servicio** | ¿podés usar este programa? | Grafana: **login del aula** (Authelia) · broker: **usuario MQTT del equipo** · Node-RED: protegido por el túnel SSH | cada programa por separado | Grafana te devuelve al login · la placa da error `5` |
-| **4 · Permisos** | ¿qué podés tocar adentro? | Linux: solo tu carpeta · broker: solo `equipo-NN/...` · Grafana: solo tu folder | que un equipo no toque lo de otro | el mensaje se descarta sin aviso · no ves la carpeta |
+| **4 · Permisos** | ¿qué podés tocar adentro? | Linux: solo tu carpeta · broker: solo `equipo-NN/...` · Grafana: solo la organización de tu equipo | que un equipo no toque lo de otro | el mensaje se descarta sin aviso · no ves la carpeta |
 
 ### Tus credenciales, en una tabla
 

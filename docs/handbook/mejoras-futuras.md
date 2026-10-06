@@ -27,7 +27,7 @@ Mantenerlo al día evita "documentación fantasma".
   qué pasa si se cae cada pieza.
 - El ciclo de vida del dato y del software del proyecto del alumno (cap. 15).
 - Bloques de "Ahora deberías entender / Seguí por acá" en los capítulos clave.
-- Glosario con definiciones "en el aula" (118 términos).
+- Glosario con definiciones "en el aula" (119 términos).
 
 ## Hecho: imágenes y PDF (octubre 2026)
 - Imágenes propias, generadas con código (`img/generar_imagenes.py`): el ciclo

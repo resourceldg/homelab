@@ -359,7 +359,7 @@ cualquier problema está del broker para adelante.
 1. Entrá a **https://grafana-aula.lucasland.duckdns.org** con **Tailscale**
    conectado (la red privada del aula) y tu usuario y contraseña del aula. Cómo
    usarlo: [capítulo 13](13-usar-grafana.md).
-2. Menú → **Dashboards** → carpeta **equipo-NN** → **equipo-NN — sensores y actuadores**.
+2. Menú → **Paneles de control** → **equipo-NN — sensores y actuadores**.
 3. En la tabla **Estado actual** tiene que aparecer tu `dispositivo` y tu
    `magnitud`, con el **último valor** y **hace cuántos segundos** llegó.
 

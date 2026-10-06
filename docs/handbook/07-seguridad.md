@@ -132,7 +132,7 @@ según tu **grupo**:
 | Página | `operators` | `students` |
 |---|---|---|
 | Grafana de operación (incluye la auditoría del pañol) | ✅ | ❌ |
-| Grafana del aula | ✅ | ✅ (solo el folder de su equipo) |
+| Grafana del aula | ✅ | ✅ (solo la organización de su equipo) |
 | Tablero del pañol | ✅ | ❌ |
 | Prometheus, cAdvisor | ✅ | ❌ |
 

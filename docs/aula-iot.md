@@ -6,8 +6,9 @@
 > VictoriaMetrics.
 
 Lo que las placas de los equipos publican en `mqtt-aula` se guarda 15 días y se
-ve en un **Grafana del aula** propio, con un folder por equipo que solo ese equipo
-ve y edita, y un dashboard general del operador.
+ve en un **Grafana del aula** propio, con **una organización por equipo** (su
+fuente de datos, sus tableros; nada de los otros equipos) y una organización del
+operador con el tablero general.
 
 Manuales para alumnos: [12 — Conectar a Grafana](handbook/12-conectar-a-grafana.md)
 y [13 — Grafana paso a paso](handbook/13-usar-grafana.md).
@@ -41,13 +42,23 @@ y [13 — Grafana paso a paso](handbook/13-usar-grafana.md).
   viene de `172.31.250.0/24` (red `grafana-aula-proxy`, solo Caddy). En `edge`
   también están `panol-api` y `panol-nodered`: si se confiara en `edge`, cualquiera
   de esos podría hacerse pasar por el operador.
-- **Datasource por equipo con `extra_label`.** VictoriaMetrics filtra cada
-  consulta por `equipo=<equipo>`, así los alumnos escriben `mqtt_valor` sin filtro.
-  **Límite honesto:** en Grafana OSS no hay permisos por datasource, así que un
-  alumno que edita puede elegir el datasource de otro equipo y *leer* sus valores.
-  Los **dashboards** sí están aislados (folders con permiso solo para el equipo).
-  Los datos de sensores del aula no son sensibles; si llegaran a serlo, hace falta
-  una organización de Grafana por equipo.
+- **Una organización de Grafana por equipo** (desde 2026-10-05). Grafana OSS no
+  tiene permisos por fuente de datos: con un folder por equipo en una sola org
+  (el primer diseño), un alumno de equipo-03 **consultaba** la fuente de
+  equipo-04 y la general, aunque no viera sus carpetas (lo comprobamos). Una org
+  es un Grafana aparte: tiene **solo** la fuente de su equipo (predeterminada) y
+  sus tableros; los integrantes son **Editor**. La org 1 ("Aula — operador") es
+  del operador: tablero general y fuente "Aula (todos)". Verificado con un usuario
+  de equipo-03: la fuente de otro equipo da *Data source not found*, pedir la org
+  de otro da *permissions needed*.
+- **Fuente por equipo con `extra_label`.** VictoriaMetrics filtra cada consulta
+  por `equipo=<equipo>`: los alumnos escriben `mqtt_valor` sin filtro, y aunque
+  escriban `equipo="equipo-04"` no vuelve nada (segunda barrera).
+- **Sin alta automática** (`GF_AUTH_PROXY_AUTO_SIGN_UP=false`): los usuarios los
+  crea Ansible desde el roster. Con alta automática, alguien de Authelia que no
+  está en un equipo caería en la org del operador.
+- **La API la maneja un script** (`roles/aula_iot/files/aula_grafana.py`, con tests
+  contra una API simulada), no ~15 tareas `uri` encadenadas.
 - **Dashboard inicial por API, no por provisioning.** Lo crea Ansible una sola vez;
   después es del equipo. Provisionado sería de solo lectura o se pisaría.
 - **Topes de cardinalidad** en VictoriaMetrics (`-storage.maxDailySeries=20000`,
@@ -87,12 +98,21 @@ Lo que pasó la primera vez (2026-10-05), para no asustarse:
 
 **Alta de un equipo o alumno:** se edita el roster
 (`ansible/inventories/production/group_vars/all/classroom.yml`) como siempre y se
-aplica. El rol crea el usuario de Grafana, el equipo, el folder con permisos, el
-datasource y el dashboard inicial. Un alumno que se cambia de equipo sale del
-equipo viejo de Grafana (la membresía se sincroniza con el roster).
+aplica. El rol crea el usuario de Grafana, la organización del equipo con su
+fuente y su tablero inicial, y lo suma como Editor. Un alumno que se cambia de
+equipo sale de la organización vieja (la membresía se sincroniza con el roster).
+Un equipo que se da de baja conserva su organización: se borra a mano si hace
+falta (Administración → Organizaciones).
 
-**Admin de Grafana:** es el usuario `operator` de Authelia. La clave de la API
-(Ansible) está en `/etc/classroom/secrets/grafana-aula.adminpass`.
+**Admin de Grafana:** es el usuario `operator` de Authelia, Admin de **todas** las
+organizaciones. Para ver el tablero de un equipo: tu avatar (arriba a la derecha)
+→ **cambiar de organización** → `equipo-NN`. El tablero general está en "Aula —
+operador". La clave de la API (Ansible) está en
+`/etc/classroom/secrets/grafana-aula.adminpass`.
+
+**Respaldo antes de cambios grandes:**
+`sudo docker cp grafana-aula:/var/lib/grafana/grafana.db /var/backups/grafana-aula/grafana-$(date +%F).db`
+(el de la migración a organizaciones quedó en `/var/backups/grafana-aula/`).
 
 ## Dashboard público para la muestra
 
@@ -124,7 +144,7 @@ docker logs --tail 50 grafana-aula | grep -i proxy
 
 | Síntoma | Causa |
 |---|---|
-| Un equipo no ve su folder | el alumno no está en `members` del roster, o no se corrió `--tags classroom` después del alta |
+| Un alumno entra y Grafana dice que no tiene acceso | no está en `members` del roster, o no se corrió `--tags classroom` después del alta (sin alta automática, Grafana no lo crea solo) |
 | Datos de un equipo no aparecen | el topic no empieza con el nombre del equipo, o el equipo no estaba en el roster cuando se renderizó `telegraf.conf` |
 | Grafana responde 407/401 entrando por SSO | Caddy no está en la red `grafana-aula-proxy` (recrear el stack `proxy`) |
 | `aula-telegraf` reiniciándose con `not Authorized` | el broker no tomó el `passwd` nuevo (montaje de archivo suelto). El rol reinicia `mqtt-aula` al cambiarlo; a mano: `docker restart mqtt-aula aula-telegraf` |

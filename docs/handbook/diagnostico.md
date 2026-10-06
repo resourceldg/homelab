@@ -159,8 +159,8 @@ hace falta** ([por qué](node-red-o-grafana.md#como-estan-conectados-hoy-en-el-a
 ### Paso 9 — ¿Grafana consulta lo correcto?
 
 - **Qué compruebo:** que **tu panel** pregunta por tu dato.
-- **Cómo:** editá el panel (menú ⋮ → *Edit*) y revisá tres cosas:
-  1. **Data source:** `MQTT — equipo-NN` (el de **tu** equipo);
+- **Cómo:** editá el panel (menú ⋮ del panel → **Editar**) y revisá tres cosas:
+  1. **Fuente de datos:** `MQTT — equipo-NN` (no `-- Grafana --`, que son datos de prueba);
   2. **Consulta:** `mqtt_valor{dispositivo="sala", magnitud="temperatura"}`, con los
      nombres **en minúsculas** y con `_` donde había espacios o guiones;
   3. **Rango de tiempo** (arriba a la derecha): que incluya el momento en que

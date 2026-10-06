@@ -60,7 +60,7 @@ en este proyecto (en los términos centrales, **qué significa en el aula**). Or
 ### Autorización
 - **Simple:** decidir **qué podés hacer** una vez que se sabe quién sos.
 - **Técnica:** control de permisos sobre recursos para una identidad ya autenticada.
-- **En el aula:** solo tu carpeta, solo tus topics `equipo-NN/...`, solo tu folder de Grafana. Ver [Red y accesos](red-y-accesos.md#las-4-capas).
+- **En el aula:** solo tu carpeta, solo tus topics `equipo-NN/...`, solo el Grafana de tu equipo. Ver [Red y accesos](red-y-accesos.md#las-4-capas).
 
 ### Backup
 - **Simple:** una copia de seguridad de los datos.
@@ -382,6 +382,11 @@ en este proyecto (en los términos centrales, **qué significa en el aula**). Or
 - **Simple:** cuando se acaba la memoria y el kernel mata procesos.
 - **Técnica:** *Out Of Memory killer* del kernel.
 - **Dónde:** lo previenen los límites de RAM por equipo.
+
+### Organización (Grafana)
+- **Simple:** un Grafana aparte adentro del mismo Grafana, con sus propios tableros y fuentes de datos.
+- **Técnica:** unidad de aislamiento de Grafana: usuarios, tableros y fuentes de una organización no existen para las otras.
+- **En el aula:** cada equipo tiene la suya (`equipo-NN`); la del profe se llama "Aula — operador". Ver [cap. 13](13-usar-grafana.md).
 
 ### Payload (carga)
 - **Simple:** el **contenido** de un mensaje: `23.5`, `ON`, `abierto`.

@@ -184,7 +184,7 @@ sequenceDiagram
   Op->>G: git push (rama → revisión → main)
   S->>G: git pull (trae el cambio)
   S->>S: ansible-playbook site.yml --tags classroom -K
-  Note over S: crea el usuario, lo suma al grupo del equipo,<br/>a Grafana del aula y a su folder
+  Note over S: crea el usuario, lo suma al grupo del equipo,<br/>a Grafana del aula, en la organización de su equipo
 ```
 
 En el servidor, como usuario `homelab`:

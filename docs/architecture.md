@@ -48,7 +48,7 @@ subsistemas, cada uno con su propio documento:
   [classroom-architecture.md](classroom-architecture.md).
 - **Aula IoT:** broker MQTT compartido (`mqtt-aula`) para las ESP32 de los
   equipos, y una capa de visualización (Telegraf → VictoriaMetrics → Grafana del
-  aula, un folder por equipo). Ver [aula-iot.md](aula-iot.md); la explicación
+  aula, una organización aislada por equipo). Ver [aula-iot.md](aula-iot.md); la explicación
   para principiantes (capas, decisiones, ciclo de vida) está en los capítulos 11
   y 15 del manual.
 - **Pañol IoT:** plano de servicios del control de acceso (Mosquitto + Postgres de

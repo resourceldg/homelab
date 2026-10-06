@@ -7,7 +7,7 @@ El acceso web está en **capas**, con un único login (Authelia) y **grupos**.
 | Grupo | Ve | Cómo |
 |---|---|---|
 | **operators** (vos) | Todo: dashboard, Grafana de operación (infra + auditoría del pañol), Grafana del aula, Prometheus, cAdvisor, panel del pañol | login SSO |
-| **students** (alumnos) | El dashboard y el **Grafana del aula** (cada equipo edita su carpeta) + su app publicada | login SSO |
+| **students** (alumnos) | El dashboard y el **Grafana del aula** (cada equipo, su propia organización) + su app publicada | login SSO |
 | **family / público** | Solo las apps de alumnos que vos publiques | sin login (públicas) |
 
 - **Authelia** es el portal de login (`auth.tudominio`). Protege con `forward_auth`
@@ -18,7 +18,8 @@ El acceso web está en **capas**, con un único login (Authelia) y **grupos**.
   de quién entró al pañol.
 - **`operators` + `students`:** el dashboard raíz y el **Grafana del aula**
   (`grafana-aula.`). Ese Grafana crea a cada alumno con el usuario que llega de
-  Authelia y lo pone en su equipo: ve y edita solo su carpeta. Detalle en
+  Authelia en la organización de su equipo: ve y edita solo lo de su equipo,
+  y no puede consultar los datos de otros. Detalle en
   [aula-iot.md](aula-iot.md).
 - Las **apps publicadas** de alumnos quedan públicas (sin login).
 
