@@ -9,8 +9,14 @@ JavaScript; un PDF no ejecuta nada. Por eso este script los dibuja antes
 (mermaid-cli), convierte cada capítulo a HTML, une todo en el orden del `nav` de
 mkdocs.yml y lo imprime con Chrome, que muestra bien SVG, acentos y emojis.
 
+Navegación del PDF: índice con número de página y enlace a cada capítulo,
+marcadores (el panel lateral del visor: partes y capítulos), y en cada hoja el
+nombre del capítulo arriba. Los números de página salen de imprimir dos veces:
+la primera mide dónde cae cada capítulo, la segunda los escribe en el índice.
+
 Necesita: Python con `markdown` y `pymdown-extensions` (vienen con
-mkdocs-material), `npx` (Node) para mermaid-cli, y Google Chrome o Chromium.
+mkdocs-material) y `pypdf`, `npx` (Node) para mermaid-cli, y Google Chrome o
+Chromium.
 """
 import hashlib
 import html
@@ -24,6 +30,11 @@ from datetime import date
 
 import markdown
 import yaml
+
+try:
+    import pypdf
+except ImportError:
+    sys.exit("Falta pypdf (números de página del índice y marcadores): pip install pypdf")
 
 RAIZ = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DOCS = os.path.join(RAIZ, "docs", "handbook")
@@ -98,7 +109,15 @@ def bloque_diagrama(svg):
     return f'\n{aviso}<div class="{clase}"><img src="file://{svg}" alt="diagrama"></div>\n'
 
 
-def capitulo_html(archivo, ids_paginas):
+def slug_parte(parte):
+    return "parte-" + re.sub(r"[^a-z0-9]+", "-", parte.lower()).strip("-")
+
+
+def texto_css(t):
+    return t.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def capitulo_html(archivo, ids_paginas, parte=None, titulo=""):
     slug_pag = os.path.splitext(archivo)[0]
     with open(os.path.join(DOCS, archivo), encoding="utf-8") as fh:
         texto = fh.read()
@@ -139,7 +158,9 @@ def capitulo_html(archivo, ids_paginas):
             return AVISO_APAISADA + f'<div class="apaisada">{m.group(1)}</div>'
         return f'<p>{m.group(1)}</p>'
     cuerpo = re.sub(r'<p>(<img [^>]*src="file://([^"]+\.svg)"[^>]*>)</p>', img_propia, cuerpo)
-    return f'<section class="capitulo" id="{slug_pag}">{cuerpo}</section>'
+    # Banda arriba del título: a qué parte pertenece (se ve al pasar las hojas).
+    banda = f'<div class="cap-banda">{html.escape(parte or "Manual")}</div>'
+    return f'<section class="capitulo" id="{slug_pag}" style="page: p-{slug_pag}">{banda}{cuerpo}</section>'
 
 
 CSS = """
@@ -157,12 +178,24 @@ body { font-family: 'DejaVu Sans', 'Noto Sans', Arial, sans-serif; font-size: 10
 .portada .sub { font-size: 14pt; color: #424242; margin-bottom: 18mm; }
 .portada img { width: 100%; margin: 6mm 0 14mm; }
 .portada .autor { font-size: 13pt; font-weight: bold; } .portada .fecha { color: #757575; }
-.indice { break-before: page; } .indice h1 { color: #00796b; }
-.indice .parte { font-weight: bold; margin-top: 4mm; color: #00796b; }
-.indice a { color: #212121; text-decoration: none; } .indice li { margin: 1mm 0; }
-.separador { break-before: page; height: 230mm; display: flex; align-items: center; justify-content: center; }
-.separador h1 { font-size: 28pt; color: #00796b; border: none; }
+.indice { break-before: page; } .indice h1 { color: #00796b; margin-bottom: 1mm; }
+.indice .ayuda { color: #757575; font-size: 9pt; margin: 0 0 4mm; }
+.indice ul { list-style: none; padding: 0; margin: 0; }
+.indice li { margin: 0; break-inside: avoid; }
+.indice a { display: flex; align-items: baseline; gap: 2mm; padding: 1.1mm 0; text-decoration: none; color: #004d40; }
+.indice a .t { flex: none; max-width: 85%; }
+.indice a .puntos { flex: 1; border-bottom: 1.5px dotted #80cbc4; transform: translateY(-1mm); }
+.indice a .n { flex: none; min-width: 9mm; text-align: right; font-weight: bold; color: #00796b; }
+.indice li.parte a { margin-top: 4mm; padding: 1.6mm 2mm; background: #e0f2f1; border-left: 4px solid #00796b;
+                     font-weight: bold; color: #00695c; }
+.indice li.cap a { padding-left: 6mm; }
+.separador { break-before: page; height: 230mm; display: flex; flex-direction: column; align-items: center;
+             justify-content: center; }
+.separador .rotulo { color: #80cbc4; font-size: 11pt; letter-spacing: 3px; text-transform: uppercase; }
+.separador h1 { font-size: 28pt; color: #00796b; border: none; text-align: center; }
 .capitulo { break-before: page; }
+.cap-banda { background: #00796b; color: #fff; font-size: 9pt; letter-spacing: 1.5px; text-transform: uppercase;
+             padding: 1.6mm 3mm; margin: 0 0 3mm; border-radius: 2px; }
 h1 { color: #00796b; font-size: 21pt; border-bottom: 2px solid #00796b; padding-bottom: 2mm; }
 h2 { color: #004d40; font-size: 15pt; margin-top: 7mm; break-after: avoid; }
 h3 { color: #00695c; font-size: 12.5pt; break-after: avoid; } h4 { break-after: avoid; }
@@ -194,34 +227,85 @@ def main():
       <div class="fecha">Versión del {date.today().strftime('%d/%m/%Y')} · generado desde el repositorio</div>
     </div>"""
 
-    indice = ['<div class="indice"><h1>Índice</h1><ul style="list-style:none;padding:0">']
-    parte_actual = object()
-    for parte, titulo, archivo in paginas:
-        if parte != parte_actual:
-            if parte:
-                indice.append(f'<li class="parte">{html.escape(parte)}</li>')
+    def indice(paginas_de):
+        n = lambda ancla: paginas_de.get(ancla, "")
+        out = ['<div class="indice"><h1>Índice</h1>',
+               '<p class="ayuda">Tocá un título para ir a ese capítulo. También podés usar los marcadores '
+               '(el panel lateral de tu visor de PDF).</p><ul>']
+        parte_actual = object()
+        for parte, titulo, archivo in paginas:
+            if parte and parte != parte_actual:
+                a = slug_parte(parte)
+                out.append(f'<li class="parte"><a href="#{a}"><span class="t">{html.escape(parte)}</span>'
+                           f'<span class="puntos"></span><span class="n">{n(a)}</span></a></li>')
             parte_actual = parte
-        indice.append(f'<li style="margin-left:{6 if parte else 0}mm"><a href="#{os.path.splitext(archivo)[0]}">{html.escape(titulo)}</a></li>')
-    indice.append("</ul></div>")
+            a = os.path.splitext(archivo)[0]
+            out.append(f'<li class="{"cap" if parte else "suelto"}"><a href="#{a}"><span class="t">{html.escape(titulo)}</span>'
+                       f'<span class="puntos"></span><span class="n">{n(a)}</span></a></li>')
+        out.append("</ul></div>")
+        return "".join(out)
 
     cuerpo = []
+    estilos_pagina = []
     parte_actual = object()
     for parte, titulo, archivo in paginas:
         if parte and parte != parte_actual:
-            cuerpo.append(f'<div class="separador"><h1>{html.escape(parte)}</h1></div>')
+            cuerpo.append(f'<div class="separador" id="{slug_parte(parte)}"><div class="rotulo">Parte</div>'
+                          f'<h1>{html.escape(parte)}</h1></div>')
         parte_actual = parte
         print("capítulo:", archivo)
-        cuerpo.append(capitulo_html(archivo, ids))
+        cuerpo.append(capitulo_html(archivo, ids, parte, titulo))
+        # Cada capítulo es una "página con nombre": arriba de cada hoja dice dónde estás.
+        slug = os.path.splitext(archivo)[0]
+        arriba = f"{parte} · {titulo}" if parte else titulo
+        estilos_pagina.append(f'@page p-{slug} {{ @top-left {{ content: "{texto_css(arriba)}"; '
+                              f"font: 8pt 'DejaVu Sans', sans-serif; color: #00796b; }} }}")
 
-    doc = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Manual de Arquitectura del Homelab</title>'
-           f'<style>{CSS}</style></head><body>{portada}{"".join(indice)}{"".join(cuerpo)}</body></html>')
-    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
-        fh.write(doc)
-        html_tmp = fh.name
-    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-sandbox", "--allow-file-access-from-files",
-                    "--no-pdf-header-footer", f"--print-to-pdf={SALIDA}", f"file://{html_tmp}"],
-                   check=True, timeout=300, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    os.unlink(html_tmp)
+    def imprimir(paginas_de):
+        doc = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Manual de Arquitectura del Homelab</title>'
+               f'<style>{CSS}{"".join(estilos_pagina)}</style></head><body>{portada}{indice(paginas_de)}'
+               f'{"".join(cuerpo)}</body></html>')
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as fh:
+            fh.write(doc)
+            html_tmp = fh.name
+        subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-sandbox", "--allow-file-access-from-files",
+                        "--no-pdf-header-footer", f"--print-to-pdf={SALIDA}", f"file://{html_tmp}"],
+                       check=True, timeout=300, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.unlink(html_tmp)
+        # Dónde cayó cada capítulo: Chrome deja un destino con nombre por cada ancla enlazada.
+        r = pypdf.PdfReader(SALIDA)
+        return {nombre.lstrip("/"): r.get_destination_page_number(d) + 1
+                for nombre, d in r.named_destinations.items()}
+
+    # Dos pasadas (o más, si agregar los números corriera el índice a otra hoja).
+    paginas_de = {}
+    for _ in range(4):
+        medidas = imprimir(paginas_de)
+        if all(paginas_de.get(k) == medidas.get(k) for k in medidas) and paginas_de:
+            break
+        paginas_de = medidas
+    else:
+        sys.exit("Los números de página del índice no se estabilizan.")
+
+    # Marcadores (panel lateral): Portada, Índice y cada parte con sus capítulos.
+    lector = pypdf.PdfReader(SALIDA)
+    escritor = pypdf.PdfWriter(clone_from=lector)
+    escritor.add_outline_item("Portada", 0)
+    escritor.add_outline_item("Índice", 1)
+    padre, parte_actual = None, object()
+    for parte, titulo, archivo in paginas:
+        if parte != parte_actual:
+            padre = (escritor.add_outline_item(parte, paginas_de[slug_parte(parte)] - 1, bold=True)
+                     if parte else None)
+            parte_actual = parte
+        escritor.add_outline_item(titulo, paginas_de[os.path.splitext(archivo)[0]] - 1, parent=padre)
+    for pagina in escritor.pages:
+        pagina.compress_content_streams(level=9)
+    escritor.compress_identical_objects(remove_duplicates=True, remove_unreferenced=True)
+    escritor.page_mode = "/UseOutlines"   # que el visor abra con el panel de marcadores
+    escritor.add_metadata({"/Title": "Manual de Arquitectura del Homelab", "/Author": "Lucas D. Gómez"})
+    with open(SALIDA, "wb") as fh:
+        escritor.write(fh)
     print("PDF listo:", SALIDA, f"({os.path.getsize(SALIDA) // 1024} KB)")
 
 

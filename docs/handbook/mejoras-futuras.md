@@ -37,7 +37,6 @@ Mantenerlo al día evita "documentación fantasma".
 - Manual en PDF ordenado desde Fundamentos (`scripts/manual-pdf.py`).
 
 ## Pendiente
-- **Índice del PDF con número de página** (hoy tiene enlaces, sin números).
 - **Salida pública para la muestra** (que un visitante sin Tailscale vea un
   tablero): hoy no existe; hay que decidirla.
 - **Anclas en GitHub:** los enlaces a secciones (`#...`) del manual siguen el
