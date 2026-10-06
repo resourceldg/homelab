@@ -52,8 +52,9 @@ Para que todo funcione de punta a punta:
    #   vault_authelia_jwt_secret / _session_secret / _storage_key
    #   vault_sso_passwords: { operator: "...", jessi: "...", ... }
    ```
-3. **Tailscale → Split DNS (solo para vos).** Para resolver el dominio a la IP del
-   tailnet en todos tus dispositivos sin `/etc/hosts`: en
+3. **Tailscale → Split DNS (configurado el 2026-10-05).** Hace que **todo equipo
+   del tailnet** (el tuyo y los de los alumnos) resuelva el dominio a la IP del
+   tailnet, sin tocar `/etc/hosts`: en
    https://login.tailscale.com/admin/dns activá **MagicDNS**, y en **Nameservers →
    Custom** agregá `100.110.123.76` con **"Restrict to domain"** = tu dominio. El
    rol `dns` ya corre un dnsmasq en el server que responde ese dominio con la IP
