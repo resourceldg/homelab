@@ -56,15 +56,21 @@ def test_grafana_trusts_user_header_only_from_the_proxy_network():
     assert "grafana-aula-proxy" in yaml.safe_load(_read(PROXY))["services"]["caddy"]["networks"]
 
 
-def test_every_team_gets_a_filtered_datasource():
+def test_operator_org_only_has_the_all_teams_datasource():
+    """La org 1 es del operador: ahí no puede quedar una fuente de equipo (antes
+    estaban todas en la org 1 y cualquiera podía consultarlas)."""
     tpl = Environment(trim_blocks=True, lstrip_blocks=True).from_string(
         _read(os.path.join(ROLE, "templates", "datasources.yml.j2")))
     doc = yaml.safe_load(tpl.render(ansible_managed="x", classroom_teams=TEAMS))
-    by_uid = {d["uid"]: d for d in doc["datasources"]}
-    for team in TEAMS:
-        ds = by_uid[f"mqtt-{team['name']}"]
-        assert ds["jsonData"]["customQueryParameters"] == f"extra_label=equipo={team['name']}"
-    assert "customQueryParameters" not in by_uid["mqtt-aula"]["jsonData"]
+    assert [d["uid"] for d in doc["datasources"]] == ["mqtt-aula"]
+    assert all(d["orgId"] == 1 for d in doc["datasources"])
+    borradas = {d["name"] for d in doc["deleteDatasources"]}
+    assert borradas == {f"MQTT — {t['name']}" for t in TEAMS}
+
+
+def test_no_auto_signup_so_strangers_never_land_in_the_operator_org():
+    env = _services()["grafana"]["environment"]
+    assert env["GF_AUTH_PROXY_AUTO_SIGN_UP"] == "false"
 
 
 def test_starter_dashboard_uses_the_team_datasource_only():
@@ -72,7 +78,7 @@ def test_starter_dashboard_uses_the_team_datasource_only():
     body = json.loads(raw.replace("__EQUIPO__", "equipo-07"))
     uids = set(re.findall(r'"uid": "(mqtt-[^"]+)"', json.dumps(body)))
     assert uids == {"mqtt-equipo-07"}, uids
-    assert body["folderUid"] == "equipo-07" and body["overwrite"] is False
+    assert body["overwrite"] is False and "folderUid" not in body
 
 
 def test_telegraf_subscribes_one_topic_per_team():

@@ -86,7 +86,10 @@ services:
       GF_AUTH_PROXY_HEADER_NAME: "Remote-User"
       GF_AUTH_PROXY_HEADER_PROPERTY: "username"
       GF_AUTH_PROXY_HEADERS: "Name:Remote-Name Email:Remote-Email"
-      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      # Sin alta automática: los usuarios los crea Ansible desde el roster y los
+      # pone en la org de su equipo. Con alta automática, alguien de Authelia que
+      # no está en el roster caería en la org 1, la del operador.
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "false"
       GF_AUTH_PROXY_WHITELIST: "${AULA_PROXY_SUBNET}"
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
       GF_AUTH_ANONYMOUS_ENABLED: "false"

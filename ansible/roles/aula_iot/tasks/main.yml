@@ -110,227 +110,43 @@
   delay: 3
   when: aula_iot_enabled | bool
 
-# --- Grafana: usuarios, equipos, folders, permisos ----------------------------------
-# Con auth proxy los usuarios se crearían solos al primer login, pero entonces
-# no se los podría meter en su equipo antes de que entren. Se crean acá con una
-# clave al azar que nunca se usa (entran por Authelia, no por formulario).
-- name: Build the list of students from the roster
-  ansible.builtin.set_fact:
-    aula_alumnos: >-
-      {{ classroom_teams | subelements('members')
-         | map('last') | list | unique }}
+# --- Grafana: una organización por equipo -----------------------------------------
+# Todo el trabajo con la API lo hace files/aula_grafana.py (idempotente, con
+# tests): usuarios, una org por equipo con su fuente filtrada y su tablero,
+# integrantes como Editor, y migración desde el diseño anterior (carpetas en la
+# org 1). Por qué organizaciones: Grafana OSS no tiene permisos por fuente de
+# datos; ver el docstring del script y docs/aula-iot.md.
+- name: Install the Grafana org sync script
+  ansible.builtin.copy:
+    src: aula_grafana.py
+    dest: /usr/local/lib/aula-grafana.py
+    owner: root
+    group: root
+    mode: "0755"
   when: aula_iot_enabled | bool
 
-- name: Look up Grafana users
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/users/lookup?loginOrEmail={{ item }}"
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    status_code: [200, 404]
-  loop: "{{ aula_alumnos }}"
-  register: aula_user_lookup
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Create missing Grafana users
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/admin/users"
-    method: POST
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      login: "{{ item.item }}"
-      name: "{{ (sso_users | selectattr('username', 'equalto', item.item) | map(attribute='displayname') | first) | default(item.item) }}"
-      password: "{{ lookup('ansible.builtin.password', '/dev/null', length=32, chars=['ascii_letters', 'digits']) }}"
-  loop: "{{ aula_user_lookup.results }}"
-  loop_control:
-    label: "{{ item.item }}"
-  when: aula_iot_enabled | bool and item.status == 404
-  changed_when: true
-  no_log: true
-
-- name: Re-read Grafana user ids
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/users/lookup?loginOrEmail={{ item }}"
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-  loop: "{{ aula_alumnos }}"
-  register: aula_users
+- name: Sync Grafana organizations with the roster
+  ansible.builtin.command: /usr/bin/python3 /usr/local/lib/aula-grafana.py
+  args:
+    stdin: "{{ aula_grafana_cfg | to_json }}"
+  vars:
+    aula_grafana_cfg:
+      api: "{{ aula_iot_grafana_api }}"
+      operador: "{{ aula_iot_grafana_admin }}"
+      clave_operador: "{{ aula_grafana_adminpass.content | b64decode }}"
+      nombre_org_operador: "{{ aula_iot_org_operador }}"
+      vm_url: "http://aula-victoriametrics:8428"
+      tablero_inicial: "{{ lookup('ansible.builtin.file', 'equipo-dashboard.json') }}"
+      equipos: "{{ classroom_teams }}"
+      nombres: "{{ sso_users | items2dict(key_name='username', value_name='displayname') }}"
+  register: aula_grafana_sync
+  changed_when: (aula_grafana_sync.stdout | from_json).changed
   no_log: true
   when: aula_iot_enabled | bool
 
-- name: Index Grafana user ids by login
-  ansible.builtin.set_fact:
-    aula_user_ids: "{{ dict(aula_users.results | map(attribute='item') | zip(aula_users.results | map(attribute='json.id'))) }}"
+# El paso de arriba va con no_log (lleva la clave del admin); acá solo la lista
+# de cambios, que no tiene secretos.
+- name: Report Grafana changes
+  ansible.builtin.debug:
+    msg: "{{ (aula_grafana_sync.stdout | from_json).cambios | default(['sin cambios'], true) }}"
   when: aula_iot_enabled | bool
-
-- name: Look up Grafana teams
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/teams/search?name={{ item.name }}"
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: aula_team_lookup
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Create missing Grafana teams
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/teams"
-    method: POST
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      name: "{{ item.item.name }}"
-  loop: "{{ aula_team_lookup.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  when: aula_iot_enabled | bool and item.json.totalCount == 0
-  changed_when: true
-  no_log: true
-
-- name: Re-read Grafana team ids
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/teams/search?name={{ item.name }}"
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: aula_teams
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Index Grafana team ids by name
-  ansible.builtin.set_fact:
-    aula_team_ids: "{{ dict(aula_teams.results | map(attribute='item.name') | zip(aula_teams.results | map(attribute='json.teams') | map('first') | map(attribute='id'))) }}"
-  when: aula_iot_enabled | bool
-
-# PUT con la lista completa: idempotente, y saca del equipo a quien ya no está
-# en el roster (alumno que cambió de equipo o se dio de baja).
-- name: Sync team members with the roster
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/teams/{{ aula_team_ids[item.name] }}/members"
-    method: PUT
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      members: "{{ item.members }}"
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  changed_when: false
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Look up team folders
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/folders/{{ item.name }}"
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    status_code: [200, 404]
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: aula_folder_lookup
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Create missing team folders
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/folders"
-    method: POST
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      uid: "{{ item.item.name }}"
-      title: "{{ item.item.name }}"
-  loop: "{{ aula_folder_lookup.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  when: aula_iot_enabled | bool and item.status == 404
-  changed_when: true
-  no_log: true
-
-# La lista REEMPLAZA los permisos: se van los por defecto (Viewer/Editor de toda
-# la organización) y queda solo el equipo, con permiso de edición (2). Así un
-# equipo no ve ni toca el folder de otro. El admin (operador) ve todo siempre.
-- name: Restrict each team folder to its team (Edit)
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/folders/{{ item.name }}/permissions"
-    method: POST
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      items:
-        - teamId: "{{ aula_team_ids[item.name] }}"
-          permission: 2
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  changed_when: false
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Restrict the general folder to the operator
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/folders/aula-general/permissions"
-    method: POST
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      items: []
-  changed_when: false
-  no_log: true
-  when: aula_iot_enabled | bool
-
-# El dashboard inicial se crea UNA vez. Después es del equipo: si lo editan o lo
-# borran, Ansible no lo vuelve a tocar (por eso no va por provisioning).
-- name: Look up each team's starter dashboard
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/dashboards/uid/{{ item.name }}-mqtt"
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    status_code: [200, 404]
-  loop: "{{ classroom_teams }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: aula_dash_lookup
-  no_log: true
-  when: aula_iot_enabled | bool
-
-- name: Create the starter dashboard of teams that have none
-  ansible.builtin.uri:
-    url: "{{ aula_iot_grafana_api }}/api/dashboards/db"
-    method: POST
-    user: "{{ aula_iot_grafana_admin }}"
-    password: "{{ aula_grafana_adminpass.content | b64decode }}"
-    force_basic_auth: true
-    body_format: json
-    body: "{{ lookup('ansible.builtin.file', 'equipo-dashboard.json') | replace('__EQUIPO__', item.item.name) | from_json }}"
-  loop: "{{ aula_dash_lookup.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  when: aula_iot_enabled | bool and item.status == 404
-  changed_when: true
-  no_log: true

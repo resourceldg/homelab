@@ -13,6 +13,9 @@ aula_iot_grafana_domain: "grafana-aula.{{ caddy_base_domain }}"
 # entra como ese usuario ES el admin de Grafana.
 aula_iot_grafana_admin: "operator"
 aula_iot_grafana_api: "http://127.0.0.1:3001"
+# Nombre de la org 1, la del operador (tablero general, todos los equipos). Cada
+# equipo tiene su propia org, con su nombre (equipo-NN).
+aula_iot_org_operador: "Aula — operador"
 
 # Red caddy <-> grafana-aula. Rango FIJO porque Grafana confía en el header de
 # usuario solo si viene de acá (GF_AUTH_PROXY_WHITELIST). La crea el rol docker.
