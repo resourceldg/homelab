@@ -132,7 +132,7 @@ sum by (team) (
 ```
 
 No hace falta escribir esto de memoria: el recetario del
-[cap. 13](13-usar-grafana.md#6-recetario-de-consultas) tiene las consultas más usadas
+[cap. 13](13-usar-grafana.md#recetario-de-consultas) tiene las consultas más usadas
 para copiar.
 
 ---

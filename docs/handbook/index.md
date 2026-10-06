@@ -36,8 +36,8 @@ No hace falta leer todo en orden. Elegí tu camino:
 
 1. [Las 3 reglas del topic](12-conectar-a-grafana.md#las-3-reglas) → MQTT
 2. [Seguí un dato](11-arquitectura-iot.md#segui-un-dato-de-punta-a-punta-247-c) → cómo se guarda
-3. [Usar Grafana](13-usar-grafana.md) → tu dashboard
-4. [Recetario de consultas](13-usar-grafana.md#6-recetario-de-consultas)
+3. [Grafana paso a paso](13-usar-grafana.md) → tu tablero y tus propios gráficos
+4. [Recetario de consultas](13-usar-grafana.md#recetario-de-consultas)
 
 ### 🔀 Necesito procesar datos o automatizar algo
 
@@ -171,7 +171,7 @@ flowchart LR
 | — | [Red y accesos](red-y-accesos.md) | Tailscale, Funnel, túneles y por qué hay tantas contraseñas |
 | 12 | [Conectar tus sensores a Grafana](12-conectar-a-grafana.md) | Las 3 reglas del topic, ejemplos en MicroPython y Arduino |
 | — | [¿Node-RED, Grafana o ambos?](node-red-o-grafana.md) | Quién procesa, quién muestra, y cómo se combinan |
-| 13 | [Usar Grafana](13-usar-grafana.md) | Leer y editar el tablero de tu equipo |
+| 13 | [Grafana paso a paso](13-usar-grafana.md) | Entrar, leer el tablero de tu equipo y armar tus gráficos |
 | 14 | [Los proyectos de los equipos](14-proyectos-de-los-equipos.md) | El LED, la puerta y el enchufe como casos de diseño |
 
 ### Parte IV — Operar y evolucionar

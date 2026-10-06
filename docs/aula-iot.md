@@ -10,7 +10,7 @@ ve en un **Grafana del aula** propio, con un folder por equipo que solo ese equi
 ve y edita, y un dashboard general del operador.
 
 Manuales para alumnos: [12 — Conectar a Grafana](handbook/12-conectar-a-grafana.md)
-y [13 — Usar Grafana](handbook/13-usar-grafana.md).
+y [13 — Grafana paso a paso](handbook/13-usar-grafana.md).
 
 ## Arquitectura
 

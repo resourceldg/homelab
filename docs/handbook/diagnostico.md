@@ -166,7 +166,7 @@ hace falta** ([por qué](node-red-o-grafana.md#como-estan-conectados-hoy-en-el-a
   3. **Rango de tiempo** (arriba a la derecha): que incluya el momento en que
      publicaste.
 - **Si falla:** probá la consulta más simple, `mqtt_valor`: si así aparece, el
-  problema está en el filtro ([recetario](13-usar-grafana.md#6-recetario-de-consultas)).
+  problema está en el filtro ([recetario](13-usar-grafana.md#recetario-de-consultas)).
 
 ---
 

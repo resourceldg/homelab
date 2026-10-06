@@ -63,15 +63,36 @@ y se aplica con `--tags classroom`. El detalle está en
 2. `sso_users` — `{ username, displayname, groups: [students] }` (login web).
 3. `vault_sso_passwords[<usuario>]` en el **vault del servidor** — su contraseña
    (la misma para la web y para SSH). Sin esto el usuario se crea **sin
-   contraseña** y no puede entrar.
+   contraseña** y no puede entrar. No hace falta editar el vault a mano: el
+   paso 2 de abajo la genera.
 
-Después, en el servidor:
+Después, en el servidor (como `homelab`):
 
 ```
 cd ~/homelab && git pull
+~/homelab/scripts/claves-aula.py nueva --faltantes     # clave para quien no tiene
 cd ~/homelab/ansible
-~/homelab/.venv/bin/ansible-playbook site.yml --tags classroom -K
+~/homelab/.venv/bin/ansible-playbook site.yml --tags auth,classroom -K
 ```
+
+El script imprime la **hoja para repartir** (equipo, usuario y clave). Entregala
+a cada alumno **en privado**, no por el grupo.
+
+**Claves de los alumnos** (`scripts/claves-aula.py`, en el servidor como `homelab`):
+
+| Quiero… | Comando |
+|---|---|
+| la hoja de claves de todos (no cambia nada) | `claves-aula.py hoja` |
+| la de un equipo o un alumno | `claves-aula.py hoja equipo-03` · `claves-aula.py hoja mijael` |
+| una clave nueva (se la olvidó, se filtró) | `claves-aula.py nueva mijael` |
+| clave para quien no tiene | `claves-aula.py nueva --faltantes` |
+| cambiar todas (inicio de cuatrimestre) | `claves-aula.py nueva --todos` |
+| guardar la hoja para imprimir | agregá `--archivo ~/hoja.txt` (queda con permisos 600; borrala después) |
+
+Después de `nueva`, aplicar `--tags auth,classroom -K`: hasta entonces vale la
+clave anterior. Las claves son tres partes fáciles de dictar (`nube-tigre-482`);
+antes de cambiar el vault guarda una copia cifrada en `~/.claves-aula-respaldos/`.
+El login web bloquea 5 minutos a quien falla 5 veces en 2 minutos (Authelia).
 
 Esto crea el usuario Linux, lo suma a su equipo, le arma su usuario en el
 **Grafana del aula** dentro del equipo correcto y, si el equipo es nuevo, crea su

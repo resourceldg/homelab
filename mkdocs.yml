@@ -53,7 +53,7 @@ nav:
       - Red y accesos: red-y-accesos.md
       - 12. Conectar tus sensores a Grafana: 12-conectar-a-grafana.md
       - ¿Node-RED, Grafana o ambos?: node-red-o-grafana.md
-      - 13. Usar Grafana: 13-usar-grafana.md
+      - 13. Grafana paso a paso: 13-usar-grafana.md
       - 14. Los proyectos de los equipos: 14-proyectos-de-los-equipos.md
   - "Parte IV — Operar y evolucionar":
       - Diagnóstico (¿dónde se cortó?): diagnostico.md

@@ -30,7 +30,7 @@
     },
     "options": {
      "mode": "markdown",
-     "content": "### Dashboard de __EQUIPO__\nAcá aparece **solo lo que publican sus placas** en topics `__EQUIPO__/<dispositivo>/<magnitud>`. Este dashboard es de ustedes: **pueden editarlo, agregar paneles y guardar**. Cómo conectar un sensor o actuador: *capítulo 12 del manual — Conectar tus sensores a Grafana*. Cómo usar Grafana: *capítulo 13 — Usar Grafana*."
+     "content": "### Dashboard de __EQUIPO__\nAcá aparece **solo lo que publican sus placas** en topics `__EQUIPO__/<dispositivo>/<magnitud>`. Este dashboard es de ustedes: **pueden editarlo, agregar paneles y guardar**. Cómo conectar un sensor o actuador: *capítulo 12 del manual — Conectar tus sensores a Grafana*. Cómo armar tus gráficos: *capítulo 13 — Grafana paso a paso*."
     }
    },
    {

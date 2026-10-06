@@ -11,6 +11,15 @@ identity_validation:
   reset_password:
     jwt_secret: '{{ vault_authelia_jwt_secret }}'
 
+# Freno a quien prueba claves: 5 fallos en 2 min → ese usuario queda bloqueado
+# 5 min. Explícito (Authelia trae algo parecido por defecto) para que se vea y
+# coincida con lo que dice el manual (cap. 13, paso 1). 5 y no 3: los chicos se
+# equivocan tipeando, y las claves del aula son largas (scripts/claves-aula.sh).
+regulation:
+  max_retries: 5
+  find_time: '2 minutes'
+  ban_time: '5 minutes'
+
 authentication_backend:
   file:
     path: /config/users_database.yml

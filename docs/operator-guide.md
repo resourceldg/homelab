@@ -56,6 +56,13 @@ Re-aplicá `--tags publish`. Se renderiza un vhost de Caddy y se recarga. Caddy
 llega al contenedor porque `labctld` lo conecta a la red del equipo en el `up`
 (el proyecto tiene que estar levantado).
 
+## Claves de los alumnos
+
+Una sola clave por alumno para la web (Grafana del aula, página de inicio) y
+SSH, guardada en el vault (`vault_sso_passwords`). Se reparten y se cambian con
+`scripts/claves-aula.py` en el servidor, sin editar el vault a mano: ver
+[runbook, alta de un alumno](runbook.md).
+
 ## Servicios compartidos
 
 - Requieren `vault_postgres_superuser_password` en el vault
