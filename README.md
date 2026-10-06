@@ -162,7 +162,8 @@ Tailscale** (Split DNS), así que se entra por Tailscale.
 - Perder `vault_borg_passphrase` es perder las copias de seguridad: guardala en un
   gestor de contraseñas.
 - **La red local puede cambiar** (el servidor ya se mudó tres veces). Si cambia,
-  actualizá `lan_cidr` y aplicá `make firewall`; mientras tanto se entra por
+  actualizá `lan_cidr` y aplicá `--tags firewall,ssh -K` (el firewall y el
+  bloque `Match Address` de `sshd` lo usan los dos); mientras tanto se entra por
   Tailscale.
 - **Ubuntu 26.04 recién salido:** si el repositorio de Docker o de Tailscale da
   404 porque todavía no publicaron la versión nueva, poné

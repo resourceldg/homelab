@@ -12,7 +12,7 @@ server_locale: "es_AR.UTF-8"
 
 # --- Access model ----------------------------------------------------------
 # SSH is reachable only from the LAN and the Tailscale CGNAT range.
-lan_cidr: "192.168.100.0/24"
+lan_cidr: "192.168.8.0/24"         # red de la casa desde oct 2026 (Claro-WiFi-B044)
 tailscale_cidr: "100.64.0.0/10"       # Tailscale/CGNAT shared range
 
 # Public key for the automation account (admin_user): OpenSSH fallback for

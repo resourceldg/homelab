@@ -334,10 +334,14 @@ todo el cierre en una primera corrida riesgosa: `--skip-tags ssh-lockdown`.
    permisos correctos igual da `Permission denied (publickey)` si el usuario no
    está en el `AllowUsers` del `sshd_config` que está corriendo. Una config vieja
    puede listar solo `ansible`; volver a aplicar la actual lo arregla.
-4. **Correr como `homelab` con `-K`.** `ansible-playbook` no está en el `$PATH`
-   (está en `~/homelab/.venv/bin`), y `homelab` tiene `sudo` con contraseña, así
-   que cada corrida necesita `-K`. La cuenta `ansible` no pide contraseña pero no
-   puede leer el repositorio en el home de `homelab`.
+4. **Correr como `homelab` con `-K`, en el servidor.** `ansible-playbook` no está
+   en el `$PATH` (está en `~/homelab/.venv/bin`), y `homelab` tiene `sudo` con
+   contraseña, así que cada corrida necesita `-K`. La cuenta `ansible` no pide
+   contraseña pero no puede leer el repositorio en el home de `homelab`, y la
+   clave del vault (`~/.vault_pass`) solo está en el servidor. Desde la notebook:
+   `ssh ansible@homelab-01`, **esperar el prompt**, y recién ahí
+   `sudo -iu homelab` (pegados juntos, el segundo no corre y quedás como
+   `ansible`: "No such file or directory").
 5. **El vault se movió.** Ahora está por entorno en
    `inventories/production/group_vars/all/vault.yml`. Después de un `git pull` en
    un clon viejo, movelo una vez (§5.2).
@@ -345,6 +349,23 @@ todo el cierre en una primera corrida riesgosa: `--skip-tags ssh-lockdown`.
    (pasó con el broker del aula), hay que pasarlo al repositorio y verificar que
    coincidan: si no, la próxima corrida de Ansible lo deshace (*drift*, ver el
    capítulo 4 del manual).
+
+7. **Un puerto que publica Docker no lo abre `ufw allow`.** El tráfico a un
+   contenedor pasa por `FORWARD`, donde manda `ufw-docker`; `ufw allow 443` y
+   "Trust tailnet" solo cubren `INPUT`. Hace falta `ufw route allow`. Pasó con
+   Caddy (2026-10-05): desde el tailnet la web no respondía con Caddy sano, y el
+   log decía `[UFW DOCKER BLOCK] … DPT=443`. Ya está en el rol `firewall`; el
+   pañol usa lo mismo para su MQTT y su API.
+8. **Archivo montado suelto + Ansible = el contenedor ve el viejo.** Ansible
+   reemplaza el archivo (inodo nuevo) y un contenedor que monta **ese archivo**
+   (no su carpeta) sigue leyendo el anterior; "recargar" (`HUP`) relee el viejo.
+   Hay que **reiniciar** el contenedor. Pasó con el `passwd` de `mqtt-aula`
+   (telegraf `not Authorized`); el rol ya reinicia.
+9. **Git no guarda carpetas vacías.** Una carpeta que solo llena Ansible no
+   existe en un clon limpio: el rol la tiene que crear (pasó con los datasources
+   del Grafana del aula).
+10. **La primera vez, Caddy se compila (~10 min).** No cortar la corrida en
+    "Bring up the proxy stack"; el Caddy viejo atiende mientras tanto.
 
 Notas que no bloquean:
 
@@ -500,6 +521,13 @@ el dominio (**Split DNS**). Resultado: desde cualquier equipo del tailnet, los
 nombres llevan a Caddy por Tailscale, con HTTPS válido (el certificado se emite
 por DNS-01, así que es confiable en cualquier red) y **sin redirección de
 puertos**.
+
+**Configurado (2026-10-05)** en https://login.tailscale.com/admin/dns →
+Nameservers → Custom: `100.110.123.76`, **Restrict to domain** =
+`lucasland.duckdns.org`. Se comprueba en cualquier equipo con
+`tailscale dns status` (debe listar `lucasland.duckdns.org -> 100.110.123.76`).
+El firewall deja pasar del tailnet a Caddy con una regla `ufw route` (Caddy es un
+contenedor; ver §7, trampa 7).
 
 Cuando la notebook y el servidor están en la misma red, Tailscale arma una
 **conexión directa por la LAN** (sin relé), así que en casa anda a velocidad de LAN

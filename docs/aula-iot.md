@@ -64,7 +64,26 @@ cd ~/homelab/ansible
 ~/homelab/.venv/bin/ansible-playbook site.yml --tags classroom -K
 ```
 
-`--tags classroom` incluye `aula-iot`. Solo esta capa: `--tags aula-iot`.
+`--tags classroom` incluye `shared-services` (el broker y sus usuarios) y
+`aula-iot`, en ese orden. Solo esta capa: `--tags aula-iot`.
+
+**Primer despliegue (o un servidor nuevo):** `classroom` no alcanza, porque la
+red `grafana-aula-proxy`, el sitio de Caddy y la regla de Authelia viven en otros
+roles:
+
+```
+~/homelab/.venv/bin/ansible-playbook site.yml --tags docker,monitoring,auth,classroom -K
+```
+
+Lo que pasó la primera vez (2026-10-05), para no asustarse:
+
+- **"Bring up the proxy stack" tardó ~10 min.** Caddy es una imagen propia
+  (`xcaddy` con los plugins de DuckDNS y rate-limit) y se recompila cuando cambia
+  su stack. No está colgado: mientras compila, el Caddy viejo sigue atendiendo.
+- **Para que los alumnos entren** hace falta el Split DNS de Tailscale
+  (`lucasland.duckdns.org` → `100.110.123.76`, ver `deployment-guide.md` §13).
+  Sin eso el nombre va a la IP pública de la casa y el navegador dice "no se
+  puede conectar".
 
 **Alta de un equipo o alumno:** se edita el roster
 (`ansible/inventories/production/group_vars/all/classroom.yml`) como siempre y se
@@ -91,8 +110,10 @@ equipo viejo de Grafana (la membresía se sincroniza con el roster).
 ## Diagnóstico
 
 ```
-# ¿Llegan datos? (en el server)
-curl -s 'http://127.0.0.1:8428/api/v1/query?query=count(mqtt_valor)by(equipo)'
+# ¿Llegaron datos en el último día? (en el server). Ojo: sin el
+# last_over_time, la consulta mira solo los últimos 5 min y con las placas
+# apagadas da vacío aunque haya historia.
+curl -s 'http://127.0.0.1:8428/api/v1/query?query=count(last_over_time(mqtt_valor[1d]))by(equipo)'
 
 # ¿Qué está recibiendo Telegraf?
 docker logs --tail 50 aula-telegraf
@@ -106,6 +127,9 @@ docker logs --tail 50 grafana-aula | grep -i proxy
 | Un equipo no ve su folder | el alumno no está en `members` del roster, o no se corrió `--tags classroom` después del alta |
 | Datos de un equipo no aparecen | el topic no empieza con el nombre del equipo, o el equipo no estaba en el roster cuando se renderizó `telegraf.conf` |
 | Grafana responde 407/401 entrando por SSO | Caddy no está en la red `grafana-aula-proxy` (recrear el stack `proxy`) |
+| `aula-telegraf` reiniciándose con `not Authorized` | el broker no tomó el `passwd` nuevo (montaje de archivo suelto). El rol reinicia `mqtt-aula` al cambiarlo; a mano: `docker restart mqtt-aula aula-telegraf` |
+| "No se puede conectar" a `grafana-aula…` | falta el Split DNS en ese equipo (`getent hosts grafana-aula.<dominio>` debe dar `100.x`), o Tailscale apagado |
+| Timeout a la web desde el tailnet, Caddy sano | falta la regla `ufw route` del rol `firewall` (log: `[UFW DOCKER BLOCK] … DPT=443`); `--tags firewall` |
 
 ## Mejoras pendientes
 

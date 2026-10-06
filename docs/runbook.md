@@ -181,7 +181,8 @@ systemctl status panol-reset-prueba.timer       # reset del modo prueba (tempora
 - ¿Te quedaste afuera del SSH? Usá la consola física o Tailscale SSH
   (`ssh ansible@homelab-01`, que no pasa por el sshd endurecido).
 - **El servidor cambió de red** (pasa: ya fueron tres): actualizar `lan_cidr` y
-  aplicar `make firewall`. Mientras tanto se entra por Tailscale.
+  aplicar `--tags firewall,ssh -K` (lo usan el firewall y el `Match Address` de
+  `sshd`). Mientras tanto se entra por Tailscale.
 - **Sumar una red WiFi sin perder la anterior:**
   `sudo ~/homelab/scripts/agregar-wifi.sh "Nombre-de-la-red"` (pide la clave;
   si la nueva no levanta, vuelve a la anterior).
