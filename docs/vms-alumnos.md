@@ -92,6 +92,52 @@ VM ya creada (cloud-init corre una vez). Para eso: rehacerla, o
 **Backups:** las VMs no entran en el backup del server. Es un espacio para
 experimentar; lo que valga la pena, el alumno lo guarda en git.
 
+## Monitoreo (operador)
+
+En el Grafana de operación (carpeta **Homelab**) está el tablero **VMs de
+alumnos**. Muestra, por VM: CPU, RAM, ocupación del disco, tráfico de red,
+lectura/escritura de disco, procesos y si el kernel tuvo que matar programas por
+falta de memoria. Arriba se elige la VM (o todas).
+
+**Para qué sirve:** el alumno es root en su VM, pero la VM comparte CPU, RAM y
+disco con todo homelab-01. El tablero responde "¿quién está usando el server?" y
+avisa antes de que un disco lleno o una VM sin memoria se vuelvan un problema.
+
+**Cómo llegan los datos:**
+
+```
+ vm-alan ──(agente)──► Incus ──https :8444──► Prometheus ──► Grafana
+                         (escucha en 172.17.0.1, la IP de docker0)
+```
+
+- **Incus** mide cada VM (con un agente que corre adentro) y publica las métricas
+  en `https://172.17.0.1:8444/1.0/metrics`. Esa IP es la del puente de Docker:
+  el contenedor de Prometheus la alcanza, pero no está en la LAN ni en el tailnet.
+- Para leerlas hace falta un **certificado de cliente**, que el rol crea en
+  `/etc/incus-metrics/` (en homelab-01). Incus lo registra como tipo
+  **metrics**, así que solo sirve para leer métricas y no para administrar VMs.
+- **Prometheus** monta esa carpeta y verifica el certificado del servidor Incus
+  (job `incus` en `compose/monitoring/prometheus/prometheus.yml`).
+
+**Aplicar** (en homelab-01, como `homelab`, después del `git pull`):
+
+```
+cd ~/homelab/ansible
+~/homelab/.venv/bin/ansible-playbook site.yml --tags monitoring,vms -K
+```
+
+`monitoring` recrea Prometheus con la carpeta de certificados y carga el tablero.
+`vms` crea el certificado, abre el puerto y le pide a Prometheus que recargue.
+
+**Verificar:** el panel **Incus responde** del tablero tiene que decir **SÍ**. Si
+dice NO, en homelab-01:
+
+```
+curl -s http://127.0.0.1:9090/api/v1/targets | grep -o '"job":"incus"[^}]*"health":"[a-z]*"'
+sudo incus config get core.metrics_address      # tiene que decir 172.17.0.1:8444
+sudo ls -l /etc/incus-metrics/                   # client.crt, client.key, incus-server.crt
+```
+
 ## Guía del alumno
 
 > Si el alumno trabaja con un asistente de IA (Claude, etc.), hay un runbook
