@@ -32,3 +32,14 @@ vms_alumnos_blocked_nets:
   - "192.168.0.0/16"
   - "100.64.0.0/10"
   - "169.254.0.0/16"
+
+# --- Monitoreo (Prometheus → Grafana, tablero "VMs de alumnos") ----------------
+# Incus publica las métricas de las VMs (CPU, RAM, disco, red) en un puerto
+# aparte, con TLS y certificado de cliente. Escucha en la IP de docker0: es la
+# dirección del host que el contenedor de Prometheus alcanza, y no está en la LAN
+# ni en el tailnet. Ver docs/vms-alumnos.md, "Monitoreo".
+vms_alumnos_metrics_enabled: true
+vms_alumnos_metrics_address: "172.17.0.1:8444"
+# Certificado de cliente de Prometheus + certificado del servidor Incus (para que
+# Prometheus lo verifique). Se monta en el contenedor como /etc/prometheus/incus.
+vms_alumnos_metrics_dir: /etc/incus-metrics

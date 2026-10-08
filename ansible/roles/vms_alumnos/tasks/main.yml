@@ -130,3 +130,143 @@
   loop_control:
     label: "{{ item.item.name }}"
   changed_when: true
+
+# --- 4. Monitoreo: métricas de las VMs para Prometheus ------------------------------
+# Incus las sirve en /1.0/metrics y exige un certificado de cliente de tipo
+# "metrics" (solo puede leer métricas, no administrar nada). Prometheus corre como
+# `nobody` (65534) en su contenedor, por eso la llave es de ese grupo.
+- name: Ensure the metrics certificate directory exists
+  ansible.builtin.file:
+    path: "{{ vms_alumnos_metrics_dir }}"
+    state: directory
+    owner: root
+    group: "65534"
+    mode: "0750"
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: Generate Prometheus' client certificate for Incus metrics
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - req
+      - -x509
+      - -newkey
+      - ec
+      - -pkeyopt
+      - ec_paramgen_curve:secp384r1
+      - -sha384
+      - -nodes
+      - -days
+      - "3650"
+      - -subj
+      - /CN=prometheus-homelab
+      - -keyout
+      - "{{ vms_alumnos_metrics_dir }}/client.key"
+      - -out
+      - "{{ vms_alumnos_metrics_dir }}/client.crt"
+    creates: "{{ vms_alumnos_metrics_dir }}/client.crt"
+  register: vms_metrics_cert
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: Restrict the client key to root and Prometheus
+  ansible.builtin.file:
+    path: "{{ vms_alumnos_metrics_dir }}/client.key"
+    owner: root
+    group: "65534"
+    mode: "0640"
+  when: vms_alumnos_metrics_enabled | bool
+
+# El certificado del servidor Incus es autofirmado y dice "homelab-01": con una
+# copia, Prometheus lo verifica (ca_file + server_name) en vez de confiar a ciegas.
+- name: Publish the Incus server certificate for Prometheus to verify
+  ansible.builtin.copy:
+    src: /var/lib/incus/server.crt
+    dest: "{{ vms_alumnos_metrics_dir }}/incus-server.crt"
+    remote_src: true
+    owner: root
+    group: "65534"
+    mode: "0644"
+  register: vms_metrics_server_cert
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: List the certificates Incus trusts
+  ansible.builtin.command: incus config trust list --format csv
+  register: vms_trust
+  changed_when: false
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: Trust Prometheus' certificate (metrics only)
+  ansible.builtin.command:
+    argv:
+      - incus
+      - config
+      - trust
+      - add-certificate
+      - "{{ vms_alumnos_metrics_dir }}/client.crt"
+      - --type=metrics
+      - --name=prometheus-homelab
+  when:
+    - vms_alumnos_metrics_enabled | bool
+    - "'prometheus-homelab' not in vms_trust.stdout"
+  changed_when: true
+
+# docker0 tiene que existir antes de que Incus intente escuchar en su IP; si no,
+# después de un reinicio Incus arranca sin el puerto de métricas.
+- name: Ensure Incus starts after Docker
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/incus.service.d/10-despues-de-docker.conf
+    content: |
+      # Gestionado por Ansible (vms_alumnos): el puerto de métricas escucha en la IP
+      # de docker0, que existe recién cuando Docker arrancó.
+      [Unit]
+      After=docker.service
+      Wants=docker.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: vms_incus_dropin
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: Reload systemd after the Incus drop-in
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: vms_alumnos_metrics_enabled | bool and vms_incus_dropin is changed
+
+- name: Read the current Incus metrics address
+  ansible.builtin.command: incus config get core.metrics_address
+  register: vms_metrics_addr
+  changed_when: false
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: Expose Incus metrics on the docker0 address
+  ansible.builtin.command:
+    argv: [incus, config, set, core.metrics_address, "{{ vms_alumnos_metrics_address }}"]
+  when:
+    - vms_alumnos_metrics_enabled | bool
+    - vms_metrics_addr.stdout | trim != vms_alumnos_metrics_address
+  changed_when: true
+
+# Los contenedores llegan al host por INPUT, que UFW niega por defecto. Se abre el
+# puerto solo hacia la IP de docker0 y solo desde las redes de Docker. Otros
+# contenedores también lo alcanzan, pero sin el certificado de cliente no leen nada.
+- name: Let Prometheus (Docker networks) reach the Incus metrics port
+  community.general.ufw:
+    rule: allow
+    src: "172.16.0.0/12"
+    dest: "{{ vms_alumnos_metrics_address.split(':')[0] }}"
+    port: "{{ vms_alumnos_metrics_address.split(':')[1] }}"
+    proto: tcp
+    comment: "Prometheus: métricas de Incus (VMs alumnos)"
+  when: vms_alumnos_metrics_enabled | bool
+
+# Si Prometheus arrancó antes de que existieran los certificados, el job "incus"
+# quedó sin crear y no se reintenta solo: se le pide que relea su configuración.
+# Si Prometheus no está corriendo no pasa nada (lo leerá al arrancar).
+- name: Ask Prometheus to reload (new Incus certificates)
+  ansible.builtin.uri:
+    url: http://127.0.0.1:9090/-/reload
+    method: POST
+  failed_when: false
+  when:
+    - vms_alumnos_metrics_enabled | bool
+    - vms_metrics_cert is changed or vms_metrics_server_cert is changed

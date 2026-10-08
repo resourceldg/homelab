@@ -20,6 +20,8 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+      # Certificados para leer las métricas de Incus (los crea el rol vms_alumnos).
+      - /etc/incus-metrics:/etc/prometheus/incus:ro
     # 'edge' lets Caddy reach it; the Caddy site gates it to tailnet/LAN.
     networks: [monitoring, edge]
     # Also bind to loopback for local debugging; never on a routable interface.
