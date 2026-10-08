@@ -165,15 +165,17 @@
       - -out
       - "{{ vms_alumnos_metrics_dir }}/client.crt"
     creates: "{{ vms_alumnos_metrics_dir }}/client.crt"
-  register: vms_metrics_cert
   when: vms_alumnos_metrics_enabled | bool
 
-- name: Restrict the client key to root and Prometheus
+# Permisos explícitos: openssl los crea según el umask (quedaban root:root 0640 y
+# Prometheus, que corre como nobody, no podía leer el certificado).
+- name: Let Prometheus read the client certificate and key
   ansible.builtin.file:
-    path: "{{ vms_alumnos_metrics_dir }}/client.key"
+    path: "{{ vms_alumnos_metrics_dir }}/{{ item }}"
     owner: root
     group: "65534"
     mode: "0640"
+  loop: [client.crt, client.key]
   when: vms_alumnos_metrics_enabled | bool
 
 # El certificado del servidor Incus es autofirmado y dice "homelab-01": con una
@@ -186,7 +188,6 @@
     owner: root
     group: "65534"
     mode: "0644"
-  register: vms_metrics_server_cert
   when: vms_alumnos_metrics_enabled | bool
 
 - name: List the certificates Incus trusts
@@ -212,6 +213,15 @@
 
 # docker0 tiene que existir antes de que Incus intente escuchar en su IP; si no,
 # después de un reinicio Incus arranca sin el puerto de métricas.
+- name: Ensure the Incus drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/incus.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: vms_alumnos_metrics_enabled | bool
+
 - name: Ensure Incus starts after Docker
   ansible.builtin.copy:
     dest: /etc/systemd/system/incus.service.d/10-despues-de-docker.conf
@@ -260,13 +270,24 @@
   when: vms_alumnos_metrics_enabled | bool
 
 # Si Prometheus arrancó antes de que existieran los certificados, el job "incus"
-# quedó sin crear y no se reintenta solo: se le pide que relea su configuración.
-# Si Prometheus no está corriendo no pasa nada (lo leerá al arrancar).
-- name: Ask Prometheus to reload (new Incus certificates)
+# quedó sin crear y no se reintenta solo. En vez de adivinar cuándo hace falta,
+# se le pregunta: si "incus" no está entre sus targets activos, se le pide que
+# relea la configuración. Si Prometheus no está corriendo, no pasa nada.
+- name: Check whether Prometheus is scraping Incus
+  ansible.builtin.uri:
+    url: http://127.0.0.1:9090/api/v1/targets
+    return_content: true
+  register: vms_prom_targets
+  failed_when: false
+  when: vms_alumnos_metrics_enabled | bool
+
+- name: Ask Prometheus to reload (Incus job missing)
   ansible.builtin.uri:
     url: http://127.0.0.1:9090/-/reload
     method: POST
   failed_when: false
+  changed_when: true
   when:
     - vms_alumnos_metrics_enabled | bool
-    - vms_metrics_cert is changed or vms_metrics_server_cert is changed
+    - vms_prom_targets.status | default(0) == 200
+    - '"\"job\":\"incus\"" not in vms_prom_targets.content | default("")'
