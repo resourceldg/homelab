@@ -103,8 +103,9 @@ Host vm-alan
 tipearla. Alan abre **una** conexión maestra, que queda viva 4 horas, y todos los
 `ssh vm-alan` del agente la reusan sin volver a preguntar.
 
-Alan, en **su propia terminal** (no la del agente), corre esto y tipea la
-contraseña del aula:
+Alan, en **su propia terminal** (no la del agente), corre esto. Si su máquina
+entró al tailnet con la auth key de Lucas, **Tailscale SSH lo deja pasar sin
+contraseña**. Si la pide, la tipea Alan:
 
 ```bash
 ssh -fN homelab-01
@@ -118,7 +119,10 @@ ssh vm-alan 'hostname; whoami; sudo -n true && echo SUDO_OK'
 ```
 
 Tiene que responder `vm-alan`, `alan`, `SUDO_OK`. Si dice `Permission denied
-(publickey)`, la llave no está cargada: volver al paso 4. Si da *timeout* hacia
+(publickey,...)`, o la llave no está cargada (volver al paso 4) o la cuenta de la
+VM quedó bloqueada: hay que pedírselo a Lucas. Lo que diga el comentario de la
+llave (`alan@...`) no importa. Si dice `tailnet policy does not permit`, la
+máquina de Alan no está en el tailnet de Lucas: pedirle una auth key. Si da *timeout* hacia
 `10.90.0.10`, la VM no está arriba: hay que pedírselo a Lucas.
 
 Cuando la maestra vence (4 h), Alan repite `ssh -fN homelab-01`.
