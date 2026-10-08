@@ -13,7 +13,8 @@
       { "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "query": "prometheus", "current": {}, "hide": 0, "refresh": 1 },
       {
         "name": "team", "label": "Equipo", "type": "query", "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-        "query": "label_values(label_replace(container_last_seen{name=~\"equipo-.*\"}, \"team\", \"$1\", \"name\", \"(equipo-[0-9]+)-.*\"), team)",
+        "query": "query_result(count by (team) (label_replace(container_last_seen{name=~\"equipo-.*\"}, \"team\", \"$1\", \"name\", \"(equipo-[0-9]+)-.*\")))",
+        "regex": "/team=\"([^\"]+)\"/",
         "refresh": 2, "sort": 1, "includeAll": false, "current": {}
       }
     ]
