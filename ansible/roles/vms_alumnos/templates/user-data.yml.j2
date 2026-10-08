@@ -9,7 +9,6 @@ users:
     groups: [sudo]
     # Es SU máquina: root sin contraseña (no tiene contraseña, entra con llave).
     sudo: "ALL=(ALL) NOPASSWD:ALL"
-    lock_passwd: true
     ssh_authorized_keys:
 {% for key in item.ssh_pubkeys %}
       - {{ key }}
@@ -19,3 +18,9 @@ disable_root: true
 package_update: true
 packages:
   - openssh-server
+# Sin contraseña pero NO bloqueada. cloud-init deja la cuenta con "!" (bloqueada),
+# y el sshd de Ubuntu rechaza una cuenta bloqueada aunque la llave sea correcta
+# ("User ... not allowed because account is locked"). "*" = no hay contraseña
+# con la que entrar, pero la cuenta está activa y la llave funciona.
+runcmd:
+  - [usermod, -p, "*", "{{ item.owner }}"]
