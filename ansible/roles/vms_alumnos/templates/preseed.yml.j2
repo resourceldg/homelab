@@ -1,0 +1,23 @@
+# {{ ansible_managed }}
+# Inicialización de Incus (incus admin init --preseed). Solo se aplica una vez.
+networks:
+  - name: {{ vms_alumnos_bridge }}
+    type: bridge
+    config:
+      ipv4.address: {{ vms_alumnos_bridge_cidr }}
+      ipv4.nat: "true"
+      ipv6.address: none
+storage_pools:
+  - name: {{ vms_alumnos_storage_pool }}
+    driver: dir
+profiles:
+  - name: default
+    devices:
+      eth0:
+        name: eth0
+        network: {{ vms_alumnos_bridge }}
+        type: nic
+      root:
+        path: /
+        pool: {{ vms_alumnos_storage_pool }}
+        type: disk

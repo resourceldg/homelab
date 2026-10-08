@@ -60,3 +60,6 @@
     - { role: aula_iot, tags: ["classroom", "aula-iot"] }
     - { role: labctl, tags: ["classroom", "labctl"] }
     - { role: classroom_publish, tags: ["classroom", "publish"] }
+    # VMs con root para alumnos (Incus/KVM). Tag propio, NO "classroom": instala
+    # paquetes y toca el firewall, así que se corre a propósito, no de rebote.
+    - { role: vms_alumnos, tags: ["vms"] }

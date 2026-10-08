@@ -1,0 +1,132 @@
+---
+# Tres partes: (1) Incus instalado e inicializado, (2) el firewall que encierra
+# a las VMs (solo internet), (3) las VMs de vms_alumnos.
+
+# --- 1. Incus ------------------------------------------------------------------
+- name: Install Incus and the VM stack (QEMU + UEFI firmware)
+  ansible.builtin.apt:
+    name: [incus, qemu-system-x86, ovmf]
+    state: present
+
+- name: Ensure Incus is running
+  ansible.builtin.service:
+    name: incus
+    state: started
+    enabled: true
+
+# Si ya hay un pool de almacenamiento, Incus ya fue inicializado: el preseed no
+# se vuelve a aplicar (pisaría la red/pool en uso).
+- name: Check whether Incus is already initialized
+  ansible.builtin.command: incus storage list --format csv
+  register: vms_incus_pools
+  changed_when: false
+
+- name: Initialize Incus (bridge with NAT + dir storage pool)
+  ansible.builtin.command: incus admin init --preseed
+  args:
+    stdin: "{{ lookup('ansible.builtin.template', 'preseed.yml.j2') }}"
+  when: vms_incus_pools.stdout | trim | length == 0
+  changed_when: true
+
+# --- 2. Firewall: las VMs solo salen a internet ----------------------------------
+# UFW niega todo lo entrante y todo lo ruteado por defecto. Al puente se le abre lo
+# mínimo para que la VM arranque (DHCP y DNS del propio Incus) y nada más: una VM
+# con root no llega por SSH ni a ningún servicio de homelab-01.
+- name: Let VMs reach Incus DHCP on the bridge
+  community.general.ufw:
+    rule: allow
+    direction: in
+    interface: "{{ vms_alumnos_bridge }}"
+    port: "67"
+    proto: udp
+    comment: "VMs alumnos: DHCP"
+
+- name: Let VMs reach Incus DNS on the bridge
+  community.general.ufw:
+    rule: allow
+    direction: in
+    interface: "{{ vms_alumnos_bridge }}"
+    port: "53"
+    proto: "{{ item }}"
+    comment: "VMs alumnos: DNS"
+  loop: [udp, tcp]
+
+# El orden importa: UFW evalúa las reglas en orden, así que primero los "deny" a
+# las redes privadas y recién después el "allow" general. Esto también tapa el
+# atajo de Docker: un puerto publicado (p. ej. Caddy) se reescribe (DNAT) a una IP
+# 172.x antes de pasar por acá, y 172.16.0.0/12 está negado.
+- name: Block VMs from the LAN, Docker networks and the tailnet
+  community.general.ufw:
+    rule: deny
+    route: true
+    interface_in: "{{ vms_alumnos_bridge }}"
+    dest: "{{ item }}"
+    comment: "VMs alumnos: sin redes privadas"
+  loop: "{{ vms_alumnos_blocked_nets }}"
+
+- name: Let VMs out to the internet
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ vms_alumnos_bridge }}"
+    comment: "VMs alumnos: salida a internet"
+
+# --- 3. Las VMs ---------------------------------------------------------------------
+- name: Warn about VMs without SSH keys (they are skipped)
+  ansible.builtin.debug:
+    msg: >-
+      La VM {{ item.name }} ({{ item.owner }}) no tiene ssh_pubkeys: NO se crea.
+      Pedile al alumno su llave pública (~/.ssh/id_ed25519.pub) y agregala.
+  loop: "{{ vms_alumnos | rejectattr('ssh_pubkeys', 'defined') | list
+            + vms_alumnos | selectattr('ssh_pubkeys', 'defined')
+                          | rejectattr('ssh_pubkeys') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Check which VMs already exist
+  ansible.builtin.command: incus list --format csv --columns n
+  register: vms_existing
+  changed_when: false
+
+# Se crea con `init` (sin arrancar) para fijarle la IP antes del primer arranque.
+# cloud-init lee user-data una sola vez: cambiarlo después no toca una VM creada.
+- name: Create missing VMs
+  ansible.builtin.command:
+    argv:
+      - incus
+      - init
+      - "{{ item.image | default(vms_alumnos_image) }}"
+      - "{{ item.name }}"
+      - --vm
+      - --config
+      - "limits.cpu={{ item.cpus | default(vms_alumnos_cpus) }}"
+      - --config
+      - "limits.memory={{ item.memory | default(vms_alumnos_memory) }}"
+      - --config
+      - boot.autostart=true
+      - --config
+      - "cloud-init.user-data={{ lookup('ansible.builtin.template', 'user-data.yml.j2') }}"
+      - --device
+      - "root,size={{ item.disk | default(vms_alumnos_disk) }}"
+  loop: "{{ vms_alumnos | selectattr('ssh_pubkeys', 'defined') | selectattr('ssh_pubkeys') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.name not in vms_existing.stdout_lines
+  register: vms_created
+  changed_when: true
+
+- name: Pin each new VM to its fixed IP
+  ansible.builtin.command:
+    argv: [incus, config, device, override, "{{ item.item.name }}", eth0, "ipv4.address={{ item.item.ip }}"]
+  loop: "{{ vms_created.results | selectattr('changed', 'defined') | selectattr('changed') | list }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  changed_when: true
+
+- name: Start new VMs
+  ansible.builtin.command:
+    argv: [incus, start, "{{ item.item.name }}"]
+  loop: "{{ vms_created.results | selectattr('changed', 'defined') | selectattr('changed') | list }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  changed_when: true

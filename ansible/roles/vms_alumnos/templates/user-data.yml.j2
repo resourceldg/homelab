@@ -1,0 +1,21 @@
+#cloud-config
+# {{ ansible_managed }}
+# Primer arranque de la VM de {{ item.owner }}. cloud-init lo aplica UNA vez:
+# cambiar esto después no toca una VM ya creada.
+hostname: {{ item.name }}
+users:
+  - name: {{ item.owner }}
+    shell: /bin/bash
+    groups: [sudo]
+    # Es SU máquina: root sin contraseña (no tiene contraseña, entra con llave).
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+{% for key in item.ssh_pubkeys %}
+      - {{ key }}
+{% endfor %}
+ssh_pwauth: false
+disable_root: true
+package_update: true
+packages:
+  - openssh-server
