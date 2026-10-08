@@ -1,0 +1,34 @@
+---
+# vms_alumnos — una máquina virtual (VM) propia para el alumno que quiere ser
+# root y armar su servidor sin tocar homelab-01. Corre sobre Incus (KVM).
+# Ver docs/vms-alumnos.md.
+#
+# La lista de VMs vive en group_vars (classroom.yml → vms_alumnos). Una VM sin
+# ssh_pubkeys NO se crea: el rol avisa y sigue (no hay contraseña, solo llave).
+vms_alumnos: []
+
+# Red privada de las VMs (puente de Incus con NAT). Elegida para no chocar con
+# la LAN (192.168.8.0/24), Docker (172.16.0.0/12) ni Tailscale (100.64.0.0/10).
+vms_alumnos_bridge: incusbr0
+vms_alumnos_bridge_cidr: "10.90.0.1/24"
+
+# Almacenamiento: driver "dir" (cada disco es un archivo en /var/lib/incus).
+# Simple y sin particiones nuevas; alcanza para pocas VMs.
+vms_alumnos_storage_pool: default
+
+# Imagen y tamaño por defecto (cada VM puede pisarlos).
+vms_alumnos_image: "images:ubuntu/24.04/cloud"
+vms_alumnos_cpus: 2
+vms_alumnos_memory: "2GiB"
+vms_alumnos_disk: "20GiB"
+
+# Destinos que una VM NO puede alcanzar: la LAN de la casa, las redes de Docker
+# (servicios del aula y del pañol), el tailnet y el resto de los rangos privados.
+# Así una VM con root no puede ver ni tocar nada de homelab-01 ni de la casa:
+# solo sale a internet.
+vms_alumnos_blocked_nets:
+  - "10.0.0.0/8"
+  - "172.16.0.0/12"
+  - "192.168.0.0/16"
+  - "100.64.0.0/10"
+  - "169.254.0.0/16"

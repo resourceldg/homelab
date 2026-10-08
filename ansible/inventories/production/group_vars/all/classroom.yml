@@ -40,3 +40,13 @@ student_exposures: []
   #   service: web
   #   port: 8080
   #   enabled: true
+
+# VMs propias con root (rol vms_alumnos, `--tags vms`). Cada alumno entra a la
+# suya con su llave, saltando por homelab-01:  ssh -J <usuario>@homelab-01 <usuario>@<ip>
+# La VM solo sale a internet: no ve la LAN, ni Docker, ni el tailnet.
+# Sin ssh_pubkeys la VM NO se crea (el rol avisa). Ver docs/vms-alumnos.md.
+vms_alumnos:
+  - name: vm-alan
+    owner: alan
+    ip: 10.90.0.10
+    ssh_pubkeys: []   # pendiente: pegar acá el contenido de ~/.ssh/id_ed25519.pub de Alan
