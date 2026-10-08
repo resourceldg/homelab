@@ -49,4 +49,5 @@ vms_alumnos:
   - name: vm-alan
     owner: alan
     ip: 10.90.0.10
-    ssh_pubkeys: []   # pendiente: pegar acá el contenido de ~/.ssh/id_ed25519.pub de Alan
+    ssh_pubkeys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICjH9hG0Ftjho5+zFRY90pvMjzHEGQJ6V8JiFope5r2M alan@odiseasoft.com
