@@ -5,6 +5,8 @@
 bind-dynamic
 interface={{ dns_tailscale_interface }}
 except-interface=lo
+# El dnsmasq propio de Incus atiende incusbr0 (VMs de alumnos): no pisarlo.
+except-interface=incusbr0
 listen-address={{ dns_tailscale_ip }}
 no-resolv
 no-hosts
