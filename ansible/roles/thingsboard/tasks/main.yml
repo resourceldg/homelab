@@ -87,7 +87,9 @@
 # 0/O, 1/l/I. El primer login (Authelia) sigue siendo la clave del aula.
 - name: Generate each team admin's ThingsBoard password (once)
   ansible.builtin.shell:
-    cmd: "umask 077; tr -dc 'abcdefghjkmnpqrstuvwxyz23456789' < /dev/urandom | head -c 10 > {{ thingsboard_secrets_dir }}/tb-usuario-{{ item.1 }}.pass"
+    cmd: >-
+      umask 077; python3 -c "import secrets; print(''.join(secrets.choice('abcdefghjkmnpqrstuvwxyz23456789') for _ in range(10)), end='')"
+      > {{ thingsboard_secrets_dir }}/tb-usuario-{{ item.1 }}.pass
     creates: "{{ thingsboard_secrets_dir }}/tb-usuario-{{ item.1 }}.pass"
   args:
     executable: /bin/bash
