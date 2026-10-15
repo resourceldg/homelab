@@ -69,8 +69,9 @@ thingsboard_demo_titulos:
 # Cada equipo de esta lista tiene su PROPIO tenant de ThingsBoard, y sus
 # usuarios son administradores: crean y editan sus dashboards y dispositivos,
 # aislados del resto. Entran a https://<subdominio>.<dominio> (tailnet +
-# Authelia) con su usuario del aula y la MISMA clave (vault_sso_passwords).
-# El login de ThingsBoard es <usuario>@<thingsboard_dominio_usuarios>.
+# Authelia) con su usuario y clave del aula, y después a ThingsBoard con
+# <usuario>@<thingsboard_dominio_usuarios> y una clave PROPIA que genera el rol
+# en {{ thingsboard_secrets_dir }}/tb-usuario-<usuario>.pass.
 #   thingsboard_equipos_admin:
 #     - { equipo: equipo-01, usuarios: [dardo] }
 thingsboard_equipos_admin: []

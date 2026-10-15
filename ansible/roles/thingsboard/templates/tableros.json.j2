@@ -19,7 +19,7 @@
 {%- for eq in thingsboard_equipos_admin -%}
 {%-   set usuarios = [] -%}
 {%-   for u in eq.usuarios -%}
-{%-     set _ = usuarios.append({'usuario': u, 'email': u ~ '@' ~ thingsboard_dominio_usuarios, 'clave': thingsboard_secrets_dir ~ '/usuario-' ~ u ~ '.pass'}) -%}
+{%-     set _ = usuarios.append({'usuario': u, 'email': u ~ '@' ~ thingsboard_dominio_usuarios, 'clave': thingsboard_secrets_dir ~ '/tb-usuario-' ~ u ~ '.pass'}) -%}
 {%-   endfor -%}
 {%-   set _ = espacios.append({'equipo': eq.equipo, 'titulo': 'Proyecto — ' ~ (thingsboard_titulos[eq.equipo] | default(eq.equipo)), 'usuarios': usuarios, 'gateway_token': thingsboard_secrets_dir ~ '/gateway-' ~ eq.equipo ~ '.token'}) -%}
 {%- endfor -%}

@@ -154,8 +154,15 @@ def admin_tenant(tb, ten, email, clave, estricto=True, nombre="Admin"):
     if isinstance(link, dict):
         link = link.get("value", "")
     token = urllib.parse.parse_qs(urllib.parse.urlparse(str(link)).query)["activateToken"][0]
-    tb.post("/api/noauth/activate?sendActivationMail=false",
-            {"activateToken": token, "password": clave}, auth=False)
+    try:
+        tb.post("/api/noauth/activate?sendActivationMail=false",
+                {"activateToken": token, "password": clave}, auth=False)
+    except RuntimeError as e:
+        # P. ej. la política de claves de ThingsBoard (mínimo 6 caracteres).
+        if estricto:
+            raise
+        print(f"AVISO: no pude activar {email}: {e}")
+        return
     print(f"admin: {email} activado")
 
 

@@ -81,29 +81,19 @@
   loop_control:
     label: "{{ item.equipo }}"
 
-- name: Fail if a team admin has no classroom password in the vault
-  ansible.builtin.assert:
-    that: (vault_sso_passwords | default({}))[item.1] is defined
-    fail_msg: >-
-      {{ item.1 }} no tiene clave en vault_sso_passwords: es la misma del aula
-      (scripts/claves-aula.py). Sin eso no puede entrar a su espacio.
+# Clave PROPIA de ThingsBoard por alumno (una vez; borrar el archivo la rota).
+# No se reusa la del aula: ThingsBoard exige 6+ caracteres y las del aula
+# pueden ser más cortas; además tb.<dominio> es administración. Legible: sin
+# 0/O, 1/l/I. El primer login (Authelia) sigue siendo la clave del aula.
+- name: Generate each team admin's ThingsBoard password (once)
+  ansible.builtin.shell:
+    cmd: "umask 077; tr -dc 'abcdefghjkmnpqrstuvwxyz23456789' < /dev/urandom | head -c 10 > {{ thingsboard_secrets_dir }}/tb-usuario-{{ item.1 }}.pass"
+    creates: "{{ thingsboard_secrets_dir }}/tb-usuario-{{ item.1 }}.pass"
+  args:
+    executable: /bin/bash
   loop: "{{ thingsboard_equipos_admin | subelements('usuarios') }}"
   loop_control:
     label: "{{ item.1 }}"
-
-# La clave de ThingsBoard es la del aula: un archivo por alumno (root 0600)
-# para que tb-provision la lea sin pasar por la línea de comandos.
-- name: Write each team admin's password (same as the classroom one)
-  ansible.builtin.copy:
-    content: "{{ vault_sso_passwords[item.1] }}"
-    dest: "{{ thingsboard_secrets_dir }}/usuario-{{ item.1 }}.pass"
-    owner: root
-    group: root
-    mode: "0600"
-  loop: "{{ thingsboard_equipos_admin | subelements('usuarios') }}"
-  loop_control:
-    label: "{{ item.1 }}"
-  no_log: true
 
 - name: Read the team gateway tokens
   ansible.builtin.slurp:

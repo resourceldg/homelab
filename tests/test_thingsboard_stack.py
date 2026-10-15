@@ -155,6 +155,6 @@ def test_espacio_de_equipo_con_admin_alumno():
     (esp,) = cfg["equipos_admin"]
     assert esp["equipo"] == "equipo-01"
     assert esp["usuarios"] == [{"usuario": "dardo", "email": "dardo@isft238.local",
-                                "clave": "/etc/thingsboard/secrets/usuario-dardo.pass"}]
+                                "clave": "/etc/thingsboard/secrets/tb-usuario-dardo.pass"}]
     assert esp["gateway_token"] == "/etc/thingsboard/secrets/gateway-equipo-01.token"
     assert _render_tableros()["equipos_admin"] == []
