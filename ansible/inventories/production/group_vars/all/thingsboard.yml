@@ -5,7 +5,7 @@ thingsboard_enabled: true
 
 # Publicación en internet (nodo Tailscale "tableros"). Requiere la auth key en
 # /etc/thingsboard/secrets/tailscale.authkey la primera vez.
-thingsboard_publico_enabled: false
+thingsboard_publico_enabled: true
 
 # Proyectos del aula que se publican (por defecto, todo privado).
 thingsboard_proyectos_publicos: []
