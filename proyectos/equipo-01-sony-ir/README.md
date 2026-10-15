@@ -116,7 +116,7 @@ sudo ... python3 tablero.py --crear --reemplazar  # después de cambiar tablero.
 
 | Prueba | Resultado |
 |---|---|
-| Tablero con datos simulados (réplica local, no producción) | Los 22 widgets muestran datos; sin errores de consola en escritorio ni en celular |
+| Tablero con datos simulados (réplica local, no producción) | Los 19 widgets muestran datos; sin errores de consola en escritorio ni en celular |
 | Alarma "placa sin conexión" | Se crea a los 60 s sin datos (inactividad de prueba) y se borra sola al llegar un latido |
 | Alarma "error del receptor" | Se crea al llegar `error_rx` |
 | Firmware | **Compila** para ESP32 (xtensa): RAM ~82 KB de variables + 96 KB de pila, flash ~660 KB |
