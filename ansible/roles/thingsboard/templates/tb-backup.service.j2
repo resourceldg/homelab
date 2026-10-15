@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Volcado diario de la base de ThingsBoard
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tb-backup
+Nice=10
+IOSchedulingClass=idle

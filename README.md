@@ -62,6 +62,10 @@ se regenera con `python3 scripts/manual-pdf.py`.
   ESP32 reportan a su API (por la LAN, o desde otra red vía Tailscale Funnel) y el
   tablero se publica detrás del login único. Ver [docs/panol-iot.md](docs/panol-iot.md).
 
+- **Tableros IoT públicos (ThingsBoard CE):** un tablero por proyecto, generales
+  y para monitores, con publicación en internet de **solo lectura** (sin VPN para
+  quien mira) y administración privada. Stack aparte, que no reemplaza a Grafana. Ver [docs/thingsboard.md](docs/thingsboard.md).
+
 Para montar el mismo servidor en otras máquinas o administrar varios sitios:
 **[docs/replicar-y-escalar.md](docs/replicar-y-escalar.md)**.
 
@@ -93,7 +97,8 @@ homelab/
 │       ├── docker/ monitoring/ backups/ authelia/
 │       ├── classroom/ shared_services/ labctl/ classroom_publish/   # plataforma de aula
 │       ├── aula_iot/            # aula IoT: Telegraf + VictoriaMetrics + Grafana del aula
-│       └── panol/               # pañol IoT (MQTT + base de auditoría)
+│       ├── panol/               # pañol IoT (MQTT + base de auditoría)
+│       └── thingsboard/         # tableros IoT públicos (ThingsBoard CE)
 ├── compose/
 │   ├── proxy/                   # Caddy (compilado con DuckDNS para DNS-01)
 │   ├── dashboard/               # Homepage (página de inicio con enlaces)
@@ -103,7 +108,8 @@ homelab/
 │   ├── shared-data/             # servicios compartidos del aula + broker mqtt-aula
 │   ├── aula-iot/                # capa de visualización del aula IoT
 │   ├── apps/                    # proyecto educativo de ejemplo
-│   └── panol/                   # pañol IoT: Mosquitto + Postgres + Node-RED
+│   ├── panol/                   # pañol IoT: Mosquitto + Postgres + Node-RED
+│   └── thingsboard/             # ThingsBoard + puente MQTT + proxy público
 ├── tests/                       # tests unitarios, testinfra y playbook de verificación
 ├── docs/                        # arquitectura, guías y el manual (handbook/)
 └── Makefile                     # interfaz del operador (make help)

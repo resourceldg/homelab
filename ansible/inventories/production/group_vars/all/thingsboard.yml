@@ -1,0 +1,11 @@
+---
+# ThingsBoard en producción (ver docs/thingsboard.md). Prendido el 15/10/2026,
+# con la temperatura ya resuelta (59 °C con la CPU al 82 %).
+thingsboard_enabled: true
+
+# Publicación en internet (nodo Tailscale "tableros"). Requiere la auth key en
+# /etc/thingsboard/secrets/tailscale.authkey la primera vez.
+thingsboard_publico_enabled: false
+
+# Proyectos del aula que se publican (por defecto, todo privado).
+thingsboard_proyectos_publicos: []

@@ -1,0 +1,94 @@
+---
+# ThingsBoard CE — tableros IoT de los proyectos. Ver docs/thingsboard.md.
+#
+# APAGADO por defecto: el informe de infraestructura del 14/10/2026 detectó que
+# la CPU del servidor llega a 96–99 °C de noche con poca carga. Se prende
+# (thingsboard_enabled: true en el inventario) cuando el disipador esté limpio
+# y la temperatura nocturna baje. Ver docs/thingsboard.md, "Antes de desplegar".
+thingsboard_enabled: false
+
+# Versión fija (no `latest`). Al cambiarla: leer "Actualizar" en el doc — hay
+# que correr la migración de la base y volver a probar la superficie pública.
+thingsboard_version: "4.3.1.6"
+
+thingsboard_stack_dir: "{{ stacks_root }}/thingsboard"
+thingsboard_config_dir: /etc/thingsboard
+thingsboard_secrets_dir: /etc/thingsboard/secrets
+
+# --- Memoria y CPU ------------------------------------------------------------
+# Medido en la validación (docs/thingsboard.md, "Recursos"): con 1 GB de heap
+# el contenedor queda ~0,9–1,1 GB en reposo y con 20 espectadores. El tope del
+# contenedor deja margen para metaspace, hilos y buffers de red. La CPU está
+# fija en 1 núcleo en el compose (por la temperatura).
+thingsboard_java_opts: >-
+  -Xms512m -Xmx1024m -XX:MaxMetaspaceSize=320m
+  -XX:ReservedCodeCacheSize=128m -Xss512k
+thingsboard_mem_limit: "1792m"
+
+# Retención de la telemetría en ThingsBoard (VictoriaMetrics guarda 15 días).
+thingsboard_ttl_dias: 30
+
+# Puerto SOLO en loopback, para el aprovisionamiento desde el host.
+thingsboard_http_port: 18080
+
+# --- Identidad --------------------------------------------------------------------
+thingsboard_institucion: "ISFT 238"
+thingsboard_tenant: "ISFT 238"
+# Usuario administrador del tenant (no recibe correos: es solo el login).
+thingsboard_admin_email: "admin@tableros.isft238.local"
+
+# Administración: https://<subdominio>.<caddy_base_domain>, por el tailnet,
+# detrás de Authelia (solo operadores) y además con el login de ThingsBoard.
+thingsboard_subdomain: tb
+
+# --- Proyectos y publicación --------------------------------------------------------
+# Cada equipo del roster (classroom_teams) es un PROYECTO: sus placas aparecen
+# solas en ThingsBoard (tipo de dispositivo = nombre del equipo) y tiene su
+# dashboard. Privado salvo que figure acá:
+thingsboard_proyectos_publicos: []
+# Títulos lindos por equipo (opcional): { equipo-01: "Estación meteorológica" }
+thingsboard_titulos: {}
+
+# Dashboards generales (varios proyectos en uno). `tipos` = equipos o demos.
+thingsboard_dashboards_generales:
+  - titulo: "IoT — General"
+    tipos: "{{ thingsboard_demo_proyectos if thingsboard_demo_enabled | bool else [] }}"
+    publico: true
+
+# Demo: un simulador publica en mqtt-aula como una placa (cuenta tb-demo).
+# Los árboles TIENEN que coincidir con los de shared_services
+# (shared_mqtt_service_users: tb-puente y tb-demo); lo controla un test.
+thingsboard_demo_enabled: true
+thingsboard_demo_proyectos: [demo-meteo, demo-seguridad, demo-ambiente]
+thingsboard_demo_titulos:
+  demo-meteo: "Estación meteorológica"
+  demo-seguridad: "Seguridad IoT"
+  demo-ambiente: "Sensores ambientales"
+
+# --- Publicación en internet (nodo Tailscale "tableros" con Funnel) ---------------
+# Requiere una auth key de Tailscale en {{ thingsboard_secrets_dir }}/tailscale.authkey
+# (una sola vez: después el nodo guarda su estado en un volumen) y que la política
+# del tailnet permita Funnel a ese nodo. Ver docs/thingsboard.md, "Publicar".
+thingsboard_publico_enabled: false
+# Nombre del tailnet (para armar los links públicos).
+thingsboard_tailnet: "tail4eda13.ts.net"
+thingsboard_publico_host: "tableros.{{ thingsboard_tailnet }}"
+
+# Límites del perfil de tenant. Los espectadores públicos comparten UNA
+# identidad: este tope de sesiones WebSocket es, en la práctica, el máximo de
+# pestañas públicas abiertas a la vez (todas juntas).
+thingsboard_limites:
+  maxWsSessionsPerPublicUser: 100
+  maxWsSubscriptionsPerPublicUser: 3000
+
+# --- Respaldo -----------------------------------------------------------------------
+# pg_dump diario (formato custom), se guardan los últimos N. Va al MISMO disco
+# hasta que exista /mnt/backup (decisión del 14/10/2026): protege de errores y
+# de una actualización fallida, no de que se rompa el SSD.
+thingsboard_backup_dir: /var/backups/thingsboard
+thingsboard_backup_conservar: 7
+# A la tarde, fuera de la ventana caliente de la noche (01:50–06:00).
+thingsboard_backup_hora: "*-*-* 13:40:00"
+
+# Portada pública (index.html con la lista de tableros publicados).
+thingsboard_portada_dir: /srv/tableros

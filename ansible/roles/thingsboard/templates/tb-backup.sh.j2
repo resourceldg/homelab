@@ -1,0 +1,20 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Volcado diario de la base de ThingsBoard (pg_dump, formato custom).
+# Restaurar: docs/thingsboard.md, "Respaldo y recuperación".
+set -euo pipefail
+dir={{ thingsboard_backup_dir }}
+archivo="thingsboard-$(date +%Y%m%d-%H%M%S).dump"
+
+# pg_dump corre DENTRO del contenedor (misma versión que el servidor) y escribe
+# en /backups, que es $dir en el host. Primero a .tmp: un volcado cortado no
+# queda con el nombre de uno bueno.
+docker exec tb-postgres pg_dump -U thingsboard -d thingsboard -Fc -Z 6 \
+    -f "/backups/${archivo}.tmp"
+docker exec tb-postgres pg_restore --list "/backups/${archivo}.tmp" > /dev/null
+docker exec tb-postgres mv "/backups/${archivo}.tmp" "/backups/${archivo}"
+
+# Se conservan los últimos {{ thingsboard_backup_conservar }}.
+ls -1t "$dir"/thingsboard-*.dump | tail -n +{{ thingsboard_backup_conservar + 1 }} | xargs -r rm -f
+
+echo "ok: $dir/$archivo ($(du -h "$dir/$archivo" | cut -f1))"

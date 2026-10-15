@@ -44,6 +44,13 @@ access_control:
     - domain: '{{ panol_subdomain | default("panol") }}.{{ caddy_base_domain }}'
       policy: one_factor
       subject: ['group:operators']
+{% if thingsboard_enabled | default(false) | bool %}
+    # ThingsBoard — administración: solo operadores. Lo público NO pasa por
+    # acá (nodo Tailscale "tableros" -> tableros-proxy).
+    - domain: '{{ thingsboard_subdomain | default("tb") }}.{{ caddy_base_domain }}'
+      policy: one_factor
+      subject: ['group:operators']
+{% endif %}
     # Grafana de operación: infra + auditoría del pañol (quién entró y cuándo).
     # Solo operadores. Los alumnos tienen el suyo en grafana-aula.
     - domain: 'grafana.{{ caddy_base_domain }}'
