@@ -320,6 +320,35 @@ Se arman **solos desde el roster** (`classroom.yml`):
   `thingsboard_proyectos_publicos`. Si se quiere un dashboard público a mano, su
   proyecto tiene que figurar ahí.
 
+### Espacios de equipo (alumnos administradores)
+
+Un equipo puede tener su **propio tenant** de ThingsBoard, con sus alumnos como
+**administradores**: crean y editan dashboards, manejan sus dispositivos y
+arman reglas, aislados del resto. Ni ven el aula ni el aula los ve; probado:
+abrir un dashboard del tenant del aula le da 403.
+
+```yaml
+# ansible/inventories/production/group_vars/all/thingsboard.yml
+thingsboard_equipos_admin:
+  - { equipo: equipo-01, usuarios: [dardo] }
+```
+
+- **Entrada:** `https://tb.<dominio>` por el tailnet. Primero Authelia, con el
+  usuario y la clave **del aula**: la regla deja pasar a los operadores y a
+  estos alumnos. Después ThingsBoard, con `<usuario>@isft238.local` y una clave
+  **propia**, que genera el rol en `/etc/thingsboard/secrets/tb-usuario-<usuario>.pass`.
+  No se reusa la del aula porque ThingsBoard exige 6 caracteres o más.
+- **Datos:** el puente manda lo de `<equipo>/#` a su tenant por un gateway con
+  token propio (`gateway-<equipo>.token`). El tenant del aula lo sigue recibiendo.
+- **Dashboard de arranque:** lo crea `tb-provision`, que corre cada 10 minutos
+  (`tb-provision.timer`), **una sola vez** y cuando ya hay datos. Después es
+  del equipo y no se pisa.
+- **Ojo:** como administrador de su tenant, el alumno *puede* publicar sus
+  dashboards. La vista pública sigue pasando por `tableros-proxy`, así que
+  es de solo lectura igual.
+- Guía para el alumno: ver `~/Documents/acceso-dardo-thingsboard.txt` como
+  modelo (fuera del repo, porque lleva claves).
+
 ### Monitores (pantalla completa)
 
 Cada tablero público tiene un link fijo. Para un monitor:
