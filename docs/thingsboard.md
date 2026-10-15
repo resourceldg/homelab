@@ -338,6 +338,11 @@ thingsboard_equipos_admin:
   estos alumnos. Después ThingsBoard, con `<usuario>@isft238.local` y una clave
   **propia**, que genera el rol en `/etc/thingsboard/secrets/tb-usuario-<usuario>.pass`.
   No se reusa la del aula porque ThingsBoard exige 6 caracteres o más.
+- **Jerarquía:** `sysadmin@thingsboard.org` es el root de la plataforma (crea
+  y borra espacios y usuarios). El operador administra el tenant del aula
+  (`admin@tableros.isft238.local`) y **también cada espacio de equipo**
+  (`admin-<equipo>@tableros.isft238.local`, misma clave: `admin.pass`). Los
+  alumnos administran solo su espacio.
 - **Datos:** el puente manda lo de `<equipo>/#` a su tenant por un gateway con
   token propio (`gateway-<equipo>.token`). El tenant del aula lo sigue recibiendo.
 - **Dashboard de arranque:** lo crea `tb-provision`, que corre cada 10 minutos

@@ -366,6 +366,12 @@ def equipos(tb_sys, cfg):
     for eq in cfg.get("equipos_admin", []):
         ten = tenant(tb_sys, eq["equipo"])
         limites(tb_sys, ten, cfg["limites"])
+        # El operador también administra cada espacio de equipo (con su clave
+        # de siempre): ve y corrige lo que hagan los alumnos. El root de la
+        # plataforma sigue siendo sysadmin.
+        local, dominio = cfg["admin_email"].split("@", 1)
+        admin_tenant(tb_sys, ten, f"{local}-{eq['equipo']}@{dominio}",
+                     leer(cfg["secretos"]["admin"]), estricto=False, nombre="Operador")
         for u in eq["usuarios"]:
             admin_tenant(tb_sys, ten, u["email"], leer(u["clave"]), estricto=False, nombre=u["usuario"])
         tb = TB(tb_sys.base)
