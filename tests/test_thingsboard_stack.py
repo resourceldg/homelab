@@ -146,3 +146,15 @@ def test_sin_datos_personales_en_los_titulos():
     cfg = _render_tableros(classroom_teams=[{"name": "equipo-01", "members": ["jessi", "dardo"]}])
     texto = json.dumps(cfg)
     assert "jessi" not in texto and "dardo" not in texto
+
+
+def test_espacio_de_equipo_con_admin_alumno():
+    """Un equipo con espacio propio: login <usuario>@dominio, clave en un
+    archivo de secretos (nunca en la config) y token de gateway propio."""
+    cfg = _render_tableros(thingsboard_equipos_admin=[{"equipo": "equipo-01", "usuarios": ["dardo"]}])
+    (esp,) = cfg["equipos_admin"]
+    assert esp["equipo"] == "equipo-01"
+    assert esp["usuarios"] == [{"usuario": "dardo", "email": "dardo@isft238.local",
+                                "clave": "/etc/thingsboard/secrets/usuario-dardo.pass"}]
+    assert esp["gateway_token"] == "/etc/thingsboard/secrets/gateway-equipo-01.token"
+    assert _render_tableros()["equipos_admin"] == []

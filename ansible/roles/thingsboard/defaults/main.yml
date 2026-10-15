@@ -65,6 +65,17 @@ thingsboard_demo_titulos:
   demo-seguridad: "Seguridad IoT"
   demo-ambiente: "Sensores ambientales"
 
+# --- Equipos que administran su propio espacio ---------------------------------
+# Cada equipo de esta lista tiene su PROPIO tenant de ThingsBoard, y sus
+# usuarios son administradores: crean y editan sus dashboards y dispositivos,
+# aislados del resto. Entran a https://<subdominio>.<dominio> (tailnet +
+# Authelia) con su usuario del aula y la MISMA clave (vault_sso_passwords).
+# El login de ThingsBoard es <usuario>@<thingsboard_dominio_usuarios>.
+#   thingsboard_equipos_admin:
+#     - { equipo: equipo-01, usuarios: [dardo] }
+thingsboard_equipos_admin: []
+thingsboard_dominio_usuarios: "isft238.local"
+
 # --- Publicación en internet (nodo Tailscale "tableros" con Funnel) ---------------
 # Requiere una auth key de Tailscale en {{ thingsboard_secrets_dir }}/tailscale.authkey
 # (una sola vez: después el nodo guarda su estado en un volumen) y que la política

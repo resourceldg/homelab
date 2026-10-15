@@ -129,13 +129,13 @@ def tenant(tb, titulo):
     return tb.post("/api/tenant", {"title": titulo})
 
 
-def admin_tenant(tb, ten, email, clave):
+def admin_tenant(tb, ten, email, clave, estricto=True, nombre="Admin"):
     tid = ten["id"]["id"]
     u = next((x for x in tb.paginas(f"/api/tenant/{tid}/users") if x["email"] == email), None)
     if u is None:
         print(f"admin: creo {email}")
         u = tb.post("/api/user?sendActivationMail=false", {
-            "email": email, "authority": "TENANT_ADMIN", "firstName": "Admin",
+            "email": email, "authority": "TENANT_ADMIN", "firstName": nombre,
             "lastName": "Tableros", "tenantId": {"id": tid, "entityType": "TENANT"},
         })
     elif TB(tb.base).login(email, clave):
@@ -146,7 +146,11 @@ def admin_tenant(tb, ten, email, clave):
     try:
         link = tb.get(f"/api/user/{u['id']['id']}/activationLink")
     except RuntimeError:
-        sys.exit(f"{email} existe y no entra con la clave del secreto: revisar a mano")
+        aviso = f"{email} existe y no entra con la clave del secreto: revisar a mano"
+        if estricto:
+            sys.exit(aviso)
+        print("AVISO: " + aviso)
+        return
     if isinstance(link, dict):
         link = link.get("value", "")
     token = urllib.parse.parse_qs(urllib.parse.urlparse(str(link)).query)["activateToken"][0]
@@ -345,6 +349,34 @@ def dashboards(tb, cfg):
     return resultado
 
 
+# --- 5b. Equipos que administran su propio espacio --------------------------------
+
+def equipos(tb_sys, cfg):
+    """Un tenant por equipo con administradores propios (alumnos). Ahí crean y
+    editan sus dashboards; nadie más del aula los ve. El puente les manda SOLO
+    lo de su equipo, por un gateway con token propio. El dashboard de arranque
+    se crea UNA vez (cuando ya hay datos) y después es del equipo: no se pisa."""
+    for eq in cfg.get("equipos_admin", []):
+        ten = tenant(tb_sys, eq["equipo"])
+        limites(tb_sys, ten, cfg["limites"])
+        for u in eq["usuarios"]:
+            admin_tenant(tb_sys, ten, u["email"], leer(u["clave"]), estricto=False, nombre=u["usuario"])
+        tb = TB(tb_sys.base)
+        if not any(tb.login(u["email"], leer(u["clave"])) for u in eq["usuarios"]):
+            print(f"AVISO: ningún administrador de {eq['equipo']} entra: salteo su espacio")
+            continue
+        gateway(tb, "tb-puente", leer(eq["gateway_token"]))
+        hay_datos = any(d["type"] == eq["equipo"] for d in tb.paginas("/api/tenant/devices"))
+        titulos = {d["title"] for d in tb.paginas("/api/tenant/dashboards")}
+        if hay_datos and eq["titulo"] not in titulos:
+            nuevo = armar_dashboard(tb, eq["titulo"], [eq["equipo"]],
+                                    cfg["widgets"]["tabla"], cfg["widgets"]["serie"], False)
+            nuevo["configuration"]["description"] = (
+                "Creado por tb-provision como punto de partida. Es de tu equipo: editalo.")
+            tb.post("/api/dashboard", nuevo)
+            print(f"{eq['equipo']}: dashboard de arranque creado")
+
+
 # --- 6. Reconciliación de lo público --------------------------------------------------
 
 def cliente_publico(tb):
@@ -446,6 +478,7 @@ def main():
     ten = tenant(tb, cfg["tenant"])
     admin_tenant(tb, ten, cfg["admin_email"], leer(sec["admin"]))
     limites(tb, ten, cfg["limites"])
+    equipos(tb, cfg)
 
     if not tb.login(cfg["admin_email"], leer(sec["admin"])):
         sys.exit("El administrador del tenant no entra")

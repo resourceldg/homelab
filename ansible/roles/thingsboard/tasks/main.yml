@@ -71,6 +71,49 @@
   loop_control:
     label: "{{ item.file }}"
 
+- name: Generate a gateway token per team space (once)
+  ansible.builtin.shell:
+    cmd: "umask 077; printf %s \"$(openssl rand -hex 32)\" > {{ thingsboard_secrets_dir }}/gateway-{{ item.equipo }}.token"
+    creates: "{{ thingsboard_secrets_dir }}/gateway-{{ item.equipo }}.token"
+  args:
+    executable: /bin/bash
+  loop: "{{ thingsboard_equipos_admin }}"
+  loop_control:
+    label: "{{ item.equipo }}"
+
+- name: Fail if a team admin has no classroom password in the vault
+  ansible.builtin.assert:
+    that: (vault_sso_passwords | default({}))[item.1] is defined
+    fail_msg: >-
+      {{ item.1 }} no tiene clave en vault_sso_passwords: es la misma del aula
+      (scripts/claves-aula.py). Sin eso no puede entrar a su espacio.
+  loop: "{{ thingsboard_equipos_admin | subelements('usuarios') }}"
+  loop_control:
+    label: "{{ item.1 }}"
+
+# La clave de ThingsBoard es la del aula: un archivo por alumno (root 0600)
+# para que tb-provision la lea sin pasar por la línea de comandos.
+- name: Write each team admin's password (same as the classroom one)
+  ansible.builtin.copy:
+    content: "{{ vault_sso_passwords[item.1] }}"
+    dest: "{{ thingsboard_secrets_dir }}/usuario-{{ item.1 }}.pass"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ thingsboard_equipos_admin | subelements('usuarios') }}"
+  loop_control:
+    label: "{{ item.1 }}"
+  no_log: true
+
+- name: Read the team gateway tokens
+  ansible.builtin.slurp:
+    src: "{{ thingsboard_secrets_dir }}/gateway-{{ item.equipo }}.token"
+  loop: "{{ thingsboard_equipos_admin }}"
+  loop_control:
+    label: "{{ item.equipo }}"
+  register: thingsboard_tokens_raw
+  no_log: true
+
 - name: Read the secrets
   ansible.builtin.slurp:
     src: "{{ item }}"
@@ -115,6 +158,11 @@
     thingsboard_gateway_token: "{{ thingsboard_sec.results[2].content | b64decode }}"
     thingsboard_puente_mqtt_pass: "{{ thingsboard_sec.results[3].content | b64decode }}"
     thingsboard_monitoreo_password: "{{ thingsboard_sec.results[4].content | b64decode }}"
+    thingsboard_tokens_equipos: >-
+      {{ thingsboard_tokens_raw.results
+         | map(attribute='item.equipo')
+         | zip(thingsboard_tokens_raw.results | map(attribute='content') | map('b64decode'))
+         | map('join', '=') | join(',') }}
     thingsboard_demo_mqtt_pass: "{{ thingsboard_demo_pass.content | b64decode if thingsboard_demo_enabled | bool else '' }}"
     thingsboard_ts_authkey: "{{ thingsboard_authkey.content | b64decode | trim if thingsboard_authkey_file.stat.exists else '' }}"
     # El nodo público arranca si está pedido Y (hay auth key O ya se unió antes).
@@ -254,6 +302,26 @@
 - name: Show what provisioning did
   ansible.builtin.debug:
     var: thingsboard_provision.stdout_lines
+
+# Cada 10 minutos: los dispositivos nuevos aparecen en los dashboards, se
+# asignan a lo público y los espacios de equipo reciben su dashboard de
+# arranque, sin volver a correr Ansible. Es idempotente.
+- name: Install the periodic provisioning units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [tb-provision.service, tb-provision.timer]
+  register: thingsboard_provision_units
+
+- name: Enable the periodic provisioning timer
+  ansible.builtin.systemd:
+    name: tb-provision.timer
+    enabled: true
+    state: started
+    daemon_reload: "{{ thingsboard_provision_units is changed }}"
 
 # --- Respaldo -----------------------------------------------------------------------------
 - name: Install the backup script

@@ -120,7 +120,7 @@ class Estado:
         self.lock = threading.Lock()
         self.mensajes = {"enviado": 0, "descartado": 0, "retenido": 0,
                          "sin_cupo": 0, "cola_llena": 0}
-        self.conectado = {"aula": 0, "tb": 0}
+        self.conectado = {"aula": 0}
         self.ultimo = 0.0
 
     def sumar(self, resultado):
@@ -174,29 +174,52 @@ def main():
     max_disp = int(os.environ.get("MAX_DISPOSITIVOS", "200"))
     cola_max = int(os.environ.get("COLA_MAX", "10000"))
     estado = Estado()
-    conectados = set()      # dispositivos anunciados a TB en esta conexión
     vistos = set()          # dispositivos aceptados (tope MAX_DISPOSITIVOS)
     avisado_tope = [False]
 
-    # --- Lado ThingsBoard (destino) ---------------------------------------
-    tb = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="tb-puente")
-    tb.username_pw_set(leer_secreto("TB_TOKEN"))
-    # QoS 1 + cola acotada: si TB se reinicia, paho guarda lo pendiente y lo
-    # manda al reconectar. Pasado el tope se descarta (y se cuenta).
-    tb.max_queued_messages_set(cola_max)
-    tb.reconnect_delay_set(1, 30)
+    # --- Lado ThingsBoard (destinos) -------------------------------------
+    # Siempre el tenant del aula (TB_TOKEN). Además, cada equipo que es
+    # administrador de su propio tenant recibe SOLO lo suyo, con el token del
+    # gateway de ese tenant (TB_TOKENS_EQUIPOS="equipo-01=tok,equipo-03=tok").
+    class Destino:
+        def __init__(self, nombre, token):
+            self.nombre = nombre
+            self.conectados = set()   # dispositivos anunciados en esta conexión
+            sufijo = "" if nombre == "tb" else "-" + nombre
+            self.c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="tb-puente" + sufijo)
+            self.c.username_pw_set(token)
+            # QoS 1 + cola acotada: si TB se reinicia, paho guarda lo pendiente y
+            # lo manda al reconectar. Pasado el tope se descarta (y se cuenta).
+            self.c.max_queued_messages_set(cola_max)
+            self.c.reconnect_delay_set(1, 30)
+            self.c.on_connect = self.al_conectar
+            self.c.on_disconnect = self.al_desconectar
+            estado.conectado[nombre] = 0
 
-    def tb_on_connect(c, u, flags, rc, props):
-        estado.conectado["tb"] = 1 if rc == 0 else 0
-        conectados.clear()   # re-anunciar dispositivos tras reconectar
-        log.info("ThingsBoard: conectado (%s)", rc)
+        def al_conectar(self, c, u, flags, rc, props):
+            estado.conectado[self.nombre] = 1 if rc == 0 else 0
+            self.conectados.clear()   # re-anunciar dispositivos tras reconectar
+            log.info("ThingsBoard (%s): conectado (%s)", self.nombre, rc)
 
-    def tb_on_disconnect(c, u, flags, rc, props):
-        estado.conectado["tb"] = 0
-        log.warning("ThingsBoard: desconectado (%s)", rc)
+        def al_desconectar(self, c, u, flags, rc, props):
+            estado.conectado[self.nombre] = 0
+            log.warning("ThingsBoard (%s): desconectado (%s)", self.nombre, rc)
 
-    tb.on_connect = tb_on_connect
-    tb.on_disconnect = tb_on_disconnect
+        def enviar(self, nombre, equipo, valores):
+            if nombre not in self.conectados:
+                self.c.publish("v1/gateway/connect",
+                               json.dumps({"device": nombre, "type": equipo}), qos=1)
+                self.conectados.add(nombre)
+            cuerpo = {nombre: [{"ts": int(time.time() * 1000), "values": valores}]}
+            return self.c.publish("v1/gateway/telemetry", json.dumps(cuerpo), qos=1)
+
+    principal = Destino("tb", leer_secreto("TB_TOKEN"))
+    por_equipo = {}
+    for par in os.environ.get("TB_TOKENS_EQUIPOS", "").split(","):
+        if "=" in par:
+            equipo, token = par.split("=", 1)
+            por_equipo[equipo.strip()] = Destino(equipo.strip(), token.strip())
+    destinos = [principal] + list(por_equipo.values())
 
     # --- Lado aula (origen) -----------------------------------------------
     aula = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="tb-puente",
@@ -238,12 +261,9 @@ def main():
                     avisado_tope[0] = True
                 return
             vistos.add(nombre)
-        if nombre not in conectados:
-            tb.publish("v1/gateway/connect",
-                       json.dumps({"device": nombre, "type": equipo}), qos=1)
-            conectados.add(nombre)
-        cuerpo = {nombre: [{"ts": int(time.time() * 1000), "values": valores}]}
-        info = tb.publish("v1/gateway/telemetry", json.dumps(cuerpo), qos=1)
+        info = principal.enviar(nombre, equipo, valores)
+        if equipo in por_equipo:
+            por_equipo[equipo].enviar(nombre, equipo, valores)
         if info.rc == mqtt.MQTT_ERR_QUEUE_SIZE:
             estado.sumar("cola_llena")
         else:
@@ -278,8 +298,9 @@ def main():
     http = ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("METRICS_PORT", "9101"))), Handler)
     threading.Thread(target=http.serve_forever, daemon=True).start()
 
-    tb.connect_async(os.environ.get("TB_HOST", "thingsboard"), int(os.environ.get("TB_PORT", "1883")))
-    tb.loop_start()
+    for d in destinos:
+        d.c.connect_async(os.environ.get("TB_HOST", "thingsboard"), int(os.environ.get("TB_PORT", "1883")))
+        d.c.loop_start()
     aula.connect_async(os.environ.get("AULA_HOST", "mqtt-aula"), int(os.environ.get("AULA_PORT", "1883")))
     aula.loop_start()
 
@@ -290,8 +311,9 @@ def main():
     log.info("Cerrando")
     aula.loop_stop()
     aula.disconnect()
-    tb.loop_stop()
-    tb.disconnect()
+    for d in destinos:
+        d.c.loop_stop()
+        d.c.disconnect()
     http.shutdown()
 
 

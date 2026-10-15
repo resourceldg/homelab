@@ -157,7 +157,7 @@ services:
 
   tb-puente:
     build: ./puente
-    image: homelab/tb-puente:1.0.0
+    image: homelab/tb-puente:1.1.0
     container_name: tb-puente
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
@@ -171,6 +171,8 @@ services:
       TB_HOST: thingsboard
       TB_PORT: "1883"
       TB_TOKEN: ${TB_PUENTE_TOKEN}
+      # Equipos con espacio propio: "equipo-01=token,..." (lo arma el rol).
+      TB_TOKENS_EQUIPOS: ${TB_TOKENS_EQUIPOS:-}
       # Un patrón por equipo del roster (lo arma el rol). La ACL del broker
       # igual deja a esta cuenta en SOLO LECTURA.
       TOPICS: ${TB_PUENTE_TOPICS}
@@ -188,7 +190,7 @@ services:
   # Simulador de placas para la demo y las pruebas (perfil "demo"). Publica en
   # mqtt-aula con la cuenta tb-demo, que solo puede escribir en demo-*.
   tb-simulador:
-    image: homelab/tb-puente:1.0.0
+    image: homelab/tb-puente:1.1.0
     container_name: tb-simulador
     profiles: ["demo"]
     restart: unless-stopped

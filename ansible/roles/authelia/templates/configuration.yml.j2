@@ -47,9 +47,17 @@ access_control:
 {% if thingsboard_enabled | default(false) | bool %}
     # ThingsBoard — administración: solo operadores. Lo público NO pasa por
     # acá (nodo Tailscale "tableros" -> tableros-proxy).
+    # + los alumnos que administran el espacio de su equipo (cada uno ve
+    # solo su tenant: lo aísla ThingsBoard).
     - domain: '{{ thingsboard_subdomain | default("tb") }}.{{ caddy_base_domain }}'
       policy: one_factor
-      subject: ['group:operators']
+      subject:
+        - 'group:operators'
+{% for eq in thingsboard_equipos_admin | default([]) %}
+{% for u in eq.usuarios %}
+        - 'user:{{ u }}'
+{% endfor %}
+{% endfor %}
 {% endif %}
     # Grafana de operación: infra + auditoría del pañol (quién entró y cuándo).
     # Solo operadores. Los alumnos tienen el suyo en grafana-aula.

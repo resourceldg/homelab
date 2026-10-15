@@ -9,3 +9,8 @@ thingsboard_publico_enabled: true
 
 # Proyectos del aula que se publican (por defecto, todo privado).
 thingsboard_proyectos_publicos: []
+
+# Equipos que administran su propio espacio en ThingsBoard (tenant propio).
+# Entran con su usuario del aula: <usuario>@isft238.local y la misma clave.
+thingsboard_equipos_admin:
+  - { equipo: equipo-01, usuarios: [dardo] }
