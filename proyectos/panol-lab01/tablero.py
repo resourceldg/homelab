@@ -79,7 +79,10 @@ function hora(ms) { if (!ms) return '—'; var d = new Date(Number(ms));
   return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) {
   return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; }); }
-var enLinea = String(val('active', 'false')) === 'true';
+var enLinea = String(val('active', 'false')) === 'true' ||
+  (num('nodo_en_linea') === 1 && hace('nodo_en_linea') < 180);
+var segPir = num('pir') === 1 ? hace('pir') : 1e9;   // segundos desde el último movimiento
+var pirActivo = segPir < 15;
 var sesion = num('sesion') === 1;
 """
 
@@ -93,6 +96,7 @@ return '<div class="cab"><div><div class="t">PAÑOL <b>IoT</b></div>' +
   '<div class="s">LAB01 · control de acceso y auditoría · ISFT 238</div></div><div class="chips">' +
   chip(enLinea ? 'NODO EN LÍNEA' : 'NODO SIN CONEXIÓN', enLinea ? '{VERDE}' : '{ROJO}', !enLinea) +
   chip(sesion ? 'SESIÓN EN CURSO' : 'SIN SESIÓN', sesion ? '{CIAN}' : '{TENUE}', false) +
+  chip(pirActivo ? 'MOVIMIENTO · hace ' + Math.round(segPir) + ' s' : 'SIN MOVIMIENTO', pirActivo ? '{AMBAR}' : '{TENUE}', pirActivo) +
   chip(hayAlarma ? 'ALARMA: ' + esc(alarma.replace(/_/g, ' ')) : 'SIN ALARMAS', hayAlarma ? '{ROJO}' : '{VERDE}', hayAlarma) +
   '</div></div>';
 """
@@ -118,7 +122,7 @@ JS_PLANO = JS_VALORES + f"""
 var puerta = num('puerta') === 1;
 var acceso = String(val('acceso', ''));
 var accReciente = hace('acceso') < 12;
-var pir = hace('pir') < 20 && num('pir') === 1;
+var pir = pirActivo;
 var alarma = String(val('alarma', 'OK'));
 var hayAlarma = alarma !== 'OK' && hace('alarma') < 3600;
 var cPuerta = hayAlarma && alarma.indexOf('APERTURA') === 0 ? '{ROJO}' : (puerta ? '{AMBAR}' : '{VERDE}');
@@ -141,12 +145,17 @@ var persona = sesion
     '<circle cx="360" cy="196" r="16" fill="{CIAN}"/><path d="M330 250 Q360 212 390 250 Z" fill="{CIAN}"/>' +
     '<text x="360" y="300" class="lb" fill="{CIAN}">' + esc(val('sesion_usuario', 'en sesión')) + '</text></g>'
   : '<text x="360" y="220" class="lb2" style="font-size:15px">pañol vacío · sin sesión</text>';
+// Cono de detección: se ilumina con cada movimiento y se apaga en 15 s (la
+// animación arranca "adelantada" lo que ya pasó, así no depende de redibujar).
 var ondas = pir
-  ? '<g stroke="{AMBAR}" fill="none"><path class="onda" d="M532 52 A40 40 0 0 1 572 92"/>' +
-    '<path class="onda o2" d="M520 52 A52 52 0 0 1 572 104"/><path class="onda o3" d="M508 52 A64 64 0 0 1 572 116"/></g>'
+  ? '<g class="det" style="animation-delay:-' + segPir.toFixed(1) + 's">' +
+    '<path d="M572 52 L250 390 L560 390 Z" fill="url(#cono)"/>' +
+    '<g stroke="{AMBAR}" fill="none" stroke-width="3"><path class="onda" d="M522 62 A55 55 0 0 0 582 112"/>' +
+    '<path class="onda o2" d="M498 66 A85 85 0 0 0 586 146"/><path class="onda o3" d="M472 70 A115 115 0 0 0 590 180"/></g></g>'
   : '';
 return '<div class="plano"><svg viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet">' +
   '<defs><pattern id="p" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#1e293b" stroke-width=".7"/></pattern>' +
+  '<linearGradient id="cono" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{AMBAR}" stop-opacity=".45"/><stop offset="1" stop-color="{AMBAR}" stop-opacity="0"/></linearGradient>' +
   '<filter id="gl"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' +
   '<rect x="58" y="30" width="720" height="360" rx="14" fill="url(#p)" stroke="{CIAN}" stroke-opacity=".55" stroke-width="2" filter="url(#gl)"/>' +
   '<rect x="50" y="170" width="16" height="80" fill="{FONDO}"/>' + hoja +
@@ -157,8 +166,8 @@ return '<div class="plano"><svg viewBox="0 0 800 420" preserveAspectRatio="xMidY
   '<text x="96" y="362" class="lb2">' + (accReciente ? esc(acceso.replace(/_/g, ' ')) : 'en espera') + '</text>' +
   '<g transform="translate(76 108)"><rect x="0" y="14" width="30" height="24" rx="4" fill="none" stroke="' + (puerta ? '{AMBAR}' : '{VERDE}') + '" stroke-width="2"/>' +
   '<path d="M7 14 v-6 a8 8 0 0 1 16 0 v' + (puerta ? '-2' : '6') + '" fill="none" stroke="' + (puerta ? '{AMBAR}' : '{VERDE}') + '" stroke-width="2"/></g>' +
-  '<g filter="url(#gl)"><circle cx="572" cy="52" r="10" fill="' + (pir ? '{AMBAR}' : '{TENUE}') + '"/></g>' + ondas +
-  '<text x="548" y="140" class="lb" fill="' + (pir ? '{AMBAR}' : '{TENUE}') + '">PIR · ' + (pir ? 'MOVIMIENTO' : 'quieto') + '</text>' +
+  ondas + '<g filter="url(#gl)"><circle cx="572" cy="52" r="' + (pir ? 14 : 10) + '" fill="' + (pir ? '{AMBAR}' : '{TENUE}') + '"' + (pir ? ' class="lat"' : '') + '/></g>' +
+  '<text x="500" y="44" class="lb" fill="' + (pir ? '{AMBAR}' : '{TENUE}') + '" style="text-anchor:end">PIR · ' + (pir ? 'MOVIMIENTO hace ' + Math.round(segPir) + ' s' : 'quieto') + '</text>' +
   arm + persona + '</svg></div>';
 """
 
@@ -173,6 +182,10 @@ CSS_PLANO = f"""
 .brilla {{ animation:brilla 1.4s infinite alternate; }}
 @keyframes brilla {{ to {{ opacity:.55; }} }}
 .flota {{ animation:flota 3s ease-in-out infinite; }}
+.det {{ animation:det 15s linear forwards; }}
+@keyframes det {{ 0% {{ opacity:1; }} 70% {{ opacity:.6; }} 100% {{ opacity:0; }} }}
+.lat {{ animation:latpir .9s infinite; }}
+@keyframes latpir {{ 50% {{ opacity:.35; }} }}
 @keyframes flota {{ 50% {{ transform:translateY(-4px); }} }}
 """
 
@@ -208,7 +221,7 @@ CSS_SESION = f"""
 .dat .m b {{ font-size:22px; color:{CIAN}; text-shadow:0 0 12px {CIAN}; }}
 """
 
-CLAVES_EN_VIVO = ["active", "sesion", "sesion_usuario", "sesion_rol", "sesion_inicio", "fin_sesion",
+CLAVES_EN_VIVO = ["active", "nodo_en_linea", "rssi", "sesion", "sesion_usuario", "sesion_rol", "sesion_inicio", "fin_sesion",
                   "puerta", "acceso", "pir", "alarma", "armario1", "armario2", "armario3", "armario4"]
 ATRIBUTOS = {"active"}
 
@@ -363,11 +376,18 @@ def armar(tb):
         {"name": "puerta", "label": "Puerta", "usePostProcessing": True,
          "postFuncBody": "return Number(value) === 1 ? 'abre' : 'cierra';"},
         {"name": "fin_sesion", "label": "Fin de sesión"}, {"name": "alarma", "label": "Alarma"},
-    ], 0, f, 24, 7, settings={"hideEmptyLines": True, "showTimestamp": True,
+    ], 0, f, 15, 7, settings={"hideEmptyLines": True, "showTimestamp": True,
                                "dateFormat": {"format": "dd/MM HH:mm:ss"}, "defaultPageSize": 10},
         conf={"useDashboardTimewindow": False,
               "timewindow": {"selectedTab": 0, "realtime": {"realtimeType": 0, "timewindowMs": 86400000},
                              "aggregation": {"type": "NONE", "limit": 500}}})
+    a.poner("w-pir", "system.bar_chart", "Movimiento (PIR) por minuto · 30 min", [
+        {"name": "pir_evento", "label": "Movimientos", "color": AMBAR, "settings": copy.deepcopy(ks)},
+    ], 15, f, 9, 7, conf={
+        "useDashboardTimewindow": False,
+        "timewindow": {"selectedTab": 0, "realtime": {"realtimeType": 0, "timewindowMs": 1800000,
+                                                      "interval": 60000},
+                       "aggregation": {"type": "SUM", "limit": 25000}}})
     _, alb = a.base("system.alarm_widgets.alarms_table")
     al = copy.deepcopy(alb)
     columnas = {"createdTime": "Hora", "originatorDisplayName": "Origen", "type": "Alarma",

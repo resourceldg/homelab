@@ -5,9 +5,9 @@ animado del pañol, sesión en curso, indicadores del día, gráficos, registro 
 alarmas. Esta carpeta tiene el **generador del tablero** (`tablero.py`), su copia
 en JSON y un **simulador** para verlo funcionar sin el hardware.
 
-> **Estado (16/10/2026):** probado **con datos simulados en la réplica local** de
-> ThingsBoard (la de la notebook). **Todavía no está en producción** ni conectado
-> al pañol real: falta el puente desde el broker del pañol (ver punto 5).
+> **Estado (16/10/2026):** en la **réplica local** de ThingsBoard (la de la
+> notebook), con **datos reales** del pañol que trae `puente_real.py` (punto 6).
+> **Todavía no está en producción.**
 
 ## 1. Qué muestra
 
@@ -107,3 +107,27 @@ los reales.
 2. Crear el tablero en producción con `--crear --alarmas`, en el tenant del ISFT.
 3. Decidir si se publica (vista pública sin login) o queda privado: muestra
    **nombres de personas** que entran al pañol, así que por defecto **privado**.
+
+## 6. Datos reales para la muestra: `puente_real.py`
+
+Lee la base del pañol en homelab-01 **por SSH, solo con SELECT**, cada 2 s, y
+publica lo nuevo en ThingsBoard con la hora real de cada evento (puerta, PIR,
+armarios, accesos, sesiones, alarmas y el latido del nodo). Al arrancar carga
+las últimas 24 h. No escribe nada en el pañol.
+
+```bash
+TB_URL=http://127.0.0.1:18080 TB_USUARIO=<admin del tenant> TB_CLAVE_ARCHIVO=<archivo con la clave> \
+  python3 puente_real.py            # Ctrl+C para cortar
+```
+
+- Necesita SSH sin contraseña a `ansible@homelab-01` (`--host` para otro).
+- La base no registra cuándo se resuelve una alarma ni cuándo se cierra un
+  armario: el puente da la alarma por resuelta al minuto y el armario por
+  cerrado a los 20 s, solo para el tablero.
+- Es de muestra. El camino definitivo es el puente MQTT del pañol hacia
+  ThingsBoard (punto 5).
+
+**PIR:** el nodo lo reporta como máximo una vez cada `THROTTLE_PIR_MS` (en la
+placa: 5 s en modo muestra, 30 s normal). En el tablero, cada movimiento
+ilumina el cono de detección del plano durante 15 s y suma una barra en
+"Movimiento (PIR) por minuto".

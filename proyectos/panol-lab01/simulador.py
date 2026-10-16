@@ -86,15 +86,15 @@ class Pañol:
         self.sesion = nombre
         self.pub(t, sesion=1, sesion_nueva=1, sesion_usuario=nombre, sesion_rol=rol, sesion_inicio=int(t * 1000))
         paso(4)
-        self.pub(t, pir=1)
+        self.pub(t, pir=1, pir_evento=1)
         paso(5)
-        self.pub(t, puerta=0, pir=0)
+        self.pub(t, puerta=0)
         for _ in range(random.randint(1, 3)):          # trabaja: armarios y movimiento
             paso(random.uniform(15, 90))
             n = random.randint(1, 4)
-            self.pub(t, **{f"armario{n}": 1, "pir": 1})
+            self.pub(t, **{f"armario{n}": 1, "pir": 1, "pir_evento": 1})
             paso(random.uniform(8, 30))
-            self.pub(t, **{f"armario{n}": 0, "pir": 0})
+            self.pub(t, **{f"armario{n}": 0})
         paso(random.uniform(30, 240))
         if random.random() < 0.85:                     # sale y se cierra por ausencia
             self.pub(t, puerta=1)
@@ -110,7 +110,7 @@ class Pañol:
         if codigo == "APERTURA_SIN_CREDENCIAL":
             self.pub(t, puerta=1)
         if codigo == "PRESENCIA_SIN_SESION":
-            self.pub(t, pir=1)
+            self.pub(t, pir=1, pir_evento=1)
         self.pub(t, alarma=codigo, alarma_evento=1, **{clave: 1})
         if vivo:
             self.enviar()
@@ -118,7 +118,7 @@ class Pañol:
             t = time.time()
         else:
             t += random.uniform(60, 300)
-        self.pub(t, alarma="OK", puerta=0, pir=0, **{clave: 0})
+        self.pub(t, alarma="OK", puerta=0, **{clave: 0})
         return t
 
 
@@ -172,7 +172,7 @@ def main():
                     p.pub(t, sesion=0, fin_sesion="CIERRE_SISTEMA")
                     p.sesion = None
                 t += 1800
-        p.pub(time.time() - 300, sesion=0, puerta=0, pir=0, alarma="OK",
+        p.pub(time.time() - 300, sesion=0, puerta=0, alarma="OK",
               armario1=0, armario2=0, armario3=0, armario4=0)
         p.enviar()
         print("historia de 24 h cargada")
