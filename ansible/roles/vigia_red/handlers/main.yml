@@ -12,3 +12,8 @@
 - name: Reload NetworkManager config
   ansible.builtin.command: nmcli general reload conf
   changed_when: true
+
+# logind relee su configuración con SIGHUP, sin cerrar sesiones.
+- name: Reload logind
+  ansible.builtin.command: systemctl kill -s HUP systemd-logind
+  changed_when: true

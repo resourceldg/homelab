@@ -22,11 +22,15 @@
 #   crontab -e    y agregar:
 #   */5 * * * * /home/zen/homelab/scripts/diagnosticar-caida.sh --cron
 #
-# Los informes quedan en ~/homelab-reportes/caida-<fecha>.md
+# Los informes quedan en ~/homelab-reportes/caida-<fecha>.md y se borran solos a
+# los HOMELAB_REPORTES_DIAS días (20 por defecto; igual que los resúmenes del server).
 set -euo pipefail
 
 HOST="${HOMELAB_SSH:-ansible@homelab-01}"
 DIR="${HOMELAB_REPORTES:-$HOME/homelab-reportes}"
+DIAS="${HOMELAB_REPORTES_DIAS:-20}"
+# Avisos de caída con más de DIAS días: se borran.
+[[ -d "$DIR" ]] && find "$DIR" -maxdepth 1 -type f -name 'caida-*.md' -mtime +"$DIAS" -delete 2>/dev/null
 ESTADO="$DIR/.caida-en-curso"     # existe mientras el servidor está caído: guarda desde cuándo
 MODO_CRON=0
 
