@@ -194,6 +194,18 @@
   loop:
     - { src: vigia-red.sh, dest: vigia-red }
     - { src: postmortem-arranque.sh, dest: postmortem-arranque }
+    - { src: vigia-metricas.py, dest: vigia-metricas }
+  when: vigia_red_enabled | bool
+
+# node-exporter (contenedor) monta / en /host y lee de acá con su colector
+# textfile: así Grafana ve el WiFi, el watchdog y la causa de cada arranque.
+- name: Directory for node-exporter textfile metrics
+  ansible.builtin.file:
+    path: /var/lib/node_exporter/textfile
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
   when: vigia_red_enabled | bool
 
 # El estado del link y el nivel de señal mienten: este server llegó a perder el
@@ -225,7 +237,7 @@
     owner: root
     group: root
     mode: "0644"
-  loop: [vigia-red.service, vigia-red.timer, postmortem-arranque.service]
+  loop: [vigia-red.service, vigia-red.timer, postmortem-arranque.service, vigia-metricas.service, vigia-metricas.timer]
   register: vigia_units
   when: vigia_red_enabled | bool
 
@@ -234,13 +246,14 @@
     name: "{{ item }}"
     enabled: true
     daemon_reload: "{{ vigia_units is changed }}"
-  loop: [vigia-red.timer, postmortem-arranque.service]
+  loop: [vigia-red.timer, postmortem-arranque.service, vigia-metricas.timer]
   when: vigia_red_enabled | bool
 
-- name: Start the guardian timer
+- name: Start the guardian and metrics timers
   ansible.builtin.systemd_service:
-    name: vigia-red.timer
+    name: "{{ item }}"
     state: started
+  loop: [vigia-red.timer, vigia-metricas.timer]
   when: vigia_red_enabled | bool
 
 # --- Capa 1b: botón de encendido -------------------------------------------------------

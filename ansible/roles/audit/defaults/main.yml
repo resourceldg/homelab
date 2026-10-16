@@ -3,3 +3,8 @@
 # server_hostname (used in report identity) comes from bootstrap/env.
 lynis_schedule_oncalendar: "Sun *-*-* 03:00:00"
 aide_check_oncalendar: "*-*-* 05:00:00"
+# Tope de CPU del escaneo diario de AIDE que trae Ubuntu (dailyaidecheck).
+# Sin tope usaba 1-2 núcleos durante 1-2 h cada madrugada y llevaba la CPU de
+# homelab-01 a 90-99 °C (el apagado de golpe del 09/10 03:21 fue en pleno
+# escaneo, a 94 °C). Con 50% tarda más, pero no calienta.
+aide_daily_cpu_quota: "50%"
