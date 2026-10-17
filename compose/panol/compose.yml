@@ -124,7 +124,10 @@ services:
   # MQTT persistente desde cualquier red, con un nombre fijo
   # (panol.<tailnet>.ts.net) que no depende de la IP ni del lugar del server.
   # Propio y no en homelab-01: allá el 443 del tailnet es de Caddy, el 8443
-  # de la API y el 10000 del MQTT del aula. Perfil "remoto": el rol lo
+  # de la API y el 10000 del MQTT del aula. Además sirve una página mínima
+  # por HTTPS en el 8443: sin ningún servicio HTTPS, Tailscale NO publica el
+  # DNS público del nodo (probado: con TCP solo, el nombre no resolvía desde
+  # afuera aunque Funnel enrutaba bien). Perfil "remoto": el rol lo
   # prende solo si hay auth key o el nodo ya se unió (ver docs/panol-iot.md).
   panol-ts:
     image: tailscale/tailscale:v1.104.1

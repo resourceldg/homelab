@@ -1,8 +1,15 @@
 {
   "TCP": {
-    "443": { "TCPForward": "mosquitto:1884", "TerminateTLS": "${TS_CERT_DOMAIN}" }
+    "443": { "TCPForward": "mosquitto:1884", "TerminateTLS": "${TS_CERT_DOMAIN}" },
+    "8443": { "HTTPS": true }
+  },
+  "Web": {
+    "${TS_CERT_DOMAIN}:8443": {
+      "Handlers": { "/": { "Text": "panol: entrada MQTT en el 443\n" } }
+    }
   },
   "AllowFunnel": {
-    "${TS_CERT_DOMAIN}:443": true
+    "${TS_CERT_DOMAIN}:443": true,
+    "${TS_CERT_DOMAIN}:8443": true
   }
 }
