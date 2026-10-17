@@ -104,3 +104,12 @@ thingsboard_backup_hora: "*-*-* 13:40:00"
 
 # Portada pública (index.html con la lista de tableros publicados).
 thingsboard_portada_dir: /srv/tableros
+
+# Espacios (tenants) de proyectos que no son del aula, administrados por su
+# dueño. Cada admin y la cuenta de servicio tienen su clave en
+# {{ thingsboard_secrets_dir }}/espacio-<id>-<admin.id|servicio>.pass (se generan una vez).
+#   - id: panol-iot
+#     titulo: "Pañol IoT"
+#     admins: [{id: lucas, email: "...", nombre: "Lucas"}]
+#     servicio: "panol-sync@panol.local"     # cuenta para el sistema del proyecto
+thingsboard_espacios_propios: []

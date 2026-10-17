@@ -143,12 +143,13 @@ panol_remoto_enabled: true
 # --- Gestión de credenciales desde ThingsBoard ------------------------------
 # El sincronizador de la app (adapters/sync_tb.py, servicio `sync-tb`) publica
 # las tarjetas en ThingsBoard y aplica lo que se pide desde el tablero
-# "Pañol · Credenciales". Entra con la cuenta de administración del tenant del
-# ISFT; la clave se lee del secreto de ThingsBoard en este mismo host (no se
-# copia a ningún repo). Si el archivo no está, el sincronizador queda inactivo.
+# "Pañol · Credenciales". El pañol tiene su PROPIO tenant ("Pañol IoT", de
+# Lucas; ver thingsboard_espacios_propios) y el sincronizador entra con la
+# cuenta de servicio de ese espacio. La clave se lee del secreto de ThingsBoard
+# en este mismo host (no se copia a ningún repo). Sin el archivo, queda inactivo.
 panol_tb_url: "http://thingsboard:8080"
-panol_tb_usuario: "admin@tableros.isft238.local"
-panol_tb_clave_archivo: "/etc/thingsboard/secrets/admin.pass"
+panol_tb_usuario: "panol-sync@panol.local"
+panol_tb_clave_archivo: "/etc/thingsboard/secrets/espacio-panol-iot-servicio.pass"
 
 # --- Publicación ------------------------------------------------------------
 # Node-RED se sirve en https://<subdominio>.<caddy_base_domain> detrás de SSO.

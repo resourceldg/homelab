@@ -390,6 +390,21 @@ def equipos(tb_sys, cfg):
             print(f"{eq['equipo']}: dashboard de arranque creado")
 
 
+def espacios_propios(tb_sys, cfg):
+    """Tenants de proyectos que NO son del aula (p. ej. el pañol, de Lucas): su
+    dueño los administra con su propio usuario y el sistema del proyecto entra
+    con una cuenta de servicio aparte (cambiar la clave del dueño no lo rompe).
+    sysadmin no ve tableros: por eso cada espacio necesita su administrador."""
+    for esp in cfg.get("espacios_propios", []):
+        ten = tenant(tb_sys, esp["titulo"])
+        limites(tb_sys, ten, cfg["limites"])
+        for a in esp["admins"]:
+            admin_tenant(tb_sys, ten, a["email"], leer(a["clave"]), estricto=False, nombre=a["nombre"])
+        s = esp.get("servicio")
+        if s:
+            admin_tenant(tb_sys, ten, s["email"], leer(s["clave"]), estricto=False, nombre="Servicio")
+
+
 # --- 6. Reconciliación de lo público --------------------------------------------------
 
 def cliente_publico(tb):
@@ -492,6 +507,7 @@ def main():
     admin_tenant(tb, ten, cfg["admin_email"], leer(sec["admin"]))
     limites(tb, ten, cfg["limites"])
     equipos(tb, cfg)
+    espacios_propios(tb, cfg)
 
     if not tb.login(cfg["admin_email"], leer(sec["admin"])):
         sys.exit("El administrador del tenant no entra")

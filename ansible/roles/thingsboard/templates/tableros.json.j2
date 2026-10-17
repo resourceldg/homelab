@@ -23,6 +23,14 @@
 {%-   endfor -%}
 {%-   set _ = espacios.append({'equipo': eq.equipo, 'titulo': 'Proyecto — ' ~ (thingsboard_titulos[eq.equipo] | default(eq.equipo)), 'usuarios': usuarios, 'gateway_token': thingsboard_secrets_dir ~ '/gateway-' ~ eq.equipo ~ '.token'}) -%}
 {%- endfor -%}
+{%- set propios = [] -%}
+{%- for esp in thingsboard_espacios_propios -%}
+{%-   set admins = [] -%}
+{%-   for a in esp.admins -%}
+{%-     set _ = admins.append({'email': a.email, 'nombre': a.nombre, 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-' ~ a.id ~ '.pass'}) -%}
+{%-   endfor -%}
+{%-   set _ = propios.append({'titulo': esp.titulo, 'admins': admins, 'servicio': ({'email': esp.servicio, 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-servicio.pass'} if esp.servicio | default('') else none)}) -%}
+{%- endfor -%}
 {{ {
   'url': 'http://127.0.0.1:' ~ thingsboard_http_port,
   'institucion': thingsboard_institucion,
@@ -39,5 +47,6 @@
   'limites': thingsboard_limites,
   'widgets': {'tabla': 'system.cards.entities_table', 'serie': 'system.time_series_chart'},
   'dashboards': dashes,
-  'equipos_admin': espacios
+  'equipos_admin': espacios,
+  'espacios_propios': propios
 } | to_nice_json }}

@@ -97,6 +97,18 @@
   loop_control:
     label: "{{ item.1 }}"
 
+# Espacios propios (proyectos que no son del aula): una clave por administrador
+# y otra para la cuenta de servicio del proyecto. Mismo alfabeto legible, 12.
+- name: Generate the personal-space passwords (once)
+  ansible.builtin.shell:
+    cmd: >-
+      umask 077; python3 -c "import secrets; print(''.join(secrets.choice('abcdefghjkmnpqrstuvwxyz23456789') for _ in range(12)), end='')"
+      > {{ thingsboard_secrets_dir }}/espacio-{{ item }}.pass
+    creates: "{{ thingsboard_secrets_dir }}/espacio-{{ item }}.pass"
+  args:
+    executable: /bin/bash
+  loop: "{{ lookup('ansible.builtin.template', 'espacios-claves.j2') | from_json }}"
+
 - name: Read the team gateway tokens
   ansible.builtin.slurp:
     src: "{{ thingsboard_secrets_dir }}/gateway-{{ item.equipo }}.token"
