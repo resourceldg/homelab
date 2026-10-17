@@ -42,6 +42,7 @@ services:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       # passwd y acl los genera el rol Ansible en el host (uid 1883, 0640).
       - ./mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./mosquitto/passwd-remoto:/mosquitto/config/passwd-remoto:ro
       - ./mosquitto/acl:/mosquitto/config/acl:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
@@ -117,6 +118,44 @@ services:
       mosquitto:
         condition: service_started
 
+  # Entrada REMOTA de los nodos: un nodo de Tailscale propio ("panol") con su
+  # Funnel en el 443. Termina el TLS (certificado de *.ts.net) y reenvía el TCP
+  # plano al listener 1884 del broker, que solo acepta identidades de nodos. Así los ESP32 llegan con UNA conexión
+  # MQTT persistente desde cualquier red, con un nombre fijo
+  # (panol.<tailnet>.ts.net) que no depende de la IP ni del lugar del server.
+  # Propio y no en homelab-01: allá el 443 del tailnet es de Caddy, el 8443
+  # de la API y el 10000 del MQTT del aula. Además sirve una página mínima
+  # por HTTPS en el 8443: sin ningún servicio HTTPS, Tailscale NO publica el
+  # DNS público del nodo (probado: con TCP solo, el nombre no resolvía desde
+  # afuera aunque Funnel enrutaba bien). Perfil "remoto": el rol lo
+  # prende solo si hay auth key o el nodo ya se unió (ver docs/panol-iot.md).
+  panol-ts:
+    image: tailscale/tailscale:v1.104.1
+    container_name: panol-ts
+    profiles: ["remoto"]
+    restart: unless-stopped
+    hostname: panol
+    environment:
+      TS_AUTHKEY: ${PANOL_TS_AUTHKEY:-}
+      TS_HOSTNAME: panol
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+      # Sin SSH de Tailscale ni rutas ni DNS: este nodo solo expone el broker.
+      TS_EXTRA_ARGS: --accept-dns=false
+    volumes:
+      - panol_ts:/var/lib/tailscale
+      - ./remoto/serve.json:/config/serve.json:ro
+    networks: [panol]
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 96M
+
 networks:
   # Red del proyecto, creada por el rol `docker` (como `edge`). El stack de la
   # app (repo panol-iot) y Grafana se unen a ella como red externa y así
@@ -127,6 +166,7 @@ networks:
     external: true
 
 volumes:
+  panol_ts:
   mosquitto_data:
   mosquitto_log:
   postgres_data:

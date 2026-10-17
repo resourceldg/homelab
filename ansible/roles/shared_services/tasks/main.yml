@@ -70,7 +70,7 @@
     creates: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
   args:
     executable: /bin/bash
-  loop: "{{ shared_mqtt_service_users }}"
+  loop: "{{ shared_mqtt_service_users_todos }}"
   loop_control:
     label: "{{ item.name }}"
   when: shared_services_enabled | bool
@@ -78,7 +78,7 @@
 - name: Read MQTT service user passwords
   ansible.builtin.slurp:
     src: "{{ shared_services_secrets_dir }}/{{ item.name }}.mqttpass"
-  loop: "{{ shared_mqtt_service_users }}"
+  loop: "{{ shared_mqtt_service_users_todos }}"
   loop_control:
     label: "{{ item.name }}"
   register: service_mqttpass

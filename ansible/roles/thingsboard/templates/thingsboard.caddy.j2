@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# ThingsBoard — ADMINISTRACIÓN. Solo por el tailnet (como todo lo web) y
+# detrás de Authelia, solo operadores. Además pide el login de ThingsBoard.
+# Lo público NO pasa por acá: va por el nodo Tailscale "tableros" ->
+# tableros-proxy (stack thingsboard), que solo deja pasar la vista pública.
+{{ thingsboard_subdomain }}.{$CADDY_BASE_DOMAIN} {
+	import secure_headers
+	import authelia
+	encode zstd gzip
+
+	# Las métricas responden SIN login en ThingsBoard: no se sirven ni acá.
+	# Prometheus las lee directo por la red edge.
+	@metricas path /actuator /actuator/*
+	handle @metricas {
+		respond "No encontrado" 404
+	}
+	handle {
+		reverse_proxy thingsboard:8080
+	}
+}

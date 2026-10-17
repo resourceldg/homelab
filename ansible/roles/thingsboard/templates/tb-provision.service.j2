@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Aprovisionamiento de ThingsBoard (dashboards, lo público, espacios de equipo)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/tb-provision --config {{ thingsboard_config_dir }}/tableros.json
+Nice=10

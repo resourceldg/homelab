@@ -26,3 +26,28 @@ shared_mqtt_service_users:
     acl: ["topic read {teams}/#"]
   - name: aula-exporter
     acl: ["topic read $SYS/#"]
+
+# Cuentas de ThingsBoard (rol thingsboard). SOLO existen si ThingsBoard está
+# prendido: darlas de alta reconstruye el passwd y reinicia mqtt-aula (las
+# placas se reconectan en segundos), y no tiene sentido hacerlo de rebote en
+# cualquier `--tags classroom`.
+#   tb-puente  lee lo que publican los equipos y la demo, y lo pasa a ThingsBoard
+#   tb-demo    el simulador: escribe SOLO en los árboles de demo
+# Los árboles de demo tienen que coincidir con thingsboard_demo_proyectos
+# (lo controla tests/test_thingsboard_stack.py).
+shared_mqtt_tb_users:
+  - name: tb-puente
+    acl:
+      - "topic read {teams}/#"
+      - "topic read demo-meteo/#"
+      - "topic read demo-seguridad/#"
+      - "topic read demo-ambiente/#"
+  - name: tb-demo
+    acl:
+      - "topic readwrite demo-meteo/#"
+      - "topic readwrite demo-seguridad/#"
+      - "topic readwrite demo-ambiente/#"
+
+shared_mqtt_service_users_todos: >-
+  {{ shared_mqtt_service_users
+     + (shared_mqtt_tb_users if (thingsboard_enabled | default(false) | bool) else []) }}

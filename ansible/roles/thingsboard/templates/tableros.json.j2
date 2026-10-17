@@ -1,0 +1,52 @@
+{#- Config de tb-provision. Un dashboard por equipo del roster (privado salvo
+    que esté en thingsboard_proyectos_publicos), uno por proyecto de demo, y
+    los generales. Sumar un equipo al roster = su dashboard aparece solo. -#}
+{%- set equipos = classroom_teams | map(attribute='name') | list -%}
+{%- set dashes = [] -%}
+{%- for g in thingsboard_dashboards_generales if g.tipos | length > 0 -%}
+{%-   set _ = dashes.append({'titulo': g.titulo, 'tipos': g.tipos, 'publico': g.publico | default(false) | bool}) -%}
+{%- endfor -%}
+{%- if thingsboard_demo_enabled | bool -%}
+{%-   for d in thingsboard_demo_proyectos -%}
+{%-     set _ = dashes.append({'titulo': thingsboard_demo_titulos[d] | default(d), 'tipos': [d], 'publico': true}) -%}
+{%-   endfor -%}
+{%- endif -%}
+{%- for e in equipos -%}
+{%-   set _ = dashes.append({'titulo': 'Proyecto — ' ~ (thingsboard_titulos[e] | default(e)), 'tipos': [e], 'publico': e in thingsboard_proyectos_publicos}) -%}
+{%- endfor -%}
+{%- set _ = dashes.append({'titulo': 'Aula — Todos los proyectos', 'tipos': equipos, 'publico': false}) -%}
+{%- set espacios = [] -%}
+{%- for eq in thingsboard_equipos_admin -%}
+{%-   set usuarios = [] -%}
+{%-   for u in eq.usuarios -%}
+{%-     set _ = usuarios.append({'usuario': u, 'email': u ~ '@' ~ thingsboard_dominio_usuarios, 'clave': thingsboard_secrets_dir ~ '/tb-usuario-' ~ u ~ '.pass'}) -%}
+{%-   endfor -%}
+{%-   set _ = espacios.append({'equipo': eq.equipo, 'titulo': 'Proyecto — ' ~ (thingsboard_titulos[eq.equipo] | default(eq.equipo)), 'usuarios': usuarios, 'gateway_token': thingsboard_secrets_dir ~ '/gateway-' ~ eq.equipo ~ '.token'}) -%}
+{%- endfor -%}
+{%- set propios = [] -%}
+{%- for esp in thingsboard_espacios_propios -%}
+{%-   set admins = [] -%}
+{%-   for a in esp.admins -%}
+{%-     set _ = admins.append({'email': a.email, 'nombre': a.nombre, 'apellido': a.apellido | default(''), 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-' ~ a.id ~ '.pass'}) -%}
+{%-   endfor -%}
+{%-   set _ = propios.append({'titulo': esp.titulo, 'admins': admins, 'servicio': ({'email': esp.servicio, 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-servicio.pass'} if esp.servicio | default('') else none)}) -%}
+{%- endfor -%}
+{{ {
+  'url': 'http://127.0.0.1:' ~ thingsboard_http_port,
+  'institucion': thingsboard_institucion,
+  'tenant': thingsboard_tenant,
+  'admin_email': thingsboard_admin_email,
+  'gateway': 'tb-puente',
+  'base_publica': 'https://' ~ thingsboard_publico_host,
+  'portada_dir': thingsboard_portada_dir,
+  'secretos': {
+    'sysadmin': thingsboard_secrets_dir ~ '/sysadmin.pass',
+    'admin': thingsboard_secrets_dir ~ '/admin.pass',
+    'gateway_token': thingsboard_secrets_dir ~ '/gateway.token'
+  },
+  'limites': thingsboard_limites,
+  'widgets': {'tabla': 'system.cards.entities_table', 'serie': 'system.time_series_chart'},
+  'dashboards': dashes,
+  'equipos_admin': espacios,
+  'espacios_propios': propios
+} | to_nice_json }}

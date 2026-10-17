@@ -1,6 +1,6 @@
 [Unit]
 Description=Resumen de qué pasó en el arranque anterior (homelab)
-After=systemd-journald.service local-fs.target
+After=systemd-journald.service local-fs.target vigia-watchdog.service
 Before=vigia-red.timer
 
 [Service]

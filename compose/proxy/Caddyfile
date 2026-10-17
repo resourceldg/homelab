@@ -2,7 +2,14 @@
 {
 	email {$ACME_EMAIL}
 	# DuckDNS DNS-01 challenge for wildcard-capable, port-80-free issuance.
-	acme_dns duckdns {$DUCKDNS_TOKEN}
+	# resolvers: para encontrar la zona, ACME pide el SOA del nombre. En este
+	# host el dominio pasa por el split DNS del tailnet (dnsmasq), que no tiene
+	# SOA y responde REFUSED: sin resolvers públicos no se emitía ni renovaba
+	# ningún certificado (detectado el 15/10/2026 con tb. y equipo01.).
+	cert_issuer acme {
+		dns duckdns {$DUCKDNS_TOKEN}
+		resolvers 1.1.1.1 8.8.8.8
+	}
 	servers {
 		protocols h1 h2 h3
 	}

@@ -1,0 +1,289 @@
+---
+# ThingsBoard CE — tableros IoT de los proyectos del ISFT 238.
+# Stack del OPERADOR, independiente: no reemplaza a Grafana ni a nada del aula.
+# Ver compose/thingsboard/README.md y docs/thingsboard.md.
+#
+#   thingsboard     ThingsBoard CE (monolito, cola en memoria, sin Kafka)
+#   tb-postgres     su base PROPIA (no la compartida del aula: ver README)
+#   tb-puente       lee mqtt-aula (solo lectura) y reenvía a ThingsBoard
+#   tableros-proxy  proxy PÚBLICO: deja pasar solo la vista de dashboards públicos
+#   tableros        nodo Tailscale propio con Funnel en su 443 (perfil "publico")
+#
+# PUERTOS: ninguno publicado en el host. La administración entra por el Caddy
+# principal (tailnet + Authelia, red `edge`); el público entra por Funnel →
+# tableros-proxy. Los ESP32 no hablan con ThingsBoard: publican en mqtt-aula
+# como siempre.
+#
+# REDES
+#   tb           interna (sin salida): ThingsBoard, su base, el puente y el proxy público
+#   tb-publico   solo tableros-proxy <-> nodo Tailscale (este sí sale a internet)
+#   edge         la del Caddy principal (admin) y de Prometheus (métricas)
+#   classroom-shared  la de mqtt-aula (solo el puente)
+name: thingsboard
+
+services:
+  thingsboard:
+    image: thingsboard/tb-node:${TB_VERSION}
+    container_name: thingsboard
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    # Sin env_file: cada servicio recibe SOLO las variables que nombra (el .env
+    # tiene también el token del puente y la auth key de Tailscale).
+    environment:
+      TZ: ${TZ}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://tb-postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: thingsboard
+      SPRING_DATASOURCE_PASSWORD: ${TB_DB_PASSWORD}
+      TB_QUEUE_TYPE: in-memory
+      # Heap chico y fijo: el server comparte RAM con el aula, la VM de un
+      # alumno y el escritorio. Medido en la validación (ver README).
+      JAVA_OPTS: ${TB_JAVA_OPTS}
+      # Transportes que no se usan, apagados (RAM y superficie). El MQTT queda
+      # SOLO para el puente, dentro de la red `tb`.
+      COAP_ENABLED: "false"
+      LWM2M_ENABLED: "false"
+      SNMP_ENABLED: "false"
+      LWM2M_ENABLED_BS: "false"
+      EDGES_ENABLED: "false"
+      # Los dispositivos no hablan HTTP con ThingsBoard (entran por el puente) y
+      # la documentación interactiva de la API no se publica.
+      HTTP_ENABLED: "false"
+      SWAGGER_ENABLED: "false"
+      # Clave que firma las sesiones (JWT). La de fábrica es pública: con ella
+      # cualquiera se fabrica un token de administrador. La sortea el rol.
+      JWT_TOKEN_SIGNING_KEY: ${TB_JWT_SIGNING_KEY}
+      # Métricas para Prometheus en /actuator/prometheus. El proxy público y el
+      # vhost de admin bloquean esa ruta: solo la lee Prometheus por `edge`.
+      METRICS_ENABLED: "true"
+      METRICS_ENDPOINTS_EXPOSE: prometheus
+      # Retención de la telemetría (segundos). VictoriaMetrics guarda 15 días;
+      # acá un poco más, para comparar.
+      SQL_TTL_TS_TS_KEY_VALUE_TTL: ${TB_TTL_SEGUNDOS}
+    volumes:
+      # Único lugar escribible de ThingsBoard (dueño: thingsboard). Si la JVM se
+      # queda sin memoria deja acá el volcado para analizarlo.
+      - tb_logs:/var/log/thingsboard
+      # thingsboard.conf + logback.xml propios (ver conf/): sin log de GC a
+      # archivo y logs solo por stdout.
+      - ./conf:/config:ro
+    networks: [tb, edge]
+    # Solo loopback: lo usa el aprovisionamiento (tb-provision.py) desde el host.
+    ports:
+      - "127.0.0.1:${TB_HTTP_PORT:-18080}:8080"
+    depends_on:
+      tb-postgres:
+        condition: service_healthy
+    healthcheck:
+      # La imagen no trae curl ni wget: HTTP a mano con bash.
+      test:
+        - "CMD"
+        - "bash"
+        - "-c"
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /login HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          head -1 <&3 | grep -q ' 200 '
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # Arranca lento (JVM + migraciones): no lo declares muerto antes de tiempo.
+      start_period: 240s
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          # 1 núcleo: el procesador del server llega a 96 °C de noche con poca
+          # carga (informe del 14/10/2026). Un núcleo como tope acota el calor
+          # que puede sumar ThingsBoard, incluso en el arranque.
+          cpus: "1.0"
+          memory: ${TB_MEM_LIMIT}
+
+  tb-postgres:
+    image: postgres:16.4-alpine
+    container_name: tb-postgres
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      TZ: ${TZ}
+      POSTGRES_DB: thingsboard
+      POSTGRES_USER: thingsboard
+      POSTGRES_PASSWORD: ${TB_DB_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=40
+      - -c
+      - log_min_duration_statement=2000
+    volumes:
+      - tb_postgres:/var/lib/postgresql/data
+      # Volcados diarios (tb-backup.sh), fuera del volumen de datos.
+      - ${TB_BACKUP_DIR}:/backups
+    networks: [tb]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thingsboard -d thingsboard"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+  # Métricas de la base (tamaño, conexiones, transacciones) para Prometheus.
+  # Entra con un rol de SOLO monitoreo (pg_monitor), no con el dueño de la base:
+  # lo crea el rol Ansible.
+  tb-postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.19.1
+    container_name: tb-postgres-exporter
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    environment:
+      DATA_SOURCE_URI: tb-postgres:5432/thingsboard?sslmode=disable
+      DATA_SOURCE_USER: monitoreo
+      DATA_SOURCE_PASS: ${TB_MONITOREO_DB_PASSWORD}
+    networks: [tb, edge]
+    depends_on:
+      tb-postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: 48M
+
+  tb-puente:
+    build: ./puente
+    image: homelab/tb-puente:1.1.0
+    container_name: tb-puente
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    environment:
+      TZ: ${TZ}
+      AULA_HOST: mqtt-aula
+      AULA_PORT: "1883"
+      AULA_USER: tb-puente
+      AULA_PASS: ${TB_PUENTE_MQTT_PASS}
+      TB_HOST: thingsboard
+      TB_PORT: "1883"
+      TB_TOKEN: ${TB_PUENTE_TOKEN}
+      # Equipos con espacio propio: "equipo-01=token,..." (lo arma el rol).
+      TB_TOKENS_EQUIPOS: ${TB_TOKENS_EQUIPOS:-}
+      # Un patrón por equipo del roster (lo arma el rol). La ACL del broker
+      # igual deja a esta cuenta en SOLO LECTURA.
+      TOPICS: ${TB_PUENTE_TOPICS}
+      MAX_DISPOSITIVOS: "200"
+    networks: [tb, classroom-shared, edge]
+    depends_on:
+      thingsboard:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+
+  # Simulador de placas para la demo y las pruebas (perfil "demo"). Publica en
+  # mqtt-aula con la cuenta tb-demo, que solo puede escribir en demo-*.
+  tb-simulador:
+    image: homelab/tb-puente:1.1.0
+    container_name: tb-simulador
+    profiles: ["demo"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    command: ["python", "-u", "/app/simulador.py"]
+    healthcheck:
+      disable: true
+    environment:
+      TZ: ${TZ}
+      MQTT_HOST: mqtt-aula
+      MQTT_USER: tb-demo
+      MQTT_PASS: ${TB_DEMO_MQTT_PASS:-}
+      PERIODO_SEGUNDOS: "10"
+    networks: [classroom-shared]
+    depends_on: [tb-puente]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: 48M
+
+  tableros-proxy:
+    build: ./publico
+    image: homelab/tableros-proxy:2.11.7
+    container_name: tableros-proxy
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    volumes:
+      - ./publico/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Portada con la lista de tableros públicos (la escribe tb-provision.py).
+      - ${TB_PORTADA_DIR}:/srv/portada:ro
+      - tableros_proxy_data:/data
+      - tableros_proxy_config:/config
+    # edge: SOLO para que Prometheus lea sus métricas (:9180). El tráfico de
+    # internet entra por tb-publico.
+    networks: [tb, tb-publico, edge]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/salud"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+
+  # Nodo Tailscale aparte ("tableros"): tiene SU 443 para Funnel, así no se
+  # toca el 443 del tailnet de homelab-01 (que usa Caddy). Solo arranca con
+  # COMPOSE_PROFILES=publico, cuando hay auth key.
+  tableros:
+    image: tailscale/tailscale:v1.104.1
+    container_name: tableros
+    profiles: ["publico"]
+    restart: unless-stopped
+    hostname: tableros
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_HOSTNAME: tableros
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+      # Sin SSH de Tailscale ni rutas: este nodo solo sirve el proxy público.
+      TS_EXTRA_ARGS: --accept-dns=false
+    volumes:
+      - tableros_ts:/var/lib/tailscale
+      - ./publico/serve.json:/config/serve.json:ro
+    networks: [tb-publico]
+    depends_on:
+      tableros-proxy:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 96M
+
+networks:
+  tb:
+    name: thingsboard
+    internal: true
+  tb-publico:
+    name: thingsboard-publico
+  edge:
+    external: true
+  classroom-shared:
+    external: true
+
+volumes:
+  tb_logs:
+  tb_postgres:
+  tableros_proxy_data:
+  tableros_proxy_config:
+  tableros_ts:

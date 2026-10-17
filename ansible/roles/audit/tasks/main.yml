@@ -121,3 +121,27 @@
     enabled: true
     state: started
     daemon_reload: true
+
+- name: Ensure dailyaidecheck drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/dailyaidecheck.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Ubuntu (paquete aide-common) trae su propio escaneo diario, además del
+# nuestro. Se lo limita para que no recaliente la CPU (ver defaults).
+- name: Cap the CPU of Ubuntu's daily AIDE scan
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/dailyaidecheck.service.d/50-homelab-limite.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - do not edit manually
+      [Service]
+      CPUQuota={{ aide_daily_cpu_quota }}
+      Nice=19
+      IOSchedulingClass=idle
+  notify: Reload systemd
