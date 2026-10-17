@@ -109,6 +109,49 @@
   notify: Restart panol mosquitto
   when: panol_enabled | bool
 
+- name: Check for the Tailscale auth key (remote entry node)
+  ansible.builtin.stat:
+    path: "{{ panol_secrets_dir }}/tailscale.authkey"
+  register: panol_authkey_file
+  when: panol_enabled | bool
+
+- name: Check whether the remote entry node already joined (state volume)
+  ansible.builtin.command: docker volume inspect panol_panol_ts
+  register: panol_ts_state
+  changed_when: false
+  failed_when: false
+  when: panol_enabled | bool
+
+- name: Read the Tailscale auth key
+  ansible.builtin.slurp:
+    src: "{{ panol_secrets_dir }}/tailscale.authkey"
+  register: panol_authkey
+  no_log: true
+  when:
+    - panol_enabled | bool
+    - panol_authkey_file.stat.exists
+
+- name: Decide whether the remote entry node runs
+  ansible.builtin.set_fact:
+    panol_ts_authkey: "{{ panol_authkey.content | b64decode | trim if panol_authkey_file.stat.exists else '' }}"
+    # Arranca si está pedido Y (hay auth key O ya se unió antes).
+    panol_compose_profiles: >-
+      {{ ['remoto'] if panol_remoto_enabled | bool
+         and (panol_authkey_file.stat.exists or panol_ts_state.rc == 0) else [] }}
+  no_log: true
+  when: panol_enabled | bool
+
+- name: Warn if the remote entry was requested without an auth key
+  ansible.builtin.debug:
+    msg: >-
+      panol_remoto_enabled está en true pero no hay auth key en
+      {{ panol_secrets_dir }}/tailscale.authkey (ni el nodo se unió antes):
+      el nodo "panol" NO se levanta. Ver docs/panol-iot.md, "Entrada remota".
+  when:
+    - panol_enabled | bool
+    - panol_remoto_enabled | bool
+    - "'remoto' not in panol_compose_profiles"
+
 - name: Render the panol .env (ports, DB and broker credentials)
   ansible.builtin.template:
     src: panol.env.j2
@@ -231,6 +274,7 @@
     project_src: "{{ panol_stack_dir }}"
     state: present
     pull: missing
+    profiles: "{{ panol_compose_profiles }}"
   when: panol_enabled | bool
 
 # --- Grafana: acceso de SOLO LECTURA a la auditoría -------------------------

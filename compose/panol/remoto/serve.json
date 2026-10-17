@@ -1,0 +1,8 @@
+{
+  "TCP": {
+    "443": { "TCPForward": "mosquitto:1883", "TerminateTLS": "${TS_CERT_DOMAIN}" }
+  },
+  "AllowFunnel": {
+    "${TS_CERT_DOMAIN}:443": true
+  }
+}
