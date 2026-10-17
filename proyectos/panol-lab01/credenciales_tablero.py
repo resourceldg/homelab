@@ -8,7 +8,7 @@ La base del pañol es la fuente de verdad. ThingsBoard es la pantalla: el
 sincronizador del pañol (server/adapters/sync_tb.py, repo panol-iot) publica
 un asset "tarjeta-panol" por tarjeta y aplica lo que se pide con los botones:
 
-- Aprobar (pendientes): pide el email de la persona y asigna la tarjeta.
+- Aprobar (pendientes): abre un diálogo con la lista de personas y asigna la tarjeta.
 - Rechazar (pendientes).
 - Dar de baja (activas): deja de abrir en el próximo refresco del nodo.
 
@@ -43,30 +43,81 @@ JS_RESULTADO_ESTILO = ("var v = String(value || ''); return {color: v.indexOf('E
                        "' : (v.indexOf('OK') === 0 ? '" + VERDE + "' : '" + TENUE + "'), fontSize: '12px'};")
 
 
-def _accion(nombre, icono, cuerpo, mostrar_si):
-    return {
-        "name": nombre, "icon": icono, "type": "custom", "id": "a-" + icono,
-        "customFunction": cuerpo,
-        "useShowWidgetActionFunction": True,
-        "showWidgetActionFunction": f"var e = data && (data['Estado'] || data.estado); return e === '{mostrar_si}';",
-    }
+def _accion(nombre, icono, cuerpo, html=None):
+    a = {"name": nombre, "icon": icono, "id": "a-" + icono, "customFunction": cuerpo,
+         "useShowWidgetActionFunction": False}
+    if html:
+        a.update({"type": "customPretty", "customHtml": html, "customCss": "", "customResources": []})
+    else:
+        a["type"] = "custom"
+    return a
 
 
 # Cada botón solo deja un PEDIDO en el asset; el sincronizador lo aplica en
 # unos segundos con las reglas de la base y responde en "Último resultado".
 JS_PEDIR = """
+function refrescar() {
+  // El sincronizador aplica el pedido en segundos: se vuelven a consultar las
+  // tablas para que la tarjeta pase a su sección sin recargar la página.
+  [6000, 15000].forEach(function (ms) { setTimeout(function () { widgetContext.updateAliases(); }, ms); });
+}
 function pedir(attrs, aviso) {
   widgetContext.attributeService.saveEntityAttributes(entityId, 'SERVER_SCOPE', attrs).subscribe(function () {
     widgetContext.showSuccessToast(aviso, 4000, 'bottom');
+    refrescar();
   });
 }
 """
-JS_APROBAR = JS_PEDIR + """
-var para = window.prompt('Aprobar la tarjeta ' + entityName +
-  '\\n\\nEmail de la persona (la lista está en el panel "Personas"):', '');
-if (!para || !para.trim()) { return; }
-pedir([{key: 'accion', value: 'aprobar'}, {key: 'aprobar_para', value: para.trim()}],
-      'Pedido enviado: se aplica en unos segundos (mirá "Último resultado")');
+HTML_APROBAR = """
+<form [formGroup]="form" (ngSubmit)="save()" style="min-width:420px">
+  <mat-toolbar color="primary"><h2>Aprobar la tarjeta {{ uid }}</h2><span fxFlex></span>
+    <button mat-icon-button (click)="cancel()" type="button"><mat-icon>close</mat-icon></button></mat-toolbar>
+  <div mat-dialog-content style="padding-top:16px">
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.5">¿De quién es esta tarjeta? Va a poder abrir la puerta del pañol
+      en el próximo refresco del nodo (hasta 15 min).</p>
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Persona</mat-label>
+      <mat-select formControlName="persona" required>
+        <mat-option *ngFor="let p of personas" [value]="p.email || p.nombre">
+          {{ p.nombre }} <span style="opacity:.6">· {{ p.rol }} · {{ p.email || 'sin email' }}</span>
+        </mat-option>
+      </mat-select>
+      <mat-error>Elegí una persona</mat-error>
+    </mat-form-field>
+    <div *ngIf="!personas.length" style="opacity:.7">Cargando personas…</div>
+  </div>
+  <div mat-dialog-actions fxLayoutAlign="end center">
+    <button mat-button type="button" (click)="cancel()">Cancelar</button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Aprobar</button>
+  </div>
+</form>
+"""
+JS_APROBAR_DIALOGO = """
+var $injector = widgetContext.$scope.$injector;
+var customDialog = $injector.get(widgetContext.servicesMap.get('customDialog'));
+var http = widgetContext.http;
+customDialog.customDialog(htmlTemplate, function (vm) {
+  vm.uid = entityName;
+  vm.personas = [];
+  vm.form = vm.fb.group({persona: [null, [vm.validators.required]]});
+  http.get('/api/tenant/assets?assetName=panol-personas').subscribe(function (a) {
+    http.get('/api/plugins/telemetry/ASSET/' + a.id.id + '/values/attributes/SERVER_SCOPE?keys=personas')
+      .subscribe(function (attrs) {
+        try { vm.personas = JSON.parse((attrs[0] || {}).value || '[]'); } catch (e) { vm.personas = []; }
+      });
+  });
+  vm.cancel = function () { vm.dialogRef.close(null); };
+  vm.save = function () {
+    if (vm.form.invalid) { return; }
+    widgetContext.attributeService.saveEntityAttributes(entityId, 'SERVER_SCOPE', [
+      {key: 'accion', value: 'aprobar'}, {key: 'aprobar_para', value: vm.form.value.persona}
+    ]).subscribe(function () {
+      widgetContext.showSuccessToast('Aprobación enviada: se aplica en unos segundos', 4000, 'bottom');
+      vm.dialogRef.close(null);
+      [6000, 15000].forEach(function (ms) { setTimeout(function () { widgetContext.updateAliases(); }, ms); });
+    });
+  };
+}).subscribe();
 """
 JS_RECHAZAR = JS_PEDIR + """
 if (!window.confirm('¿Rechazar la tarjeta ' + entityName + '? No va a abrir la puerta.')) { return; }
@@ -99,33 +150,14 @@ return '<div class="res">' + caja(c.activa, 'activas', '%(VERDE)s') +
 """ % {"VERDE": VERDE, "AMBAR": AMBAR, "ROJO": ROJO, "TENUE": TENUE}
 
 CSS_RESUMEN = f"""
-.res {{ display:flex; gap:12px; height:100%; align-items:stretch; padding:4px; font-family:Inter,Roboto,sans-serif; }}
-.caja {{ flex:1; border:1px solid var(--c); border-radius:14px; display:flex; flex-direction:column;
+.res {{ display:flex; flex-wrap:wrap; gap:12px; height:100%; align-items:stretch; padding:4px;
+        font-family:Inter,Roboto,sans-serif; box-sizing:border-box; }}
+.caja {{ flex:1 1 140px; min-height:70px; box-sizing:border-box; border:1px solid var(--c); border-radius:14px; display:flex; flex-direction:column;
         justify-content:center; padding:10px 18px; background:rgba(0,0,0,.2); box-shadow:0 0 18px -8px var(--c); }}
 .caja b {{ font-size:34px; color:var(--c); line-height:1.1; }}
 .caja span {{ font-size:12px; color:{TENUE}; letter-spacing:.06em; text-transform:uppercase; }}
 """
 
-JS_PERSONAS = JS_VALORES_MULTI + """
-var lista = [];
-Object.keys(porEntidad).forEach(function (n) {
-  try { lista = JSON.parse(porEntidad[n].personas || '[]'); } catch (e) {}
-});
-function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) {
-  return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; }); }
-if (!lista.length) return '<div class="vac">Sin datos todavía (el sincronizador publica cada 10 s).</div>';
-return '<table class="per"><tr><th>Persona</th><th>Email (para aprobar)</th><th>Rol</th></tr>' +
-  lista.map(function (p) { return '<tr><td>' + esc(p.nombre) + '</td><td class="em">' + esc(p.email || '— sin email') +
-    '</td><td>' + esc(p.rol) + '</td></tr>'; }).join('') + '</table>';
-"""
-CSS_PERSONAS = f"""
-.per {{ width:100%; border-collapse:collapse; font-family:Inter,Roboto,sans-serif; font-size:13px; color:{TEXTO}; }}
-.per th {{ text-align:left; color:{TENUE}; font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
-          padding:6px 8px; border-bottom:1px solid {BORDE}; }}
-.per td {{ padding:6px 8px; border-bottom:1px solid rgba(148,163,184,.08); }}
-.per .em {{ color:{CIAN}; user-select:all; }}
-.vac {{ color:{TENUE}; padding:12px; font-family:Inter,Roboto,sans-serif; }}
-"""
 
 CABECERA = f"""<div style="display:flex;align-items:center;height:100%;padding:0 22px;gap:24px;
 font-family:Inter,Roboto,sans-serif;color:{TEXTO};flex-wrap:wrap">
@@ -134,7 +166,7 @@ font-weight:700;text-shadow:0 0 18px {CIAN}">CREDENCIALES</b></div>
 <div style="color:{TENUE};font-size:13px;margin-top:2px">Quién puede abrir la puerta del pañol · LAB01</div></div>
 <div style="color:{TENUE};font-size:12.5px;max-width:720px;line-height:1.5">
 Las tarjetas grabadas con el botón del nodo llegan como <b style="color:{AMBAR}">PENDIENTES</b> y
-<b>no abren</b> hasta aprobarlas. Aprobar pide el email de la persona. Los cambios llegan al nodo en
+<b>no abren</b> hasta aprobarlas: en <b>Aprobar</b> elegís de quién es. Los cambios llegan al nodo en
 el próximo refresco (hasta 15 min). La base del pañol valida cada pedido: el resultado aparece en
 <i>Último resultado</i>.</div></div>"""
 
@@ -194,28 +226,52 @@ def armar(tb):
     a.poner("w-cab", "system.cards.markdown_card", "", None, None, 0, 0, 24, 3, titulo_visible=False,
             settings={"markdownTextPattern": CABECERA, "useMarkdownTextFunction": False,
                       "applyDefaultMarkdownStyle": False}, conf={"padding": "0px"}, alto_movil=4)
-    a.html("w-res", "", "a-tarjetas", ["estado"], JS_RESUMEN, CSS_RESUMEN, 0, 3, 24, 3, alto_movil=5)
-    claves = [
-        columna("estado", "Estado", JS_ESTADO_TEXTO, JS_ESTADO_ESTILO, "120px"),
+    a.html("w-res", "", "a-tarjetas", ["estado"], JS_RESUMEN, CSS_RESUMEN, 0, 3, 24, 3, alto_movil=3)
+
+    def tabla(wid, titulo, filtro, claves, acciones, fila, alto, vacio, orden):
+        a.poner(wid, "system.cards.entities_table", titulo, "a-tarjetas", claves, 0, fila, 24, alto,
+                settings={"entitiesTitle": titulo, "enableSearch": True, "displayEntityName": True,
+                          "entityNameColumnTitle": "Tarjeta (UID)", "displayEntityLabel": False,
+                          "displayEntityType": False, "displayPagination": True, "defaultPageSize": 10,
+                          "defaultSortOrder": orden, "enableSelectColumnDisplay": False,
+                          "enableStickyAction": False},
+                conf={"actions": {"actionCellButton": acciones}, "noDataDisplayMessage": vacio})
+        a.widgets[wid]["config"]["datasources"][0]["filterId"] = filtro
+
+    tabla("w-pend", "Pendientes de aprobar", "f-pendiente", [
+        columna("desde", "Leída por primera vez", JS_FECHA, None, "190px"),
+        columna("nodo", "Nodo", None, None, "200px"),
+        columna("veces", "Veces que se pasó", None, None, "150px"),
+        columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO),
+    ], [_accion("Aprobar", "how_to_reg", JS_APROBAR_DIALOGO, HTML_APROBAR),
+        _accion("Rechazar", "block", JS_RECHAZAR)], 6, 5,
+        "No hay tarjetas pendientes. Una tarjeta grabada con el botón del nodo aparece acá.",
+        "-Leída por primera vez")
+    tabla("w-act", "Tarjetas activas (abren la puerta)", "f-activa", [
         columna("persona", "Persona"),
-        columna("desde", "Desde", JS_FECHA, None, "150px"),
-        columna("nodo", "Nodo que la leyó"),
-        columna("veces", "Veces leída", None, None, "90px"),
-        columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO, "320px"),
-    ]
-    a.poner("w-tabla", "system.cards.entities_table", "Tarjetas", "a-tarjetas", claves, 0, 6, 24, 10,
-            settings={"entitiesTitle": "Tarjetas", "enableSearch": True, "displayEntityName": True,
-                      "entityNameColumnTitle": "Tarjeta (UID)", "displayEntityLabel": False,
-                      "displayEntityType": False, "displayPagination": True, "defaultPageSize": 15,
-                      "defaultSortOrder": "Estado", "enableSelectColumnDisplay": False},
-            conf={"actions": {"actionCellButton": [
-                _accion("Aprobar", "how_to_reg", JS_APROBAR, "pendiente"),
-                _accion("Rechazar", "block", JS_RECHAZAR, "pendiente"),
-                _accion("Dar de baja", "person_remove", JS_BAJA, "activa"),
-            ]}})
-    a.html("w-per", "Personas (email para aprobar)", "a-personas", ["personas"], JS_PERSONAS, CSS_PERSONAS,
-           0, 16, 24, 7)
+        columna("email", "Email"),
+        columna("desde", "Alta", JS_FECHA, None, "170px"),
+        columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO),
+    ], [_accion("Dar de baja", "person_remove", JS_BAJA)], 11, 7, "No hay tarjetas activas.", "Persona")
+    tabla("w-hist", "Historial · rechazadas y dadas de baja (30 días)", "f-historial", [
+        columna("estado", "Estado", JS_ESTADO_TEXTO, JS_ESTADO_ESTILO, "130px"),
+        columna("persona", "Persona"),
+        columna("desde", "Cuándo", JS_FECHA, None, "170px"),
+        columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO),
+    ], [], 18, 5, "Sin rechazos ni bajas en los últimos 30 días.", "-Cuándo")
     return a
+
+
+def _filtro(fid, nombre, igual=None, distinto=()):
+    """Filtro por el atributo `estado`. Las condiciones se combinan con AND."""
+    def cond(op, v, i):
+        return {"key": {"type": "ATTRIBUTE", "key": "estado"}, "valueType": "STRING", "predicates": [{
+            "keyFilterPredicate": {"type": "STRING", "operation": op, "ignoreCase": True,
+                                   "value": {"defaultValue": v}},
+            "userInfo": {"editable": False, "label": "", "autogeneratedLabel": True, "order": i}}]}
+    claves = ([cond("EQUAL", igual, 0)] if igual else []) + \
+        [cond("NOT_EQUAL", v, i + 1) for i, v in enumerate(distinto)]
+    return {"id": fid, "filter": nombre, "editable": False, "keyFilters": claves}
 
 
 def tablero(a):
@@ -230,6 +286,12 @@ def tablero(a):
                 "a-personas": {"id": "a-personas", "alias": "Personas", "filter": {
                     "type": "entityName", "entityType": "ASSET", "entityNameFilter": "panol-personas",
                     "resolveMultiple": False}},
+            },
+            "filters": {
+                "f-pendiente": _filtro("f-pendiente", "Pendientes", igual="pendiente"),
+                "f-activa": _filtro("f-activa", "Activas", igual="activa"),
+                "f-historial": _filtro("f-historial", "Rechazadas y bajas",
+                                       distinto=("activa", "pendiente")),
             },
             "widgets": a.widgets,
             "states": {"default": {"name": TITULO, "root": True, "layouts": {"main": {
