@@ -132,6 +132,20 @@ panol_reset_prueba_horas: 6
 # dashboard). Funnel en 443 se lo robaría y tumbaría todo eso.
 panol_funnel_enabled: false
 panol_funnel_port: 8443
+# Por Funnel pasan SOLO estas rutas de la API. Desde el 17/10/2026 el nodo
+# manda eventos, latido y whitelist por MQTT; la API por internet queda nada
+# más como respaldo para bajar la whitelist. El resto (estado, sesiones,
+# alarmas: nombres y horarios) no se publica.
+panol_funnel_rutas: ["/api/whitelist"]
+
+# Exposición en la LAN. Apagada: los nodos llegan por la entrada remota
+# (Funnel, MQTT/TLS) y la API la usan Caddy y Funnel desde el propio host.
+# Prenderla publica el broker SIN cifrar y la API por HTTP en la LAN.
+panol_mqtt_lan_enabled: false
+panol_api_lan_enabled: false
+# Con la LAN apagada el broker queda solo en loopback, en otro puerto: el
+# 127.0.0.1:1883 lo usa un stack del aula.
+panol_mqtt_port_local: 11883
 
 # --- Entrada remota de los nodos (MQTT por Funnel) ---------------------------
 # Nodo de Tailscale propio "panol" con Funnel en el 443 → broker. Los ESP32

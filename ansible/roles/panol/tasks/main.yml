@@ -438,7 +438,10 @@
 # El puerto MQTT lo publica Docker, así que el tráfico entra por FORWARD y no
 # por INPUT: con ufw-docker instalado, la regla que manda es `ufw route`. Una
 # `ufw allow 1883` normal NO alcanzaría (y dejaría creer que está cerrado).
-- name: Allow MQTT from the device networks
+# Broker y API en la LAN: solo si la exposición está prendida. Apagada (lo
+# normal desde que los nodos van por la entrada remota), las reglas se BORRAN:
+# un puerto que nadie usa abierto en la red del colegio es superficie gratis.
+- name: Allow or remove MQTT from the device networks
   community.general.ufw:
     rule: allow
     route: true
@@ -446,13 +449,11 @@
     port: "{{ panol_mqtt_port }}"
     proto: tcp
     comment: "Panol MQTT from {{ item }}"
+    delete: "{{ not (panol_mqtt_lan_enabled | bool) }}"
   loop: "{{ panol_device_cidrs }}"
   when: panol_enabled | bool
 
-# El firmware del nodo reporta por HTTP a /api/eventos (el MQTT lo habla el
-# puente, no la placa). Sin esta regla el ESP32 encola en flash y el sistema
-# parece andar... hasta que se mira la base y está vacía.
-- name: Allow the panol API from the device networks
+- name: Allow or remove the panol API from the device networks
   community.general.ufw:
     rule: allow
     route: true
@@ -460,6 +461,7 @@
     port: "{{ panol_api_port }}"
     proto: tcp
     comment: "Panol API from {{ item }}"
+    delete: "{{ not (panol_api_lan_enabled | bool) }}"
   loop: "{{ panol_device_cidrs }}"
   when: panol_enabled | bool
 
@@ -476,8 +478,13 @@
   failed_when: false
   when: panol_enabled | bool and panol_funnel_enabled | bool
 
-- name: Enable Funnel for the panol API
-  ansible.builtin.command: "tailscale funnel --bg --https={{ panol_funnel_port }} {{ panol_api_port }}"
+# Solo las rutas de panol_funnel_rutas, una por una. Nunca "/": eso publicaría
+# toda la API (estado, sesiones, alarmas) en internet.
+- name: Publish only the allowed API paths through Funnel
+  ansible.builtin.command: >-
+    tailscale funnel --bg --https={{ panol_funnel_port }} --set-path={{ item }}
+    http://127.0.0.1:{{ panol_api_port }}{{ item }}
+  loop: "{{ panol_funnel_rutas }}"
   register: panol_funnel_enable
   changed_when: panol_funnel_enable.rc == 0
   failed_when:
@@ -485,7 +492,14 @@
     - "'not enabled on your tailnet' not in (panol_funnel_enable.stderr | default(''))"
   when:
     - panol_enabled | bool and panol_funnel_enabled | bool
-    - "'Funnel on' not in (panol_funnel_status.stdout | default(''))"
+    - (item ~ ' proxy') not in (panol_funnel_status.stdout | default(''))
+
+- name: Unpublish the whole API from Funnel (path /)
+  ansible.builtin.command: "tailscale funnel --https={{ panol_funnel_port }} --set-path=/ off"
+  changed_when: true
+  when:
+    - panol_enabled | bool and panol_funnel_enabled | bool
+    - "'|-- / proxy http://127.0.0.1:' ~ panol_api_port in (panol_funnel_status.stdout | default(''))"
 
 - name: Announce the Funnel URL (o cómo habilitarlo)
   ansible.builtin.debug:
