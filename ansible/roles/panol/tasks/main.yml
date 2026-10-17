@@ -248,6 +248,21 @@
     - panol_enabled | bool
     - panol_ematp_token_file.stat.exists | default(false)
 
+- name: Check for the ThingsBoard account (credential management)
+  ansible.builtin.stat:
+    path: "{{ panol_tb_clave_archivo }}"
+  register: panol_tb_clave_file
+  when: panol_enabled | bool
+
+- name: Read the ThingsBoard account password
+  ansible.builtin.slurp:
+    src: "{{ panol_tb_clave_archivo }}"
+  register: panol_tb_clave_raw
+  no_log: true
+  when:
+    - panol_enabled | bool
+    - panol_tb_clave_file.stat.exists | default(false)
+
 - name: Note whether the EMATP integration will be active
   ansible.builtin.debug:
     msg: >-
