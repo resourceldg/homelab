@@ -277,7 +277,7 @@
     "typeFullFqn": "system.cards.entities_table",
     "type": "latest",
     "sizeX": 24,
-    "sizeY": 5,
+    "sizeY": 8,
     "config": {
      "showTitle": true,
      "backgroundColor": "rgba(15, 23, 42, 0.78)",
@@ -413,7 +413,7 @@
     "typeFullFqn": "system.cards.entities_table",
     "type": "latest",
     "sizeX": 24,
-    "sizeY": 7,
+    "sizeY": 9,
     "config": {
      "showTitle": true,
      "backgroundColor": "rgba(15, 23, 42, 0.78)",
@@ -538,7 +538,7 @@
     "typeFullFqn": "system.cards.entities_table",
     "type": "latest",
     "sizeX": 24,
-    "sizeY": 5,
+    "sizeY": 6,
     "config": {
      "showTitle": true,
      "backgroundColor": "rgba(15, 23, 42, 0.78)",
@@ -676,21 +676,21 @@
        },
        "w-pend": {
         "sizeX": 24,
-        "sizeY": 5,
+        "sizeY": 8,
         "col": 0,
         "row": 6
        },
        "w-act": {
         "sizeX": 24,
-        "sizeY": 7,
+        "sizeY": 9,
         "col": 0,
-        "row": 11
+        "row": 14
        },
        "w-hist": {
         "sizeX": 24,
-        "sizeY": 5,
+        "sizeY": 6,
         "col": 0,
-        "row": 18
+        "row": 23
        }
       },
       "gridSettings": {

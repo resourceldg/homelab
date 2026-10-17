@@ -93,7 +93,7 @@ function chip(txt, color, pulso) {{
   return '<span class="chip' + (pulso ? ' pulso' : '') + '" style="--c:' + color + '"><i></i>' + txt + '</span>';
 }}
 return '<div class="cab"><div><div class="t">PAÑOL <b>IoT</b></div>' +
-  '<div class="s">LAB01 · control de acceso y auditoría · ISFT 238</div></div><div class="chips">' +
+  '<div class="s">LAB01 · control de acceso y auditoría</div></div><div class="chips">' +
   chip(enLinea ? 'NODO EN LÍNEA' : 'NODO SIN CONEXIÓN', enLinea ? '{VERDE}' : '{ROJO}', !enLinea) +
   chip(sesion ? 'SESIÓN EN CURSO' : 'SIN SESIÓN', sesion ? '{CIAN}' : '{TENUE}', false) +
   chip(pirActivo ? 'MOVIMIENTO · hace ' + Math.round(segPir) + ' s' : 'SIN MOVIMIENTO', pirActivo ? '{AMBAR}' : '{TENUE}', pirActivo) +

@@ -244,7 +244,7 @@ def armar(tb):
         columna("veces", "Veces que se pasó", None, None, "150px"),
         columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO),
     ], [_accion("Aprobar", "how_to_reg", JS_APROBAR_DIALOGO, HTML_APROBAR),
-        _accion("Rechazar", "block", JS_RECHAZAR)], 6, 5,
+        _accion("Rechazar", "block", JS_RECHAZAR)], 6, 8,
         "No hay tarjetas pendientes. Una tarjeta grabada con el botón del nodo aparece acá.",
         "-Leída por primera vez")
     tabla("w-act", "Tarjetas activas (abren la puerta)", "f-activa", [
@@ -252,13 +252,14 @@ def armar(tb):
         columna("email", "Email"),
         columna("desde", "Alta", JS_FECHA, None, "170px"),
         columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO),
-    ], [_accion("Dar de baja", "person_remove", JS_BAJA)], 11, 7, "No hay tarjetas activas.", "Persona")
+    ], [_accion("Dar de baja", "person_remove", JS_BAJA)], 14, 9, "No hay tarjetas activas.",
+        "Persona")
     tabla("w-hist", "Historial · rechazadas y dadas de baja (30 días)", "f-historial", [
         columna("estado", "Estado", JS_ESTADO_TEXTO, JS_ESTADO_ESTILO, "130px"),
         columna("persona", "Persona"),
         columna("desde", "Cuándo", JS_FECHA, None, "170px"),
         columna("resultado", "Último resultado", None, JS_RESULTADO_ESTILO),
-    ], [], 18, 5, "Sin rechazos ni bajas en los últimos 30 días.", "-Cuándo")
+    ], [], 23, 6, "Sin rechazos ni bajas en los últimos 30 días.", "-Cuándo")
     return a
 
 

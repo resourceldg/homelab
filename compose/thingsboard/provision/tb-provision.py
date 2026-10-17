@@ -129,14 +129,14 @@ def tenant(tb, titulo):
     return tb.post("/api/tenant", {"title": titulo})
 
 
-def admin_tenant(tb, ten, email, clave, estricto=True, nombre="Admin"):
+def admin_tenant(tb, ten, email, clave, estricto=True, nombre="Admin", apellido="Tableros"):
     tid = ten["id"]["id"]
     u = next((x for x in tb.paginas(f"/api/tenant/{tid}/users") if x["email"] == email), None)
     if u is None:
         print(f"admin: creo {email}")
         u = tb.post("/api/user?sendActivationMail=false", {
             "email": email, "authority": "TENANT_ADMIN", "firstName": nombre,
-            "lastName": "Tableros", "tenantId": {"id": tid, "entityType": "TENANT"},
+            "lastName": apellido, "tenantId": {"id": tid, "entityType": "TENANT"},
         })
     elif TB(tb.base).login(email, clave):
         return
@@ -399,10 +399,12 @@ def espacios_propios(tb_sys, cfg):
         ten = tenant(tb_sys, esp["titulo"])
         limites(tb_sys, ten, cfg["limites"])
         for a in esp["admins"]:
-            admin_tenant(tb_sys, ten, a["email"], leer(a["clave"]), estricto=False, nombre=a["nombre"])
+            admin_tenant(tb_sys, ten, a["email"], leer(a["clave"]), estricto=False,
+                         nombre=a["nombre"], apellido=a.get("apellido", ""))
         s = esp.get("servicio")
         if s:
-            admin_tenant(tb_sys, ten, s["email"], leer(s["clave"]), estricto=False, nombre="Servicio")
+            admin_tenant(tb_sys, ten, s["email"], leer(s["clave"]), estricto=False,
+                         nombre="Servicio", apellido="sincronizador")
 
 
 # --- 6. Reconciliación de lo público --------------------------------------------------

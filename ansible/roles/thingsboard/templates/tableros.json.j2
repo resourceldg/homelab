@@ -27,7 +27,7 @@
 {%- for esp in thingsboard_espacios_propios -%}
 {%-   set admins = [] -%}
 {%-   for a in esp.admins -%}
-{%-     set _ = admins.append({'email': a.email, 'nombre': a.nombre, 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-' ~ a.id ~ '.pass'}) -%}
+{%-     set _ = admins.append({'email': a.email, 'nombre': a.nombre, 'apellido': a.apellido | default(''), 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-' ~ a.id ~ '.pass'}) -%}
 {%-   endfor -%}
 {%-   set _ = propios.append({'titulo': esp.titulo, 'admins': admins, 'servicio': ({'email': esp.servicio, 'clave': thingsboard_secrets_dir ~ '/espacio-' ~ esp.id ~ '-servicio.pass'} if esp.servicio | default('') else none)}) -%}
 {%- endfor -%}

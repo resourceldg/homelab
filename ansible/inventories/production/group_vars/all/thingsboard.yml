@@ -23,5 +23,5 @@ thingsboard_espacios_propios:
   - id: panol-iot
     titulo: "Pañol IoT"
     admins:
-      - {id: lucas, email: "resourceldg@gmail.com", nombre: "Lucas"}
+      - {id: lucas, email: "resourceldg@gmail.com", nombre: "Lucas", apellido: "Gómez"}
     servicio: "panol-sync@panol.local"
