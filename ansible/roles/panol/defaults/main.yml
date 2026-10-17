@@ -49,11 +49,13 @@ panol_db_user: "panol"
 #                            (y sacarla o cambiarla en este diccionario)
 #                            make panol
 # Si una identidad NO figura acá, el rol le sortea una clave aleatoria.
+#
+# Los NODOS no tienen clave de fábrica: entran por internet (listener 1884,
+# nodo Tailscale "panol"), así que el rol les sortea una aleatoria. Se lee en
+# /etc/panol/secrets/mqtt-<usuario>.pass y se graba en el secrets.py de la placa.
 panol_mqtt_default_passwords:
   panol-servidor: "cambiar-servidor-panol"
   panol-nodered: "cambiar-nodered-panol"
-  nodo-panol-puerta: "cambiar-nodo-puerta"
-  nodo-panol-armarios: "cambiar-nodo-armarios"
 
 # Misma idea para la base de auditoría. Vaciá el valor ("") y el rol sortea una
 # clave aleatoria en el host.

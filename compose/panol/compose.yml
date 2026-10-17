@@ -42,6 +42,7 @@ services:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       # passwd y acl los genera el rol Ansible en el host (uid 1883, 0640).
       - ./mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./mosquitto/passwd-remoto:/mosquitto/config/passwd-remoto:ro
       - ./mosquitto/acl:/mosquitto/config/acl:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
@@ -119,7 +120,7 @@ services:
 
   # Entrada REMOTA de los nodos: un nodo de Tailscale propio ("panol") con su
   # Funnel en el 443. Termina el TLS (certificado de *.ts.net) y reenvía el TCP
-  # plano al broker por la red interna. Así los ESP32 llegan con UNA conexión
+  # plano al listener 1884 del broker, que solo acepta identidades de nodos. Así los ESP32 llegan con UNA conexión
   # MQTT persistente desde cualquier red, con un nombre fijo
   # (panol.<tailnet>.ts.net) que no depende de la IP ni del lugar del server.
   # Propio y no en homelab-01: allá el 443 del tailnet es de Caddy, el 8443

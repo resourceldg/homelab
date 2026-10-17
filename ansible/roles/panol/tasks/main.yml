@@ -186,10 +186,11 @@
   no_log: true
   when: panol_enabled | bool
 
-- name: Check whether the mosquitto password file exists
+- name: Check whether the mosquitto password files exist
   ansible.builtin.stat:
-    path: "{{ panol_stack_dir }}/mosquitto/passwd"
-  register: panol_passwd_file
+    path: "{{ panol_stack_dir }}/mosquitto/{{ item }}"
+  loop: [passwd, passwd-remoto]
+  register: panol_passwd_files
   when: panol_enabled | bool
 
 # mosquitto_passwd hashea; no hay forma de reproducir el hash desde Ansible.
@@ -203,18 +204,28 @@
       work="$(mktemp -d -p {{ panol_secrets_dir }})"
       trap 'rm -rf "$work"' EXIT
       : > "$work/passwd"
+      : > "$work/passwd-remoto"
+      nodos=" {{ panol_mqtt_nodes | map(attribute='usuario') | join(' ') }} "
       while IFS=$'\t' read -r usuario clave; do
         [ -n "$usuario" ] || continue
-        docker run --rm --user 0:0 --entrypoint mosquitto_passwd \
-          -v "$work":/work {{ panol_mosquitto_image }} \
-          -b /work/passwd "$usuario" "$clave"
+        destinos="passwd"
+        # Por internet (listener 1884) entran SOLO los nodos.
+        case "$nodos" in *" $usuario "*) destinos="passwd passwd-remoto" ;; esac
+        for archivo in $destinos; do
+          docker run --rm --user 0:0 --entrypoint mosquitto_passwd \
+            -v "$work":/work {{ panol_mosquitto_image }} \
+            -b "/work/$archivo" "$usuario" "$clave"
+        done
       done < {{ panol_secrets_dir }}/mqtt-users.tsv
-      install -o 1883 -g 1883 -m 0640 "$work/passwd" {{ panol_stack_dir }}/mosquitto/passwd
+      for archivo in passwd passwd-remoto; do
+        install -o 1883 -g 1883 -m 0640 "$work/$archivo" "{{ panol_stack_dir }}/mosquitto/$archivo"
+      done
   args:
     executable: /bin/bash
   when:
     - panol_enabled | bool
-    - panol_mqtt_userlist is changed or not (panol_passwd_file.stat.exists | default(false))
+    - panol_mqtt_userlist is changed
+      or not (panol_passwd_files.results | map(attribute='stat.exists') | min | default(false))
   changed_when: true
   no_log: true
   notify: Restart panol mosquitto
