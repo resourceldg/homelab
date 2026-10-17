@@ -160,7 +160,16 @@ def main():
         if lote:
             lote.sort(key=lambda x: x["ts"])
             for i in range(0, len(lote), 500):
-                tb.req("POST", url, lote[i:i + 500])
+                try:
+                    tb.req("POST", url, lote[i:i + 500])
+                except RuntimeError as e:
+                    if "-> 401" not in str(e):
+                        raise
+                    # El token de ThingsBoard venció (por ejemplo tras un corte
+                    # largo del server): nueva sesión y reintento.
+                    tb = TB(base_tb, os.environ["TB_USUARIO"], clave)
+                    login = time.time()
+                    tb.req("POST", url, lote[i:i + 500])
             eventos = sum(1 for x in lote if "nodo_en_linea" not in x["values"])
             if eventos:
                 print(time.strftime("%H:%M:%S"), f"{eventos} eventos publicados")
