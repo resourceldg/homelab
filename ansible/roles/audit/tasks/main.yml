@@ -159,4 +159,9 @@
       {% for ruta in aide_excluir %}
       !{{ ruta }}(/|$)
       {% endfor %}
-    validate: aide --config-check --config=/etc/aide/aide.conf
+    # Se prueba el archivo nuevo DENTRO de la configuración real de AIDE (que
+    # incluye aide.conf.d): si la sintaxis está mal, no se instala.
+    validate: >-
+      sh -c 'cp %s /etc/aide/aide.conf.d/zz_validar_homelab
+      && aide --config-check --config=/etc/aide/aide.conf; r=$?;
+      rm -f /etc/aide/aide.conf.d/zz_validar_homelab; exit $r'
