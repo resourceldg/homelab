@@ -145,3 +145,18 @@
       Nice=19
       IOSchedulingClass=idle
   notify: Reload systemd
+
+- name: Exclude fast-changing service data from AIDE
+  ansible.builtin.copy:
+    dest: /etc/aide/aide.conf.d/99_homelab_excluir
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - do not edit manually
+      # Datos de servicios que cambian todo el tiempo: escanearlos no aporta a
+      # la integridad del sistema y hacía que AIDE corriera 5 h a 90+ °C.
+      {% for ruta in aide_excluir %}
+      !{{ ruta }}(/|$)
+      {% endfor %}
+    validate: aide --config-check --config=/etc/aide/aide.conf

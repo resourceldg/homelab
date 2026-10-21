@@ -335,3 +335,16 @@
   when:
     - vigia_red_enabled | bool and vigia_red_evidencia_panic | bool
     - vigia_grub is changed
+
+# Se aplica en cada arranque con systemd-tmpfiles (escribe en /sys) y ahora.
+- name: Disable CPU turbo at every boot (intel_pstate)
+  ansible.builtin.copy:
+    dest: /etc/tmpfiles.d/vigia-sin-turbo.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - do not edit manually
+      w /sys/devices/system/cpu/intel_pstate/no_turbo - - - - {{ 1 if vigia_red_sin_turbo | bool else 0 }}
+  notify: Apply the turbo setting
+  when: ansible_facts.processor | select('search', 'Intel') | list | length > 0

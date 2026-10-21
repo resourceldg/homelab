@@ -8,3 +8,13 @@ aide_check_oncalendar: "*-*-* 05:00:00"
 # homelab-01 a 90-99 °C (el apagado de golpe del 09/10 03:21 fue en pleno
 # escaneo, a 94 °C). Con 50% tarda más, pero no calienta.
 aide_daily_cpu_quota: "50%"
+
+# Rutas que AIDE NO escanea: datos de servicios que cambian todo el tiempo
+# (contenedores, VMs, trabajos de alumnos). Escanearlas no aporta a la
+# integridad del sistema: el 21/10 hacían que el escaneo durara 5 h a 90+ °C
+# (11 GB de Docker + 3,6 GB de Incus). Regex de AIDE, ancladas al inicio.
+aide_excluir:
+  - /var/lib/docker
+  - /var/lib/containerd
+  - /var/lib/incus
+  - /srv/classroom
