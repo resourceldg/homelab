@@ -1,0 +1,20 @@
+# Carga el chip watchdog de la placa en cada arranque.
+#
+# Ubuntu tiene iTCO_wdt en su lista de bloqueo (/lib/modprobe.d/blacklist_linux*),
+# y systemd-modules-load la respeta: por eso /etc/modules-load.d NO alcanza (pasó
+# del 03/10 al 16/10/2026: la capa funcionaba hasta el primer reinicio y después
+# quedaba apagada sin avisar). Un `modprobe` por NOMBRE no mira esa lista.
+# systemd (RuntimeWatchdogSec) abre /dev/watchdog0 solo, apenas aparece.
+[Unit]
+Description=Cargar el watchdog de hardware (homelab)
+DefaultDependencies=no
+After=systemd-modules-load.service
+Before=sysinit.target postmortem-arranque.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/modprobe iTCO_wdt
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

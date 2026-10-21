@@ -1,0 +1,7 @@
+---
+# conf.d del Caddy principal es un DIRECTORIO montado: el archivo nuevo ya está
+# adentro del contenedor; alcanza con recargar (sin reiniciar ni reconstruir).
+- name: Reload main caddy
+  ansible.builtin.command:
+    cmd: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+  changed_when: true

@@ -382,6 +382,267 @@
           }
         ]
       }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Demora típica (15 min)",
+      "description": "Mediana de lo que tarda un evento desde que pasa en la placa hasta que lo registra el servidor. Con el enlace MQTT debería estar por debajo de 1 s; más de 5 s es un problema de red o de la placa.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 29
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "panol-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (recibido - ocurrido))) AS demora FROM eventos_procesados WHERE ocurrido IS NOT NULL AND recibido > now() - interval '15 minutes'",
+          "datasource": {
+            "type": "postgres",
+            "uid": "panol-postgres"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 1,
+          "noValue": "sin eventos",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Peor demora (15 min)",
+      "description": "El evento que más tardó en los últimos 15 min. Si la placa estuvo sin red, acá se ve cuánto tiempo guardó eventos en su cola.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 29
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "panol-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(EXTRACT(EPOCH FROM (recibido - ocurrido))) AS demora FROM eventos_procesados WHERE ocurrido IS NOT NULL AND recibido > now() - interval '15 minutes'",
+          "datasource": {
+            "type": "postgres",
+            "uid": "panol-postgres"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 1,
+          "noValue": "sin eventos",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Eventos por MQTT (15 min)",
+      "description": "Qué parte de los eventos llegó por el enlace MQTT persistente (el resto, por HTTP de respaldo).",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 29
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "panol-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 100.0 * count(*) FILTER (WHERE via = 'mqtt') / NULLIF(count(*), 0) AS mqtt FROM eventos_procesados WHERE via IS NOT NULL AND recibido > now() - interval '15 minutes'",
+          "datasource": {
+            "type": "postgres",
+            "uid": "panol-postgres"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "noValue": "sin eventos",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Demora placa → servidor",
+      "description": "Por minuto y por transporte: mediana y máximo. Línea roja: 5 s.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "panol-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "datasource": {
+            "type": "postgres",
+            "uid": "panol-postgres"
+          },
+          "rawSql": "SELECT $__timeGroupAlias(recibido, '1m', 0), via || ' · mediana' AS metric, percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (recibido - ocurrido))) AS value FROM eventos_procesados WHERE $__timeFilter(recibido) AND ocurrido IS NOT NULL AND via IS NOT NULL GROUP BY 1, 2 UNION ALL SELECT $__timeGroupAlias(recibido, '1m', 0), via || ' · máximo' AS metric, max(EXTRACT(EPOCH FROM (recibido - ocurrido))) AS value FROM eventos_procesados WHERE $__timeFilter(recibido) AND ocurrido IS NOT NULL AND via IS NOT NULL GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            },
+            "spanNulls": false,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
     }
   ]
 }

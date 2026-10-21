@@ -30,3 +30,14 @@ vigia_red_tailscale_min: 3
 
 # Destinos para decidir "hay internet" (se prueba el siguiente si uno no responde).
 vigia_red_destinos: ["1.1.1.1", "8.8.8.8"]
+
+# Un toque corto del botón de encendido no apaga el servidor (mantenerlo 4 s sí).
+vigia_red_ignorar_boton: true
+# Días que se guardan los resúmenes de caída y el log del guardián.
+vigia_red_retencion_dias: 20
+# Guardar el volcado de un kernel panic (EFI pstore) y reiniciar 10 s después.
+vigia_red_evidencia_panic: true
+
+# Turbo de la CPU apagado (3,3 -> 3,2 GHz). Con el cooler actual, 1 núcleo en
+# turbo llega a 90-95 °C (21/10); la pérdida de rendimiento es mínima.
+vigia_red_sin_turbo: true

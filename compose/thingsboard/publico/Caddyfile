@@ -1,0 +1,163 @@
+# Proxy PÚBLICO de los tableros — lo único de ThingsBoard que ve internet.
+#
+# Por qué existe: probado contra ThingsBoard CE 4.3.1.6, el token que obtiene
+# CUALQUIERA que abre un link público (POST /api/auth/login/public) puede, si
+# llega directo a ThingsBoard:
+#   - escribir telemetría falsa y atributos en los dispositivos públicos,
+#   - mandarles comandos (RPC),
+#   - leer sus credenciales (tokens de acceso).
+# Y /actuator/prometheus responde sin login. Ver docs/thingsboard.md.
+#
+# Así que acá NO se filtra "lo malo": se deja pasar SOLO lo que usa la vista
+# pública de un dashboard (capturado con un navegador real, ver
+# scripts/capturar-rutas-publicas.js) y todo lo demás responde 404. Los datos
+# viajan por el WebSocket (suscripciones de lectura): no hace falta habilitar
+# ningún POST de datos. Al actualizar ThingsBoard, volver a capturar y a
+# correr scripts/probar-acceso-publico.py.
+#
+# TLS: lo termina Tailscale Funnel (nodo "tableros"); acá llega HTTP plano por
+# la red interna thingsboard-publico.
+{
+	admin off
+	auto_https off
+	persist_config off
+	servers {
+		# Métricas por servidor/handler: pedidos en vuelo en /api/ws = pestañas
+		# públicas abiertas ahora. Se leen en :9180 (abajo), no en :8080.
+		metrics
+		# La IP real del visitante viene en X-Forwarded-For desde el nodo
+		# Tailscale (red interna): sin esto, el rate limit vería una sola IP.
+		trusted_proxies static private_ranges
+		client_ip_headers X-Forwarded-For
+	}
+}
+
+(a_thingsboard) {
+	reverse_proxy thingsboard:8080 {
+		# La sesión pública no necesita cookies ni el header de admin de otro
+		# sitio: se descartan por si un navegador los arrastra.
+		header_up -Cookie
+	}
+}
+
+:8080 {
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "no-referrer"
+		# Proyectos de alumnos: que no los indexen los buscadores.
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	# Un pedido legítimo de la vista pública es chico (el login público manda
+	# un id). Nada justifica cuerpos grandes.
+	request_body {
+		max_size 8KB
+	}
+
+	encode zstd gzip
+
+	handle /salud {
+		respond "ok" 200
+	}
+
+	# --- Portada: lista de tableros publicados (la escribe tb-provision.py) ---
+	@portada path / /index.html
+	handle @portada {
+		root * /srv/portada
+		rewrite * /index.html
+		file_server
+	}
+
+	# --- Entrada a un dashboard público: /dashboard/<id>?publicId=<id> ---------
+	# Sin publicId, la interfaz mostraría el login de administración: no se sirve.
+	@dashboard {
+		method GET
+		path_regexp ^/dashboard/[0-9a-f-]{36}$
+		query publicId=*
+	}
+
+	# --- Archivos estáticos de la interfaz (JS, CSS, fuentes, traducciones) ----
+	@estaticos {
+		method GET
+		path_regexp ^/([A-Za-z0-9._-]+\.(js|css|woff2?|ttf|otf|svg|png|ico)|assets/.+)$
+	}
+
+	# --- API: solo lectura, y solo lo que pide la vista pública ----------------
+	@api_lectura {
+		method GET
+		path /api/system/params /api/dashboard/serverTime /api/widgetType
+	}
+	@api_dashboard {
+		method GET
+		path_regexp ^/api/dashboard/[0-9a-f-]{36}$
+	}
+	# Los dos únicos POST: obtener el token público y renovarlo (un monitor
+	# que queda horas abierto lo renueva). Ninguno escribe datos.
+	@api_login {
+		method POST
+		path /api/auth/login/public /api/auth/token
+	}
+	# Datos en vivo: suscripciones por WebSocket.
+	@ws {
+		path /api/ws
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	# Tope por IP. Una escuela entera sale a internet con UNA IP (NAT), y abrir
+	# un dashboard son ~60 pedidos (casi todos estáticos): los estáticos no se
+	# limitan acá; la API sí, con margen para un aula.
+	@api_toda path /api/*
+	rate_limit @api_toda {
+		zone api_por_ip {
+			key {client_ip}
+			events 1200
+			window 1m
+		}
+	}
+	rate_limit @api_login {
+		zone login_por_ip {
+			key {client_ip}
+			events 120
+			window 1m
+		}
+	}
+
+	handle @dashboard {
+		import a_thingsboard
+	}
+	handle @estaticos {
+		import a_thingsboard
+	}
+	handle @api_lectura {
+		import a_thingsboard
+	}
+	handle @api_dashboard {
+		import a_thingsboard
+	}
+	handle @api_login {
+		import a_thingsboard
+	}
+	handle @ws {
+		import a_thingsboard
+	}
+
+	# Todo lo demás (login de admin, /api/plugins/*, /api/rpc/*, credenciales,
+	# /actuator/*, /swagger*, escaneos...) ni se enruta.
+	handle {
+		respond "No encontrado" 404
+	}
+}
+
+# Métricas para Prometheus (red edge). Este puerto NO lo publica el nodo
+# Tailscale: serve.json solo apunta a :8080.
+:9180 {
+	handle /metrics {
+		metrics
+	}
+	handle {
+		respond "No encontrado" 404
+	}
+}

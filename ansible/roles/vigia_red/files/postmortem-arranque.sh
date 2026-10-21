@@ -50,6 +50,18 @@ watchdog_hw="$(wdctl 2>/dev/null | awk '$1=="CARDRESET"{print $NF}')"
     echo "== Apagado anterior: DE GOLPE (sin apagado del sistema: corte de luz, botón o CONGELAMIENTO)"
   fi
   [[ "${watchdog_hw:-0}" == "1" ]] && echo "== EL WATCHDOG DE HARDWARE REINICIÓ EL EQUIPO: estaba congelado."
+  if [[ "$(cat /sys/class/watchdog/watchdog0/state 2>/dev/null)" == "active" ]]; then
+    echo "== Watchdog de hardware: ACTIVO (un congelamiento reinicia el equipo en 30 s)"
+  else
+    echo "== Watchdog de hardware: APAGADO (un congelamiento deja el equipo colgado)"
+  fi
+  if journalctl -b -1 --no-pager 2>/dev/null | grep -q "Power key pressed"; then
+    echo "== Se APRETÓ EL BOTÓN de encendido en el arranque anterior."
+  fi
+  # Volcado de un kernel panic (EFI pstore), si lo hubo: prueba directa de un cuelgue del sistema.
+  if compgen -G "/var/lib/systemd/pstore/*" > /dev/null || compgen -G "/sys/fs/pstore/*" > /dev/null; then
+    echo "== HAY VOLCADO DE KERNEL PANIC en /var/lib/systemd/pstore (ver con: sudo ls -R /var/lib/systemd/pstore)"
+  fi
   echo
   echo "== Guardián de red (vigia-red) en el arranque anterior:"
   journalctl -b -1 -t vigia-red --no-pager -o short-iso 2>/dev/null | tail -20

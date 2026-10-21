@@ -1,0 +1,7 @@
+[Unit]
+Description=Métricas de caídas de homelab-01 para Prometheus (textfile)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vigia-metricas
+Nice=10

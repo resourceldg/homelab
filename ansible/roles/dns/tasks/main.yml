@@ -5,6 +5,24 @@
     state: present
   when: dns_enabled | bool
 
+# Incus deja /etc/dnsmasq.d/incus con `bind-interfaces` (para un dnsmasq del
+# sistema genérico). Choca con nuestro `bind-dynamic` y dnsmasq NO ARRANCA:
+# "cannot set --bind-interfaces and --bind-dynamic". Pasó desde que se instaló
+# Incus (rol vms_alumnos, 08/10/2026) hasta el 15/10: sin split DNS, Caddy no
+# podía emitir certificados nuevos (SERVFAIL al buscar la zona). Solo se leen
+# los *.conf del directorio; incusbr0 se excluye en classroom.conf.
+- name: Make dnsmasq read only *.conf from /etc/dnsmasq.d (ignore Incus' file)
+  ansible.builtin.lineinfile:
+    path: /etc/default/dnsmasq
+    regexp: '^CONFIG_DIR='
+    line: 'CONFIG_DIR=/etc/dnsmasq.d/,*.conf'
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart dnsmasq
+  when: dns_enabled | bool
+
 - name: Configure dnsmasq for the classroom domain (Tailscale split DNS)
   ansible.builtin.template:
     src: classroom-dns.conf.j2

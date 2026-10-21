@@ -121,3 +121,47 @@
     enabled: true
     state: started
     daemon_reload: true
+
+- name: Ensure dailyaidecheck drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/dailyaidecheck.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Ubuntu (paquete aide-common) trae su propio escaneo diario, además del
+# nuestro. Se lo limita para que no recaliente la CPU (ver defaults).
+- name: Cap the CPU of Ubuntu's daily AIDE scan
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/dailyaidecheck.service.d/50-homelab-limite.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - do not edit manually
+      [Service]
+      CPUQuota={{ aide_daily_cpu_quota }}
+      Nice=19
+      IOSchedulingClass=idle
+  notify: Reload systemd
+
+- name: Exclude fast-changing service data from AIDE
+  ansible.builtin.copy:
+    dest: /etc/aide/aide.conf.d/99_homelab_excluir
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - do not edit manually
+      # Datos de servicios que cambian todo el tiempo: escanearlos no aporta a
+      # la integridad del sistema y hacía que AIDE corriera 5 h a 90+ °C.
+      {% for ruta in aide_excluir %}
+      !{{ ruta }}(/|$)
+      {% endfor %}
+    # Se prueba el archivo nuevo DENTRO de la configuración real de AIDE (que
+    # incluye aide.conf.d): si la sintaxis está mal, no se instala.
+    validate: >-
+      sh -c 'cp %s /etc/aide/aide.conf.d/zz_validar_homelab
+      && aide --config-check --config=/etc/aide/aide.conf; r=$?;
+      rm -f /etc/aide/aide.conf.d/zz_validar_homelab; exit $r'

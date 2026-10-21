@@ -22,21 +22,31 @@
   when: vigia_red_enabled | bool
 
 # --- Capa 0: watchdog de hardware ------------------------------------------------------
-- name: Load the hardware watchdog module at boot
+# modules-load.d NO sirve: systemd-modules-load respeta la lista de bloqueo de
+# Ubuntu y no carga iTCO_wdt. La capa andaba hasta el primer reinicio y después
+# quedaba apagada sin avisar (RCA del 16/10/2026). Se carga con un servicio.
+- name: Remove the modules-load.d attempt (blocked by Ubuntu's deny-list)
+  ansible.builtin.file:
+    path: /etc/modules-load.d/vigia-watchdog.conf
+    state: absent
+  when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+
+- name: Install the boot-time watchdog loader
   ansible.builtin.copy:
-    content: "# Chip watchdog de la placa (ver docs/vigia-red.md)\n{{ vigia_red_watchdog_modulo }}\n"
-    dest: /etc/modules-load.d/vigia-watchdog.conf
+    src: vigia-watchdog.service
+    dest: /etc/systemd/system/vigia-watchdog.service
     owner: root
     group: root
     mode: "0644"
+  register: vigia_wdt_unit
   when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
 
-- name: Load the hardware watchdog module now
-  community.general.modprobe:
-    name: "{{ vigia_red_watchdog_modulo }}"
-    state: present
-  register: vigia_wdt_mod
-  failed_when: false
+- name: Enable and start the watchdog loader
+  ansible.builtin.systemd_service:
+    name: vigia-watchdog.service
+    enabled: true
+    state: started
+    daemon_reload: "{{ vigia_wdt_unit is changed }}"
   when: vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
 
 - name: Check that the watchdog device exists
@@ -65,6 +75,30 @@
   when:
     - vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
     - vigia_wdt_dev.stat.exists | default(false)
+
+# systemd abre /dev/watchdog0 en su próximo ciclo (cada pocos segundos).
+- name: Verify the hardware watchdog is really armed
+  ansible.builtin.command: cat /sys/class/watchdog/watchdog0/state
+  register: vigia_wdt_estado
+  until: vigia_wdt_estado.stdout == "active"
+  retries: 10
+  delay: 3
+  changed_when: false
+  failed_when: false
+  when:
+    - vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+    - vigia_wdt_dev.stat.exists | default(false)
+
+- name: Shout if the watchdog is not armed
+  ansible.builtin.fail:
+    msg: >-
+      /dev/watchdog0 existe pero systemd no lo está usando (estado:
+      {{ vigia_wdt_estado.stdout | default('?') }}). Un congelamiento dejaría el
+      equipo colgado. Revisar /etc/systemd/system.conf.d/50-vigia-watchdog.conf.
+  when:
+    - vigia_red_enabled | bool and vigia_red_watchdog_hw | bool
+    - vigia_wdt_dev.stat.exists | default(false)
+    - vigia_wdt_estado.stdout | default('') != "active"
 
 - name: Report a missing watchdog chip
   ansible.builtin.debug:
@@ -160,6 +194,18 @@
   loop:
     - { src: vigia-red.sh, dest: vigia-red }
     - { src: postmortem-arranque.sh, dest: postmortem-arranque }
+    - { src: vigia-metricas.py, dest: vigia-metricas }
+  when: vigia_red_enabled | bool
+
+# node-exporter (contenedor) monta / en /host y lee de acá con su colector
+# textfile: así Grafana ve el WiFi, el watchdog y la causa de cada arranque.
+- name: Directory for node-exporter textfile metrics
+  ansible.builtin.file:
+    path: /var/lib/node_exporter/textfile
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
   when: vigia_red_enabled | bool
 
 # El estado del link y el nivel de señal mienten: este server llegó a perder el
@@ -191,7 +237,7 @@
     owner: root
     group: root
     mode: "0644"
-  loop: [vigia-red.service, vigia-red.timer, postmortem-arranque.service]
+  loop: [vigia-red.service, vigia-red.timer, postmortem-arranque.service, vigia-metricas.service, vigia-metricas.timer]
   register: vigia_units
   when: vigia_red_enabled | bool
 
@@ -200,11 +246,105 @@
     name: "{{ item }}"
     enabled: true
     daemon_reload: "{{ vigia_units is changed }}"
-  loop: [vigia-red.timer, postmortem-arranque.service]
+  loop: [vigia-red.timer, postmortem-arranque.service, vigia-metricas.timer]
   when: vigia_red_enabled | bool
 
-- name: Start the guardian timer
+- name: Start the guardian and metrics timers
   ansible.builtin.systemd_service:
-    name: vigia-red.timer
+    name: "{{ item }}"
     state: started
+  loop: [vigia-red.timer, vigia-metricas.timer]
   when: vigia_red_enabled | bool
+
+# --- Capa 1b: botón de encendido -------------------------------------------------------
+# Un toque corto apagaba el servidor (09/20, 10/01, 10/02, 10/14). Con ignore, el
+# toque corto no hace nada; mantenerlo 4 s sigue forzando el apagado por hardware.
+- name: Ensure logind drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/logind.conf.d
+    state: directory
+    mode: "0755"
+  when: vigia_red_enabled | bool
+
+- name: Ignore a short press of the power button
+  ansible.builtin.copy:
+    content: |
+      # vigia_red: un toque corto del botón NO apaga el servidor (RCA 16/10/2026).
+      # Mantenerlo apretado 4 s sigue apagándolo (eso lo hace la placa, no el sistema).
+      [Login]
+      HandlePowerKey={{ 'ignore' if vigia_red_ignorar_boton | bool else 'poweroff' }}
+    dest: /etc/systemd/logind.conf.d/50-vigia-boton.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload logind
+  when: vigia_red_enabled | bool
+
+# --- Capa 5b: evidencia que dura {{ vigia_red_retencion_dias }} días ------------------
+- name: Keep boot summaries for N days (systemd-tmpfiles cleans the rest daily)
+  ansible.builtin.copy:
+    content: |
+      # vigia_red: los resúmenes de caída se guardan {{ vigia_red_retencion_dias }} días.
+      d /var/log/homelab/arranques 0750 root root {{ vigia_red_retencion_dias }}d
+    dest: /etc/tmpfiles.d/vigia-red.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: vigia_red_enabled | bool
+
+- name: Rotate the guardian log, keeping N days
+  ansible.builtin.copy:
+    content: |
+      # vigia_red: un archivo por día, se guardan {{ vigia_red_retencion_dias }} días.
+      /var/log/homelab/vigia-red.log {
+          daily
+          rotate {{ vigia_red_retencion_dias }}
+          maxage {{ vigia_red_retencion_dias }}
+          dateext
+          compress
+          delaycompress
+          missingok
+          notifempty
+          copytruncate
+      }
+    dest: /etc/logrotate.d/vigia-red
+    owner: root
+    group: root
+    mode: "0644"
+  when: vigia_red_enabled | bool
+
+# Si el kernel se cuelga con un panic, el volcado queda en la NVRAM de la placa
+# (EFI) y systemd-pstore lo guarda al arrancar: es la prueba directa que faltó en
+# el RCA. panic=10: reiniciar 10 s después del panic en vez de quedar colgado.
+# Rige desde el PRÓXIMO arranque (no se reinicia nada acá).
+- name: Kernel options to keep panic evidence and reboot after a panic
+  ansible.builtin.copy:
+    content: |
+      # vigia_red (RCA 16/10/2026)
+      GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT panic=10 efi_pstore.pstore_disable=0"
+    dest: /etc/default/grub.d/90-vigia-red.cfg
+    owner: root
+    group: root
+    mode: "0644"
+  register: vigia_grub
+  when: vigia_red_enabled | bool and vigia_red_evidencia_panic | bool
+
+- name: Regenerate the GRUB config
+  ansible.builtin.command: update-grub
+  changed_when: true
+  when:
+    - vigia_red_enabled | bool and vigia_red_evidencia_panic | bool
+    - vigia_grub is changed
+
+# Se aplica en cada arranque con systemd-tmpfiles (escribe en /sys) y ahora.
+- name: Disable CPU turbo at every boot (intel_pstate)
+  ansible.builtin.copy:
+    dest: /etc/tmpfiles.d/vigia-sin-turbo.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - do not edit manually
+      w /sys/devices/system/cpu/intel_pstate/no_turbo - - - - {{ 1 if vigia_red_sin_turbo | bool else 0 }}
+  notify: Apply the turbo setting
+  when: ansible_facts.processor | select('search', 'Intel') | list | length > 0

@@ -1,0 +1,7 @@
+{#- Lista de "<espacio>-<admin|servicio>" para generar una clave por cada uno. -#}
+{%- set ids = [] -%}
+{%- for esp in thingsboard_espacios_propios -%}
+{%-   for a in esp.admins -%}{%- set _ = ids.append(esp.id ~ '-' ~ a.id) -%}{%- endfor -%}
+{%-   if esp.servicio | default('') -%}{%- set _ = ids.append(esp.id ~ '-servicio') -%}{%- endif -%}
+{%- endfor -%}
+{{ ids | to_json }}

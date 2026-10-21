@@ -31,3 +31,28 @@ scrape_configs:
       server_name: homelab-01
     static_configs:
       - targets: ["172.17.0.1:8444"]
+
+  # ThingsBoard (stack thingsboard, red edge). Las métricas de la JVM y de
+  # Spring salen de /actuator/prometheus, que ThingsBoard sirve SIN login: por
+  # eso los dos proxies (admin y público) bloquean esa ruta y solo se lee acá
+  # adentro. Si ThingsBoard no está desplegado, el target figura caído.
+  - job_name: thingsboard
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["thingsboard:8080"]
+
+  # Puente mqtt-aula -> ThingsBoard: mensajes por resultado, conexiones, tope.
+  - job_name: tb-puente
+    static_configs:
+      - targets: ["tb-puente:9101"]
+
+  # Base de ThingsBoard (postgres-exporter, rol de solo monitoreo).
+  - job_name: tb-postgres
+    static_configs:
+      - targets: ["tb-postgres-exporter:9187"]
+
+  # Proxy público de los tableros (Caddy): pedidos por código y pedidos en
+  # vuelo en /api/ws (= pestañas públicas abiertas).
+  - job_name: tableros-proxy
+    static_configs:
+      - targets: ["tableros-proxy:9180"]

@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Volcado diario de la base de ThingsBoard
+
+[Timer]
+# Fuera de la ventana caliente de la noche (01:50–06:00, informe 14/10/2026).
+OnCalendar={{ thingsboard_backup_hora }}
+# Si el servidor estaba apagado a esa hora, corre al prender.
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

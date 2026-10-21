@@ -49,11 +49,13 @@ panol_db_user: "panol"
 #                            (y sacarla o cambiarla en este diccionario)
 #                            make panol
 # Si una identidad NO figura acá, el rol le sortea una clave aleatoria.
+#
+# Los NODOS no tienen clave de fábrica: entran por internet (listener 1884,
+# nodo Tailscale "panol"), así que el rol les sortea una aleatoria. Se lee en
+# /etc/panol/secrets/mqtt-<usuario>.pass y se graba en el secrets.py de la placa.
 panol_mqtt_default_passwords:
   panol-servidor: "cambiar-servidor-panol"
   panol-nodered: "cambiar-nodered-panol"
-  nodo-panol-puerta: "cambiar-nodo-puerta"
-  nodo-panol-armarios: "cambiar-nodo-armarios"
 
 # Misma idea para la base de auditoría. Vaciá el valor ("") y el rol sortea una
 # clave aleatoria en el host.
@@ -130,6 +132,38 @@ panol_reset_prueba_horas: 6
 # dashboard). Funnel en 443 se lo robaría y tumbaría todo eso.
 panol_funnel_enabled: false
 panol_funnel_port: 8443
+# Por Funnel pasan SOLO estas rutas de la API. Desde el 17/10/2026 el nodo
+# manda eventos, latido y whitelist por MQTT; la API por internet queda nada
+# más como respaldo para bajar la whitelist. El resto (estado, sesiones,
+# alarmas: nombres y horarios) no se publica.
+panol_funnel_rutas: ["/api/whitelist"]
+
+# Exposición en la LAN. Apagada: los nodos llegan por la entrada remota
+# (Funnel, MQTT/TLS) y la API la usan Caddy y Funnel desde el propio host.
+# Prenderla publica el broker SIN cifrar y la API por HTTP en la LAN.
+panol_mqtt_lan_enabled: false
+panol_api_lan_enabled: false
+# Con la LAN apagada el broker queda solo en loopback, en otro puerto: el
+# 127.0.0.1:1883 lo usa un stack del aula.
+panol_mqtt_port_local: 11883
+
+# --- Entrada remota de los nodos (MQTT por Funnel) ---------------------------
+# Nodo de Tailscale propio "panol" con Funnel en el 443 → broker. Los ESP32
+# mantienen UNA conexión MQTT/TLS a panol.<tailnet>.ts.net desde cualquier red.
+# Necesita una auth key en {{ panol_secrets_dir }}/tailscale.authkey la primera
+# vez (después el nodo queda unido y la key se puede borrar).
+panol_remoto_enabled: true
+
+# --- Gestión de credenciales desde ThingsBoard ------------------------------
+# El sincronizador de la app (adapters/sync_tb.py, servicio `sync-tb`) publica
+# las tarjetas en ThingsBoard y aplica lo que se pide desde el tablero
+# "Pañol · Credenciales". El pañol tiene su PROPIO tenant ("Pañol IoT", de
+# Lucas; ver thingsboard_espacios_propios) y el sincronizador entra con la
+# cuenta de servicio de ese espacio. La clave se lee del secreto de ThingsBoard
+# en este mismo host (no se copia a ningún repo). Sin el archivo, queda inactivo.
+panol_tb_url: "http://thingsboard:8080"
+panol_tb_usuario: "panol-sync@panol.local"
+panol_tb_clave_archivo: "/etc/thingsboard/secrets/espacio-panol-iot-servicio.pass"
 
 # --- Publicación ------------------------------------------------------------
 # Node-RED se sirve en https://<subdominio>.<caddy_base_domain> detrás de SSO.

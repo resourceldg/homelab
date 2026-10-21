@@ -6,7 +6,7 @@
 user {{ team.name | replace('-', '_') }}
 topic readwrite {{ team.name }}/#
 {% endfor %}
-{% for svc in shared_mqtt_service_users | default([]) %}
+{% for svc in shared_mqtt_service_users_todos | default(shared_mqtt_service_users | default([])) %}
 
 # {{ svc.name }} (servicio, solo lectura)
 user {{ svc.name }}

@@ -94,8 +94,14 @@ porque eso es lo que hay que hacer antes de montar en producción.
 |---|---|---|
 | `panol-servidor` | `cambiar-servidor-panol` | api + puente (`/etc/panol/app.env`) |
 | `panol-nodered` | `cambiar-nodered-panol` | tablero Node-RED (se carga a mano en el nodo MQTT) |
-| `nodo-panol-puerta` | `cambiar-nodo-puerta` | ESP32 #1 (`firmware/nodo_panol/config.py`) |
-| `nodo-panol-armarios` | `cambiar-nodo-armarios` | ESP32 #2 (etapa posterior) |
+| `nodo-panol-puerta` | **aleatoria** (la sortea el rol) | ESP32 #1 (`secrets.py` de la placa, `MQTT_PASS`) |
+| `nodo-panol-armarios` | **aleatoria** (la sortea el rol) | ESP32 #2 (etapa posterior) |
+
+Los **nodos no tienen clave de fábrica** desde el 17/10/2026: entran por
+internet (ver [Entrada remota](#entrada-remota-de-los-nodos-mqtt-por-funnel)),
+y una clave conocida ahí deja a cualquiera publicar eventos falsos en la
+auditoría. La clave está en `/etc/panol/secrets/mqtt-<usuario>.pass` (solo
+root) y se graba en el `secrets.py` de la placa, **nunca** en el repo.
 | Postgres `panol` | `cambiar-db-panol` | base de auditoría (dueño) |
 | Postgres `grafana_ro` | `cambiar-grafana-panol` | Grafana, solo SELECT |
 
@@ -198,8 +204,71 @@ sudo tailscale funnel status          # ver la URL pública y a dónde enruta
 El nodo llega por esa URL con su token. Ojo: por Funnel el nodo va **directo a
 la API**, sin pasar por Caddy, así que el rate-limit y el filtrado de rutas de
 Caddy no aplican en este camino — la defensa es el token que valida la API
-(sin token, 401). Es el modo para probar lejos del homelab; en el colegio, con
-el homelab en la misma red que el pañol, el nodo usa la LAN directa.
+(sin token, 401). Desde el 17/10/2026 el firmware usa este camino solo para
+bajar la whitelist: los eventos van por la entrada MQTT (sección siguiente).
+
+## Entrada remota de los nodos (MQTT por Funnel)
+
+**Qué es.** Un contenedor de Tailscale propio, el nodo **`panol`**
+(`panol-ts`), con Funnel en su 443. Termina el TLS con certificado válido de
+`panol.tail4eda13.ts.net` y reenvía al broker. La placa abre **una** conexión
+MQTT/TLS y la mantiene: eventos y latido salen al instante.
+
+**Por qué.** Antes la placa abría un HTTPS nuevo por cada envío. En el ESP32
+el handshake TLS tarda **4-5 s** y el timeout era de 3 s: fallaba seguido, la
+placa esperaba 30 s y los eventos llegaban con **5-105 s** de demora. Con la
+conexión persistente el handshake se paga una vez y cada evento llega en
+**~1 s** (medido en la placa contra el server real). Y como es un **nombre fijo**
+de internet, funciona igual con el server en casa, en el colegio o en otro
+lado: **mudar el server no obliga a tocar las placas**.
+
+```
+ESP32 ──MQTT/TLS (una conexión abierta)──► panol.tail4eda13.ts.net:443  (nodo "panol", Funnel)
+                                                 │
+                                                 ▼
+                                   panol-mosquitto :1884 (solo identidades de NODOS)
+                                                 ▼
+                                   panol-puente-mqtt → motor de sesiones → Postgres
+```
+
+| Pieza | Dónde | Por qué así |
+|---|---|---|
+| Nodo `panol` | `compose/panol/compose.yml` (perfil `remoto`) + `compose/panol/remoto/serve.json` | Propio: en homelab-01 el 443 del tailnet es de Caddy, el 8443 de la API y el 10000 del MQTT del aula |
+| Página HTTPS mínima en el 8443 del nodo | `serve.json` | **Sin ningún servicio HTTPS, Tailscale no publica el DNS público del nodo** (probado: con TCP solo, Funnel enrutaba pero el nombre no resolvía y la placa daba `-202`) |
+| Listener **1884** del broker, con `passwd-remoto` | `mosquitto.conf` (`per_listener_settings`) | Por internet solo entran los **nodos**. El servidor (lee y escribe todo `panol/#`) y Node-RED no se pueden usar desde afuera aunque alguien tuviera su clave |
+| Auth key | `/etc/panol/secrets/tailscale.authkey` (solo la primera vez) | Fuera del repo. Una vez unido, el estado queda en el volumen `panol_panol_ts` y la key **se borra** |
+
+**Activar en un server nuevo:**
+
+```bash
+# EN homelab-01. Una auth key de un solo uso (consola de Tailscale → Keys).
+printf %s 'tskey-auth-...' | sudo install -m 600 /dev/stdin /etc/panol/secrets/tailscale.authkey
+make panol                                   # levanta panol-ts (perfil "remoto")
+sudo docker exec panol-ts tailscale funnel status
+sudo rm /etc/panol/secrets/tailscale.authkey # ya se unió: la key sobra
+```
+
+**Verificar desde afuera** (en cualquier PC, no hace falta estar en la LAN):
+
+```bash
+# Tiene que resolver a IPs públicas de Tailscale:
+dig +short panol.tail4eda13.ts.net A
+# Login real con la clave del nodo: "Timed out" (código 27) = entró y no hubo mensajes.
+mosquitto_sub -h panol.tail4eda13.ts.net -p 443 --cafile /etc/ssl/certs/ca-certificates.crt \
+  -u nodo-panol-puerta -P '<clave del nodo>' -t panol/prueba -W 3
+# La identidad del servidor NO tiene que entrar por acá: "not authorised".
+```
+
+**La demora se vigila en Grafana**, tablero *Pañol IoT — auditoría*: "Demora
+típica", "Peor demora", "Eventos por MQTT" y la serie por transporte. Salen de
+`eventos_procesados` (`ocurrido` = hora en la placa, `via` = http/mqtt).
+
+**Qué pasa si se corta** (probado en la placa, cortando el nodo `panol` 90 s a
+3 min): la placa sigue atendiendo la puerta y los sensores, guarda los eventos
+en su flash, reintenta con espera creciente (1, 2, 4, 8 … 15 s) y al volver los
+manda todos. **Cero eventos perdidos, sin huecos de detección.** El respaldo
+HTTP para eventos está **apagado** a propósito: un POST por Funnel con el
+enlace inestable bloqueó el bucle 87 s y el PIR no detectó nada en ese lapso.
 
 ## Ver: Grafana
 
@@ -390,7 +459,7 @@ docker exec panol-postgres psql -U panol -d panol -c 'select * from sesiones;'
 # 5. El mismo camino por MQTT, con la credencial del nodo (lo que hará el firmware).
 #    El tipo sale del topic y la identidad también: el payload va mínimo.
 mosquitto_pub -h <IP-LAN-del-server> -p 1883 \
-  -u nodo-panol-puerta -P cambiar-nodo-puerta -q 1 \
+  -u nodo-panol-puerta -P "$(sudo cat /etc/panol/secrets/mqtt-nodo-panol-puerta.pass)" -q 1 \
   -t panol/panol-lab01/panol-lab01-puerta/evento/acceso \
   -m '{"event_id":"e2e-2","timestamp":"2026-07-22T10:01:00-03:00",
        "datos":{"uid_hex":"DEADBEEF","resultado":"CONCEDIDO"}}'
@@ -424,7 +493,7 @@ sudo bash -c 'set -a; . /etc/panol/app.env; \
 # SILENCIO y el cliente cree que publicó. Con MQTT 5 avisa "Not authorized".
 # Ojo igual: mosquitto_pub sale con código 0 en los dos casos, hay que LEER.
 mosquitto_pub -h <IP-LAN-del-server> -p 1883 -V 5 -q 1 \
-  -u nodo-panol-puerta -P cambiar-nodo-puerta \
+  -u nodo-panol-puerta -P "$(sudo cat /etc/panol/secrets/mqtt-nodo-panol-puerta.pass)" \
   -t panol/panol-lab01/panol-lab01-armarios/evento/acceso -m '{}'
 #  -> Warning: Publish 1 failed: Not authorized.
 

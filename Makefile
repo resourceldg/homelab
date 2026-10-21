@@ -14,7 +14,7 @@ VENV := $(CURDIR)/.venv
 export PATH := $(VENV)/bin:$(PATH)
 
 .PHONY: help deps lint molecule vault-edit vault-create dry-run apply \
-        harden firewall updates backups monitoring panol idempotence test verify \
+        harden firewall updates backups monitoring panol thingsboard idempotence test verify \
         logs-on logs-off logs-estado new-site \
         precommit secrets
 
@@ -95,6 +95,9 @@ logs-estado: ## ¿Están prendidos los logs en vivo?
 
 panol: ## Redeploy the Pañol IoT plane (broker MQTT + auditoría + Node-RED)
 	$(RUN) $(PLAY) --tags panol
+
+thingsboard: ## Desplegar/actualizar ThingsBoard (tableros IoT). Antes: docs/thingsboard.md
+	$(RUN) $(PLAY) --tags shared-services,thingsboard
 
 backups: ## Configure backups and run one now
 	$(RUN) $(PLAY) --tags backups
