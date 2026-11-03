@@ -45,9 +45,5 @@ student_exposures: []
 # suya con su llave, saltando por homelab-01:  ssh -J <usuario>@homelab-01 <usuario>@<ip>
 # La VM solo sale a internet: no ve la LAN, ni Docker, ni el tailnet.
 # Sin ssh_pubkeys la VM NO se crea (el rol avisa). Ver docs/vms-alumnos.md.
-vms_alumnos:
-  - name: vm-alan
-    owner: alan
-    ip: 10.90.0.10
-    ssh_pubkeys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICjH9hG0Ftjho5+zFRY90pvMjzHEGQJ6V8JiFope5r2M alan@odiseasoft.com
+# vm-alan se borró el 2026-11-03 a pedido de Lucas.
+vms_alumnos: []

@@ -6,7 +6,8 @@ server ve las claves de todos los equipos, el vault y el firewall. La solución 
 darle **una máquina virtual (VM) propia**: una computadora "de mentira" que corre
 adentro de homelab-01, con su propio Ubuntu, donde el alumno sí es root.
 
-Primer caso: **Alan** (equipo-02), `vm-alan`.
+Primer caso: **Alan** (equipo-02), `vm-alan` (borrada el 2026-11-03; los
+ejemplos de esta guía siguen usando ese nombre).
 
 ## Cómo funciona
 
@@ -84,6 +85,7 @@ salto pasa por su usuario de homelab-01.
 | Apagar / prender | `sudo incus stop vm-alan` / `sudo incus start vm-alan` |
 | Rehacerla de cero | `sudo incus delete --force vm-alan` y volver a correr `--tags vms` |
 | Cuánto usa | `sudo incus info vm-alan` |
+| Borrarla para siempre | sacarla de `vms_alumnos` en `classroom.yml` (si no, `--tags vms` la vuelve a crear) y después `sudo incus delete --force vm-alan`. Si tenía un `tailscale serve` apuntando a su IP, apagarlo también |
 
 **Ojo:** cambiar `ssh_pubkeys`, CPU o RAM en `classroom.yml` **no** modifica una
 VM ya creada (cloud-init corre una vez). Para eso: rehacerla, o
@@ -141,7 +143,8 @@ sudo ls -l /etc/incus-metrics/                   # client.crt, client.key, incus
 ## Guía del alumno
 
 > Si el alumno trabaja con un asistente de IA (Claude, etc.), hay un runbook
-> pensado para que el agente lo ejecute solo: `docs/agentes/vm-alan.md`.
+> pensado para que el agente lo ejecute solo: `docs/agentes/vm-alan.md` (escrito para
+> Alan; sirve de modelo cambiando nombre e IP).
 
 ### 1. Crear tu llave SSH (una sola vez, en TU computadora)
 
