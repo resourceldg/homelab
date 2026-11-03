@@ -12,3 +12,16 @@ usg_valid_profiles:
 harden_disable_usb_storage: false  # true breaks USB backup drives — keep off
 harden_core_dumps: true
 harden_sysctl: true
+# Desktop/print/modem services with no job on this server (smaller attack surface).
+# Units missing on the host are skipped. Avahi stays: the `homelab` desktop may use it.
+harden_disabled_services:
+  - cups-browsed.service
+  - cups.service
+  - cups.socket
+  - cups.path
+  - gnome-remote-desktop.service
+  - ModemManager.service
+  - kerneloops.service
+# Postfix only delivers local system mail (cron, unattended-upgrades): no need to
+# listen on every interface.
+harden_postfix_loopback_only: true
