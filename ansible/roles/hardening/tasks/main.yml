@@ -137,3 +137,26 @@
   loop:
     - /etc/issue.net
     - /etc/issue
+
+- name: List unit files (to skip units the host does not have)
+  ansible.builtin.command: systemctl list-unit-files --no-legend --plain  # noqa: command-instead-of-module  (the module cannot list units)
+  register: hardening_unit_files
+  changed_when: false
+
+- name: Stop and disable services this server does not need
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop: "{{ harden_disabled_services }}"
+  when: item in (hardening_unit_files.stdout_lines | map('split') | map('first') | list)
+
+- name: Postfix listens on loopback only
+  ansible.builtin.lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^inet_interfaces\s*='
+    line: "inet_interfaces = loopback-only"
+  when:
+    - harden_postfix_loopback_only | bool
+    - "'postfix.service' in (hardening_unit_files.stdout_lines | map('split') | map('first') | list)"
+  notify: Restart postfix
